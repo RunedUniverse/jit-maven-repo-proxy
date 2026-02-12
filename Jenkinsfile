@@ -52,6 +52,19 @@ def installArtifact(mod, parent = null) {
 	}
 }
 
+def testArtifacts(toolchainId, tag, parent = null) {
+	stage(tag) {
+		def modPaths = getModules(withTagIn: [ tag ])*.relPathFrom(parent).join(',');
+		sh "mvn-dev -P ${ REPOS },${ toolchainId },ci-test-build -pl=${ modPaths }"
+		sh "mvn-dev --fail-never -P ${ REPOS },${ toolchainId },ci-test-exec,test-system -pl=${ modPaths }"
+		// check tests, archive reports in case junit flags errors
+		junit '*/target/surefire-reports/*.xml'
+		if(currentBuild.resultIsWorseOrEqualTo('UNSTABLE')) {
+			archiveArtifacts artifacts: '*/target/surefire-reports/*.xml'
+		}
+	}
+}
+
 node( label: 'linux' ) {
 	withModules {
 		tool(name: 'maven-latest', type: 'maven')
@@ -144,35 +157,9 @@ node( label: 'linux' ) {
 					skipStage()
 					return
 				}
-				def jdk8_mods = []
-				def jdk11_mods = []
 				
-				perModule() {
-					def mod = getModule()
-					if(mod.hasTag('jdk-1.8.0'))
-						jdk8_mods << mod.relPathFrom(parentMod);
-					if(mod.hasTag('jdk-11'))
-						jdk11_mods << mod.relPathFrom(parentMod);
-				}
-				
-				stage('jdk-1.8.0') {
-					sh "mvn-dev -P ${ REPOS },toolchain-openjdk-1-8-0,ci-test-build -pl=${ jdk8_mods.join(',') }"
-					sh "mvn-dev --fail-never -P ${ REPOS },toolchain-openjdk-1-8-0,ci-test-exec,test-system -pl=${ jdk8_mods.join(',') }"
-					// check tests, archive reports in case junit flags errors
-					junit '*/target/surefire-reports/*.xml'
-					if(currentBuild.resultIsWorseOrEqualTo('UNSTABLE')) {
-						archiveArtifacts artifacts: '*/target/surefire-reports/*.xml'
-					}
-				}
-				stage('jdk-11') {
-					sh "mvn-dev -P ${ REPOS },toolchain-openjdk-11,ci-test-build -pl=${ jdk11_mods.join(',') }"
-					sh "mvn-dev --fail-never -P ${ REPOS },toolchain-openjdk-11,ci-test-exec,test-system -pl=${ jdk11_mods.join(',') }"
-					// check tests, archive reports in case junit flags errors
-					junit '*/target/surefire-reports/*.xml'
-					if(currentBuild.resultIsWorseOrEqualTo('UNSTABLE')) {
-						archiveArtifacts artifacts: '*/target/surefire-reports/*.xml'
-					}
-				}
+				testArtifacts('toolchain-openjdk-1-8-0', 'jdk-1.8.0', parentMod);
+				testArtifacts('toolchain-openjdk-11',    'jdk-11',    parentMod);
 			}
 
 			stage('Package Build Result') {
