@@ -5,8 +5,8 @@ def evalValue(expression, path = null) {
 
 def getToolchainId(mod) {
 	if(mod.hasTag('jdk-11'))
-		return 'toolchain-openjdk-11'
-	return 'toolchain-openjdk-1-8-0'
+		return 'toolchain-openjdk-11';
+	return 'toolchain-openjdk-1-8-0';
 }
 
 def installArtifact(mod, parent = null) {
@@ -20,7 +20,6 @@ def installArtifact(mod, parent = null) {
 	def artifactId = evalValue('project.artifactId', relPath)
 	def version = evalValue('project.version', relPath)
 	echo "Building: ${ groupId }:${ artifactId }:${ version }"
-	def toolchainId = 
 	try {
 		sh "mvn-dev -P ${ REPOS },${ getToolchainId(mod) },ci-install ${ relPath==null ? '' : ('-pl='+relPath) }"
 	} finally {
@@ -151,9 +150,9 @@ node( label: 'linux' ) {
 				perModule() {
 					def mod = getModule()
 					if(mod.hasTag('jdk-1.8.0'))
-						jdk8_mods << mod.id()
+						jdk8_mods << mod.id();
 					if(mod.hasTag('jdk-11'))
-						jdk11_mods << mod.id()
+						jdk11_mods << mod.id();
 				}
 				
 				stage('jdk-1.8.0') {
