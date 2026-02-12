@@ -26,11 +26,11 @@
 		<version>0.1.0</version>
 	</parent>
 
-	<artifactId>jit-maven-repo-proxy</artifactId>
+	<artifactId>jit-maven-repo-proxy-cache-caffeine</artifactId>
 	<version>0.1.0</version>
 	<packaging>jar</packaging>
 
-	<name>JIT Maven Repository Proxy</name>
+	<name>JIT Maven Repository Proxy [cache:caffeine]</name>
 	<url>https://github.com/RunedUniverse/jit-maven-repo-proxy</url>
 	<inceptionYear>2026</inceptionYear>
 
@@ -81,11 +81,23 @@
 		<!-- ACTIVITIONS -->
 		<license-enforce>true</license-enforce>
 		<!-- VERSIONS -->
-		<java-source-version>1.8</java-source-version>
+		<java-source-version>11</java-source-version>
 		<!-- ARTIFACT VERSIONS -->
 		<jit-maven-repo-proxy-bom-version>0.1.0</jit-maven-repo-proxy-bom-version>
 		<runeduniverse-utils-bom-version>2.0.0</runeduniverse-utils-bom-version>
+		<caffeine-version>3.2.3</caffeine-version>
 	</properties>
+	
+	<profiles>
+		<!-- DEV-INSTALL -->
+		<profile>
+			<id>dev-install</id>
+			<properties>
+				<toolchain-jdk-source-version>openjdk-11</toolchain-jdk-source-version>
+				<toolchain-jdk-test-version>openjdk-11</toolchain-jdk-test-version>
+			</properties>
+		</profile>
+	</profiles>
 
 	<dependencies>
 		<dependency>
@@ -93,14 +105,9 @@
 			<artifactId>jit-maven-repo-proxy-api</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.httpcomponents.client5</groupId>
-			<artifactId>httpclient5</artifactId>
-			<version>5.6</version>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.jetty</groupId>
-			<artifactId>jetty-server</artifactId>
-			<version>12.1.6</version>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>caffeine</artifactId>
+			<version>${caffeine-version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>

@@ -13,4 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.proxy;
+package net.runeduniverse.lib.repo.maven.proxy.cache.caffeine.test;
+
+import java.time.LocalDateTime;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
+public class ExampleTest {
+
+	public void print(String line) {
+		System.out.println(LocalDateTime.now() + ": " + line);
+	}
+
+	@Test
+	@Tag("system")
+	public void exec() throws InterruptedException {
+		print("test example log");
+	}
+
+}

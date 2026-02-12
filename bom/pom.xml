@@ -81,6 +81,7 @@
 		<!-- ARTIFACT VERSIONS -->
 		<api-version>0.1.0</api-version>
 		<core-version>0.1.0</core-version>
+		<cache-caffeine-version>0.1.0</cache-caffeine-version>
 	</properties>
 
 	<dependencyManagement>
@@ -94,6 +95,11 @@
 				<groupId>net.runeduniverse.lib.repo</groupId>
 				<artifactId>jit-maven-repo-proxy</artifactId>
 				<version>${core-version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.runeduniverse.lib.repo</groupId>
+				<artifactId>jit-maven-repo-proxy-cache-caffeine</artifactId>
+				<version>${cache-caffeine-version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

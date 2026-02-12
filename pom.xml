@@ -34,6 +34,7 @@
 		<module>bom</module>
 		<module>api</module>
 		<module>core</module>
+		<module>cache-caffeine</module>
 	</modules>
 
 	<licenses>
@@ -66,9 +67,11 @@
 	<scm>
 		<url>https://github.com/RunedUniverse/jit-maven-repo-proxy</url>
 		<connection>
-			scm:git:git://github.com/RunedUniverse/jit-maven-repo-proxy.git</connection>
+			scm:git:git://github.com/RunedUniverse/jit-maven-repo-proxy.git
+		</connection>
 		<developerConnection>
-			scm:git:git@github.com:RunedUniverse/jit-maven-repo-proxy.git</developerConnection>
+			scm:git:git@github.com:RunedUniverse/jit-maven-repo-proxy.git
+		</developerConnection>
 	</scm>
 	<issueManagement>
 		<system>GitHub Issues</system>
@@ -117,16 +120,23 @@
 		<profile>
 			<id>toolchain-openjdk-1-8-0</id>
 			<properties>
-				<jdk-toolchain-source-version>openjdk-1.8.0</jdk-toolchain-source-version>
-				<jdk-toolchain-test-version>openjdk-1.8.0</jdk-toolchain-test-version>
+				<toolchain-jdk-source-version>openjdk-1.8.0</toolchain-jdk-source-version>
+				<toolchain-jdk-test-version>openjdk-1.8.0</toolchain-jdk-test-version>
+			</properties>
+		</profile>
+		<profile>
+			<id>toolchain-openjdk-11</id>
+			<properties>
+				<toolchain-jdk-source-version>openjdk-11</toolchain-jdk-source-version>
+				<toolchain-jdk-test-version>openjdk-11</toolchain-jdk-test-version>
 			</properties>
 		</profile>
 		<!-- DEV-INSTALL -->
 		<profile>
 			<id>dev-install</id>
 			<properties>
-				<jdk-toolchain-source-version>openjdk-1.8.0</jdk-toolchain-source-version>
-				<jdk-toolchain-test-version>openjdk-1.8.0</jdk-toolchain-test-version>
+				<toolchain-jdk-source-version>openjdk-1.8.0</toolchain-jdk-source-version>
+				<toolchain-jdk-test-version>openjdk-1.8.0</toolchain-jdk-test-version>
 			</properties>
 			<build>
 				<defaultGoal>clean dev/install</defaultGoal>

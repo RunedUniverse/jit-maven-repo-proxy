@@ -14,3 +14,7 @@
  * limitations under the License.
  */
 package net.runeduniverse.lib.repo.maven.proxy.api;
+
+public interface RepositoryBuilder {
+
+}
