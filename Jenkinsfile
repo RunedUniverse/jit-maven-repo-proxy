@@ -3,6 +3,12 @@ def evalValue(expression, path = null) {
 		script: "mvn org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=${ expression } -q -DforceStdout ${ path==null ? '' : ('-pl='+path) } | tail -1")
 }
 
+def getToolchainId(mod) {
+	if(mod.hasTag('jdk-11'))
+		return 'toolchain-openjdk-11';
+	return 'toolchain-openjdk-1-8-0';
+}
+
 def installArtifact(mod, parent = null) {
 	if(!mod.active()) {
 		skipStage()
@@ -14,8 +20,9 @@ def installArtifact(mod, parent = null) {
 	def artifactId = evalValue('project.artifactId', relPath)
 	def version = evalValue('project.version', relPath)
 	echo "Building: ${ groupId }:${ artifactId }:${ version }"
+	def toolchainId = 
 	try {
-		sh "mvn-dev -P ${ REPOS },toolchain-openjdk-1-8-0,ci-install ${ relPath==null ? '' : ('-pl='+relPath) }"
+		sh "mvn-dev -P ${ REPOS },${ getToolchainId(mod) },ci-install ${ relPath==null ? '' : ('-pl='+relPath) }"
 	} finally {
 		def baseName = "${ artifactId }-${ version }"
 		// create spec .pom in target/ path
@@ -73,8 +80,8 @@ node( label: 'linux' ) {
 			
 			addModule( id: 'maven-parent',        path: '.',     name: 'Maven Parent',                      tags: [ 'parent' ])
 			addModule( id: 'mvn-repo-proxy-bom',  path: 'bom',   name: 'Bill of Materials',                 tags: [ 'bom' ])
-			addModule( id: 'mvn-repo-proxy-api',  path: 'api',   name: 'JIT Maven Repository Proxy [API]',  tags: [         'build1a', 'pack-jar' ])
-			addModule( id: 'mvn-repo-proxy',      path: 'core',  name: 'JIT Maven Repository Proxy',        tags: [ 'test', 'build1',  'pack-jar' ])
+			addModule( id: 'mvn-repo-proxy-api',  path: 'api',   name: 'JIT Maven Repository Proxy [API]',  tags: [         'build1a', 'pack-jar', 'jdk-1.8.0' ])
+			addModule( id: 'mvn-repo-proxy',      path: 'core',  name: 'JIT Maven Repository Proxy',        tags: [ 'test', 'build1',  'pack-jar', 'jdk-11'    ])
 		}
 		def parentMod = getModule(id: 'maven-parent')
 
@@ -138,12 +145,34 @@ node( label: 'linux' ) {
 					skipStage()
 					return
 				}
-				sh "mvn-dev -P ${ REPOS },toolchain-openjdk-1-8-0,ci-test-build"
-				sh "mvn-dev --fail-never -P ${ REPOS },toolchain-openjdk-1-8-0,ci-test-exec,test-system"
-				// check tests, archive reports in case junit flags errors
-				junit '*/target/surefire-reports/*.xml'
-				if(currentBuild.resultIsWorseOrEqualTo('UNSTABLE')) {
-					archiveArtifacts artifacts: '*/target/surefire-reports/*.xml'
+				def jdk8_mods = [];
+				def jdk11_mods = [];
+				
+				perModule() {
+					def mod = getModule();
+					if(mod.hasTag('jdk-1.8.0'))
+						jdk8_mods << mod.id();
+					if(mod.hasTag('jdk-11'))
+						jdk11_mods << mod.id();
+				}
+				
+				stage('jdk-1.8.0') {
+					sh "mvn-dev -P ${ REPOS },toolchain-openjdk-1-8-0,ci-test-build -pl=${ jdk8_mods.join(',') }"
+					sh "mvn-dev --fail-never -P ${ REPOS },toolchain-openjdk-1-8-0,ci-test-exec,test-system -pl=${ jdk8_mods.join(',') }"
+					// check tests, archive reports in case junit flags errors
+					junit '*/target/surefire-reports/*.xml'
+					if(currentBuild.resultIsWorseOrEqualTo('UNSTABLE')) {
+						archiveArtifacts artifacts: '*/target/surefire-reports/*.xml'
+					}
+				}
+				stage('jdk-11') {
+					sh "mvn-dev -P ${ REPOS },toolchain-openjdk-11,ci-test-build -pl=${ jdk11_mods.join(',') }"
+					sh "mvn-dev --fail-never -P ${ REPOS },toolchain-openjdk-11,ci-test-exec,test-system -pl=${ jdk11_mods.join(',') }"
+					// check tests, archive reports in case junit flags errors
+					junit '*/target/surefire-reports/*.xml'
+					if(currentBuild.resultIsWorseOrEqualTo('UNSTABLE')) {
+						archiveArtifacts artifacts: '*/target/surefire-reports/*.xml'
+					}
 				}
 			}
 
