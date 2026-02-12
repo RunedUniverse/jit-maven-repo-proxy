@@ -54,7 +54,9 @@ def installArtifact(mod, parent = null) {
 
 def testArtifacts(toolchainId, tag, parent = null) {
 	stage(tag) {
-		def modPaths = getModules(withTagIn: [ tag ])*.relPathFrom(parent).join(',');
+		def modPaths = getModules(withTagIn: [ tag ])
+			.collect { it.relPathFrom(parent) }
+			.join(',');
 		sh "mvn-dev -P ${ REPOS },${ toolchainId },ci-test-build -pl=${ modPaths }"
 		sh "mvn-dev --fail-never -P ${ REPOS },${ toolchainId },ci-test-exec,test-system -pl=${ modPaths }"
 		// check tests, archive reports in case junit flags errors
