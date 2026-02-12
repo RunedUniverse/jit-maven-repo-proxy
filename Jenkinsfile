@@ -150,9 +150,9 @@ node( label: 'linux' ) {
 				perModule() {
 					def mod = getModule()
 					if(mod.hasTag('jdk-1.8.0'))
-						jdk8_mods << mod.id();
+						jdk8_mods << mod.relPathFrom(parentMod);
 					if(mod.hasTag('jdk-11'))
-						jdk11_mods << mod.id();
+						jdk11_mods << mod.relPathFrom(parentMod);
 				}
 				
 				stage('jdk-1.8.0') {
