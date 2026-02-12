@@ -14,14 +14,14 @@ def installArtifact(mod, parent = null) {
 		skipStage()
 		return
 	}
-	def relPath = (parent == null ? null : mod.relPathFrom(parent))
+	def relPath = (parent == null ? '.' : mod.relPathFrom(parent))
 	// get module metadata
 	def groupId = evalValue('project.groupId', relPath)
 	def artifactId = evalValue('project.artifactId', relPath)
 	def version = evalValue('project.version', relPath)
 	echo "Building: ${ groupId }:${ artifactId }:${ version }"
 	try {
-		sh "mvn-dev -P ${ REPOS },${ getToolchainId(mod) },ci-install ${ relPath==null ? '' : ('-pl='+relPath) }"
+		sh "mvn-dev -P ${ REPOS },${ getToolchainId(mod) },ci-install -pl=${ relPath }"
 	} finally {
 		def baseName = "${ artifactId }-${ version }"
 		// create spec .pom in target/ path
