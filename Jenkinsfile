@@ -5,8 +5,8 @@ def evalValue(expression, path = null) {
 
 def getToolchainId(mod) {
 	if(mod.hasTag('jdk-11'))
-		return 'toolchain-openjdk-11';
-	return 'toolchain-openjdk-1-8-0';
+		return 'toolchain-openjdk-11'
+	return 'toolchain-openjdk-1-8-0'
 }
 
 def installArtifact(mod, parent = null) {
@@ -127,16 +127,16 @@ node( label: 'linux' ) {
 			}
 			stage('Install - BOMs') {
 				perModule(withTagIn: [ 'bom' ]) {
-					installArtifact( getModule(), parentMod );
+					installArtifact( getModule(), parentMod )
 				}
 			}
 
 			stage('Build') {
 				perModule(withTagIn: [ 'build1a' ]) {
-					installArtifact( getModule(), parentMod );
+					installArtifact( getModule(), parentMod )
 				}
 				perModule(withTagIn: [ 'build1' ]) {
-					installArtifact( getModule(), parentMod );
+					installArtifact( getModule(), parentMod )
 				}
 			}
 
@@ -145,15 +145,15 @@ node( label: 'linux' ) {
 					skipStage()
 					return
 				}
-				def jdk8_mods = [];
-				def jdk11_mods = [];
+				def jdk8_mods = []
+				def jdk11_mods = []
 				
 				perModule() {
-					def mod = getModule();
+					def mod = getModule()
 					if(mod.hasTag('jdk-1.8.0'))
-						jdk8_mods << mod.id();
+						jdk8_mods << mod.id()
 					if(mod.hasTag('jdk-11'))
-						jdk11_mods << mod.id();
+						jdk11_mods << mod.id()
 				}
 				
 				stage('jdk-1.8.0') {
