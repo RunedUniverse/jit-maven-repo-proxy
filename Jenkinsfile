@@ -165,7 +165,7 @@ node( label: 'linux' ) {
 					skipStage()
 					return
 				}
-				
+
 				testArtifacts('toolchain-openjdk-1-8-0', 'jdk-1.8.0', parentMod);
 				testArtifacts('toolchain-openjdk-11',    'jdk-11',    parentMod);
 			}
