@@ -55,13 +55,13 @@ def installArtifact(mod, parent = null) {
 def testArtifacts(toolchainId, tag, parent = null) {
 	stage(tag) {
 		def mods = getModules(withTags: [ 'test', tag ]);
-		def modPaths = mods.collect({ it.relPathFrom(parent) }).join(',');
 
 		if(!mods) {
 			skipStage()
 			return
 		}
-
+		
+		def modPaths = mods.collect({ it.relPathFrom(parent) }).join(',');
 		sh "mvn-dev -P ${ REPOS },${ toolchainId },ci-test-build -pl=${ modPaths }"
 		sh "mvn-dev --fail-never -P ${ REPOS },${ toolchainId },ci-test-exec,test-system -pl=${ modPaths }"
 		// check tests, archive reports in case junit flags errors
@@ -97,10 +97,11 @@ node( label: 'linux' ) {
 			sh "mkdir -p ${ RESULT_PATH }"
 			sh "mkdir -p ${ ARCHIVE_PATH }"
 			
-			addModule( id: 'maven-parent',        path: '.',     name: 'Maven Parent',                      tags: [ 'parent' ])
-			addModule( id: 'mvn-repo-proxy-bom',  path: 'bom',   name: 'Bill of Materials',                 tags: [ 'bom' ])
-			addModule( id: 'mvn-repo-proxy-api',  path: 'api',   name: 'JIT Maven Repository Proxy [API]',  tags: [         'build1a', 'pack-jar', 'jdk-1.8.0' ])
-			addModule( id: 'mvn-repo-proxy',      path: 'core',  name: 'JIT Maven Repository Proxy',        tags: [ 'test', 'build1',  'pack-jar', 'jdk-11'    ])
+			addModule( id: 'maven-parent',    path: '.',               name: 'Maven Parent',                                 tags: [ 'parent' ])
+			addModule( id: 'bom',             path: 'bom',             name: 'Bill of Materials',                            tags: [ 'bom' ])
+			addModule( id: 'api',             path: 'api',             name: 'JIT Maven Repository Proxy [API]',             tags: [         'build1a', 'pack-jar', 'jdk-1.8.0' ])
+			addModule( id: 'mvn-repo-proxy',  path: 'core',            name: 'JIT Maven Repository Proxy',                   tags: [ 'test', 'build1',  'pack-jar', 'jdk-1.8.0' ])
+			addModule( id: 'cache-caffeine',  path: 'cache-caffeine',  name: 'JIT Maven Repository Proxy [cache:caffeine]',  tags: [ 'test', 'build1',  'pack-jar', 'jdk-11'    ])
 		}
 		def parentMod = getModule(id: 'maven-parent')
 
