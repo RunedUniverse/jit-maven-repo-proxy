@@ -13,22 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.proxy.test;
+package net.runeduniverse.lib.repo.maven.proxy.api;
 
-import java.time.LocalDateTime;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import java.io.InputStream;
 
-public class ExampleTest {
+public interface ArtifactData {
 
-	public void print(String line) {
-		System.out.println(LocalDateTime.now() + ": " + line);
-	}
+	public String getVersion();
 
-	@Test
-	@Tag("system")
-	public void exec() throws InterruptedException {
-		print("test example log");
-	}
+	public InputStream getStream();
 
 }

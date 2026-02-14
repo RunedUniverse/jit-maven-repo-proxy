@@ -101,21 +101,24 @@
 			<groupId>io.netty</groupId>
 			<artifactId>netty-transport</artifactId>
 			<version>4.2.10.Final</version>
-			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-transport-native-unix-common</artifactId>
 			<version>4.2.10.Final</version>
-			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-codec-http2</artifactId>
 			<version>4.2.10.Final</version>
-			<scope>compile</scope>
 		</dependency>
-		<!-- note: try to use cache-miss events as request reason - not directly netty proxy -->
+		<!-- note: try to use cache-miss events as request reason - not directly
+		netty proxy -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.20.0</version>
+		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>

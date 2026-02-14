@@ -15,6 +15,8 @@
  */
 package net.runeduniverse.lib.repo.maven.proxy.api;
 
-public interface Repository {
+public interface RepositoryInstance {
+
+	public String getPath();
 
 }

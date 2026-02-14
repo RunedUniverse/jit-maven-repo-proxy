@@ -15,6 +15,10 @@
  */
 package net.runeduniverse.lib.repo.maven.proxy.api;
 
-public interface RepositoryBuilder {
+public interface ArtifactCoordinates {
+
+	public String getGroupId();
+
+	public String getArtifactId();
 
 }
