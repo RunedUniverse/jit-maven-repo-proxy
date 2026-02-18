@@ -15,8 +15,15 @@
  */
 package net.runeduniverse.lib.repo.maven.proxy.api;
 
+import java.util.concurrent.CompletableFuture;
+
 public interface RepositoryInstance {
 
 	public String getPath();
+
+	public CompletableFuture<ArtifactMetadata> getMetadata(String groupId, String artifactId);
+
+	public CompletableFuture<ArtifactData> getArtifact(String groupId, String artifactId, String classifier,
+			String extension, String version);
 
 }

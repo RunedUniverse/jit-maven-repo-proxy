@@ -19,6 +19,7 @@ import java.util.concurrent.CompletableFuture;
 
 import net.runeduniverse.lib.repo.maven.proxy.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.proxy.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySourceClient;
 
 public class HttpSourceClient implements RepositorySourceClient {
@@ -29,6 +30,10 @@ public class HttpSourceClient implements RepositorySourceClient {
 		this.source = source;
 	}
 
+	public RepositorySource getSource() {
+		return source;
+	}
+
 	@Override
 	public CompletableFuture<ArtifactMetadata> discoverMetadata(String groupId, String artifactId) {
 		// TODO Auto-generated method stub
@@ -36,7 +41,8 @@ public class HttpSourceClient implements RepositorySourceClient {
 	}
 
 	@Override
-	public CompletableFuture<ArtifactData> downloadArtifact(String groupId, String artifactId, String version) {
+	public CompletableFuture<ArtifactData> downloadArtifact(String groupId, String artifactId, String classifier,
+			String extension, String version) {
 		// TODO Auto-generated method stub
 		return null;
 	}

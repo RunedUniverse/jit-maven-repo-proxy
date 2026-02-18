@@ -17,25 +17,41 @@ package net.runeduniverse.lib.repo.maven.proxy;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
+import net.runeduniverse.lib.repo.maven.proxy.api.ArtifactData;
+import net.runeduniverse.lib.repo.maven.proxy.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositoryInstance;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySourceClient;
 import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
 
-public class RepoInstance implements RepositoryInstance {
+public class DefaultRepositoryInstance implements RepositoryInstance {
 
 	protected final Map<String, RepositorySourceClient> sources = new LinkedHashMap<>();
 
 	protected final String path;
 	protected final Cache cache;
 
-	public RepoInstance(final String path, final Cache cache) {
+	public DefaultRepositoryInstance(final String path, final Cache cache) {
 		this.path = path;
 		this.cache = cache;
 	}
 
 	public String getPath() {
 		return this.path;
+	}
+
+	@Override
+	public CompletableFuture<ArtifactMetadata> getMetadata(String groupId, String artifactId) {
+		// TODO handle metadata download
+		return null;
+	}
+
+	@Override
+	public CompletableFuture<ArtifactData> getArtifact(String groupId, String artifactId, String classifier,
+			String extension, String version) {
+		// TODO handle artifact download
+		return null;
 	}
 
 }

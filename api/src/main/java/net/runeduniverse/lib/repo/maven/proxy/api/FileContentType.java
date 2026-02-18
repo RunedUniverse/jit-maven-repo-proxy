@@ -13,20 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.proxy;
+package net.runeduniverse.lib.repo.maven.proxy.api;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-import net.runeduniverse.lib.repo.maven.proxy.api.RepositoryInstance;
-import net.runeduniverse.lib.repo.maven.proxy.api.RepositoryServer;
-
-public class RepoServer implements RepositoryServer {
-
-	protected final Map<String, RepositoryInstance> instances = new LinkedHashMap<>();
-
-	public void addInstance(final RepositoryInstance instance) {
-		this.instances.put(instance.getPath(), instance);
-	}
-
+public enum FileContentType {
+	POM, SIGNATURE, CHECKSUM, DATA
 }

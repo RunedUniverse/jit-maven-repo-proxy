@@ -25,4 +25,6 @@ public interface ArtifactMetadata extends ArtifactCoordinates {
 
 	public Set<String> getVersions();
 
+	public String getLastUpdated();
+
 }

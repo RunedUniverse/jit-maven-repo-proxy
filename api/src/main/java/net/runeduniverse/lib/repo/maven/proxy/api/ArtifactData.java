@@ -15,12 +15,21 @@
  */
 package net.runeduniverse.lib.repo.maven.proxy.api;
 
-import java.io.InputStream;
+import java.nio.file.Path;
+import java.util.Map;
 
-public interface ArtifactData {
+public interface ArtifactData extends ArtifactCoordinates {
 
 	public String getVersion();
 
-	public InputStream getStream();
+	public String getClassifier();
+
+	public String getExtension();
+
+	public Path getArtifactPath();
+
+	public Path getSignaturePath();
+
+	public Map<String, String> getHashes();
 
 }

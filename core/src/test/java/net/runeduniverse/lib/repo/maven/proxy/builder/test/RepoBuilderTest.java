@@ -20,9 +20,9 @@ import java.time.LocalDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import net.runeduniverse.lib.repo.maven.proxy.builder.RepoServerBuilder;
+import net.runeduniverse.lib.repo.maven.proxy.builder.ProxyServerBuilder;
 import net.runeduniverse.lib.repo.maven.proxy.source.http.HttpSource;
-import net.runeduniverse.lib.repo.maven.proxy.api.RepositoryServer;
+import net.runeduniverse.lib.repo.maven.proxy.api.ProxyServer;
 
 public class RepoBuilderTest {
 
@@ -35,7 +35,7 @@ public class RepoBuilderTest {
 	public void exec() throws InterruptedException {
 		print("starting test");
 
-		RepositoryServer server = new RepoServerBuilder()//
+		ProxyServer server = new ProxyServerBuilder()//
 				.cacheFactory(path -> null)
 				.instance("maven-central", instance -> {
 					instance.putSource(

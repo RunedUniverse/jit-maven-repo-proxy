@@ -15,6 +15,6 @@
  */
 package net.runeduniverse.lib.repo.maven.proxy.api;
 
-public interface RepositoryServer {
+public interface ProxyServer {
 
 }

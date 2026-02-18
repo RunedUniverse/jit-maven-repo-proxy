@@ -19,8 +19,11 @@ import java.util.concurrent.CompletableFuture;
 
 public interface RepositorySourceClient {
 
+	public RepositorySource getSource();
+
 	public CompletableFuture<ArtifactMetadata> discoverMetadata(String groupId, String artifactId);
 
-	public CompletableFuture<ArtifactData> downloadArtifact(String groupId, String artifactId, String version);
+	public CompletableFuture<ArtifactData> downloadArtifact(String groupId, String artifactId, String classifier,
+			String extension, String version);
 
 }
