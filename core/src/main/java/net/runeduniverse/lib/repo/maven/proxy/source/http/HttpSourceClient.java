@@ -35,14 +35,14 @@ public class HttpSourceClient implements RepositorySourceClient {
 	}
 
 	@Override
-	public CompletableFuture<ArtifactMetadata> discoverMetadata(String groupId, String artifactId) {
+	public CompletableFuture<ArtifactMetadata> getMetadata(final String groupId, final String artifactId) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public CompletableFuture<ArtifactData> downloadArtifact(String groupId, String artifactId, String classifier,
-			String extension, String version) {
+	public CompletableFuture<ArtifactData> getArtifact(final String groupId, final String artifactId,
+			final String classifier, final String extension, final String version) {
 		// TODO Auto-generated method stub
 		return null;
 	}

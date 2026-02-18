@@ -15,8 +15,13 @@
  */
 package net.runeduniverse.lib.repo.maven.api;
 
-public interface MavenRepositoryInstance extends ArtifactProvider {
+import java.util.concurrent.CompletableFuture;
 
-	public String getPath();
+public interface ArtifactProvider {
+
+	public CompletableFuture<ArtifactMetadata> getMetadata(String groupId, String artifactId);
+
+	public CompletableFuture<ArtifactData> getArtifact(String groupId, String artifactId, String classifier,
+			String extension, String version);
 
 }

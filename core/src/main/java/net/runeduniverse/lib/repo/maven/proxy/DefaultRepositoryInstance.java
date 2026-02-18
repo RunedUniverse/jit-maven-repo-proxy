@@ -43,15 +43,13 @@ public class DefaultRepositoryInstance implements MavenRepositoryInstance {
 
 	@Override
 	public CompletableFuture<ArtifactMetadata> getMetadata(String groupId, String artifactId) {
-		// TODO handle metadata download
-		return null;
+		return this.cache.getMetadata(groupId, artifactId);
 	}
 
 	@Override
 	public CompletableFuture<ArtifactData> getArtifact(String groupId, String artifactId, String classifier,
 			String extension, String version) {
-		// TODO handle artifact download
-		return null;
+		return this.cache.getArtifact(groupId, artifactId, classifier, extension, version);
 	}
 
 }

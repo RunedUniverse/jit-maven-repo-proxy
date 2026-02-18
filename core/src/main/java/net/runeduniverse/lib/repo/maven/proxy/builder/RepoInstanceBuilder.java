@@ -55,7 +55,7 @@ public class RepoInstanceBuilder {
 		return removeSource(source.key());
 	}
 
-	protected MavenRepositoryInstance build(Function<String, Cache> factory) {
+	public MavenRepositoryInstance build(final Function<String, Cache> factory) {
 		return new DefaultRepositoryInstance(this.path, factory.apply(this.path));
 	}
 

@@ -15,8 +15,25 @@
  */
 package net.runeduniverse.lib.repo.maven.proxy.cache.caffeine;
 
+import java.util.concurrent.CompletableFuture;
+
+import net.runeduniverse.lib.repo.maven.api.ArtifactData;
+import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
 
 public class CacheAdapter implements Cache {
+
+	@Override
+	public CompletableFuture<ArtifactMetadata> getMetadata(final String groupId, final String artifactId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public CompletableFuture<ArtifactData> getArtifact(final String groupId, final String artifactId,
+			final String classifier, final String extension, final String version) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
 }

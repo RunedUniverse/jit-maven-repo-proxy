@@ -15,6 +15,8 @@
  */
 package net.runeduniverse.lib.repo.maven.proxy.cache.api;
 
-public interface Cache {
+import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
+
+public interface Cache extends ArtifactProvider {
 
 }
