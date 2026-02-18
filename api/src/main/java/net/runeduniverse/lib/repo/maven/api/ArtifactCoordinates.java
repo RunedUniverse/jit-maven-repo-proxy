@@ -13,17 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.proxy.api;
+package net.runeduniverse.lib.repo.maven.api;
 
-import java.util.concurrent.CompletableFuture;
+public interface ArtifactCoordinates {
 
-public interface RepositoryInstance {
+	public String getGroupId();
 
-	public String getPath();
-
-	public CompletableFuture<ArtifactMetadata> getMetadata(String groupId, String artifactId);
-
-	public CompletableFuture<ArtifactData> getArtifact(String groupId, String artifactId, String classifier,
-			String extension, String version);
+	public String getArtifactId();
 
 }

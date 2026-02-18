@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.proxy.api;
+package net.runeduniverse.lib.repo.maven.api;
 
 import java.util.Set;
 

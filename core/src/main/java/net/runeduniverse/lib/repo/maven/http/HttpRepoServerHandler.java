@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.proxy;
+package net.runeduniverse.lib.repo.maven.http;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -33,10 +33,10 @@ import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.CharsetUtil;
-import net.runeduniverse.lib.repo.maven.proxy.api.ArtifactData;
-import net.runeduniverse.lib.repo.maven.proxy.api.ArtifactMetadata;
-import net.runeduniverse.lib.repo.maven.proxy.api.FileContentType;
-import net.runeduniverse.lib.repo.maven.proxy.api.RepositoryInstance;
+import net.runeduniverse.lib.repo.maven.api.ArtifactData;
+import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.api.FileContentType;
+import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
 
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -73,15 +73,30 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 
 	protected static final Pattern PATTERN_CLASSIFIER = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9_-]*$");
 
-	protected final Function<String, RepositoryInstance> repoProvider;
 	protected final Map<String, String> fType2cTypeMap;
 	protected final Map<String, FileContentType> fTypeMap;
 
-	public HttpRepoServerHandler(final Function<String, RepositoryInstance> repoProvider,
-			final Map<String, String> fType2cTypeMap, final Map<String, FileContentType> fTypeMap) {
-		this.repoProvider = repoProvider;
+	protected MavenRepositoryInstance repoInst;
+
+	public HttpRepoServerHandler(final Map<String, String> fType2cTypeMap,
+			final Map<String, FileContentType> fTypeMap) {
+		this(null, fType2cTypeMap, fTypeMap);
+	}
+
+	public HttpRepoServerHandler(final MavenRepositoryInstance repoInst, final Map<String, String> fType2cTypeMap,
+			final Map<String, FileContentType> fTypeMap) {
+		this.repoInst = repoInst;
 		this.fType2cTypeMap = fType2cTypeMap;
 		this.fTypeMap = fTypeMap;
+	}
+
+	protected MavenRepositoryInstance getRepoInstance(final ChannelHandlerContext ctx) {
+		if (this.repoInst == null) {
+			this.repoInst = ctx.channel()
+					.attr(HttpRepoUtils.ATTKEY_REPO_INSTANCE)
+					.get();
+		}
+		return this.repoInst;
 	}
 
 	@Override
@@ -107,14 +122,12 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 		final LinkedList<String> pathFragments = Arrays.stream(decoder.path()
 				.split("/"))
 				.collect(Collectors.toCollection(LinkedList::new));
-		if (pathFragments.size() < 4) {
+		if (pathFragments.size() < 3) {
 			sendError(ctx, request, BAD_REQUEST);
 			return;
 		}
 
-		final String repoPath = StringUtils.trimToNull(pathFragments.pollFirst());
-		final RepositoryInstance repoInst = this.repoProvider.apply(repoPath);
-
+		final MavenRepositoryInstance repoInst = getRepoInstance(ctx);
 		final String fileName = StringUtils.trimToNull(pathFragments.pollLast());
 
 		if (repoInst == null || fileName == null) {
@@ -133,7 +146,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 	}
 
 	protected void handleMavenMetadata(final ChannelHandlerContext ctx, final FullHttpRequest request,
-			final RepositoryInstance repoInst, final String fileName, final LinkedList<String> pathFragments) {
+			final MavenRepositoryInstance repoInst, final String fileName, final LinkedList<String> pathFragments) {
 		final String artifactId = StringUtils.trimToEmpty(pathFragments.pollLast());
 		final String groupId = StringUtils.trimToEmpty(String.join(".", pathFragments));
 		final String fileType;
@@ -217,7 +230,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 	}
 
 	protected void handleArtifact(final ChannelHandlerContext ctx, final FullHttpRequest request,
-			final RepositoryInstance repoInst, final String fileName, final LinkedList<String> pathFragments) {
+			final MavenRepositoryInstance repoInst, final String fileName, final LinkedList<String> pathFragments) {
 		final String version = StringUtils.trimToEmpty(pathFragments.pollLast());
 		final String artifactId = StringUtils.trimToEmpty(pathFragments.pollLast());
 		final String groupId = StringUtils.trimToEmpty(String.join(".", pathFragments));
@@ -407,36 +420,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 
 	protected void sendError(final ChannelHandlerContext ctx, final FullHttpRequest request,
 			final HttpResponseStatus status) {
-		final FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, status,
-				Unpooled.copiedBuffer("Failure: " + status + "\r\n", CharsetUtil.UTF_8));
-		response.headers()
-				.set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
-
-		sendAndCleanupConnection(ctx, request, response);
-	}
-
-	protected void sendAndCleanupConnection(final ChannelHandlerContext ctx, final FullHttpRequest request,
-			final FullHttpResponse response) {
-		final boolean keepAlive = HttpUtil.isKeepAlive(request);
-		HttpUtil.setContentLength(response, response.content()
-				.readableBytes());
-		if (!keepAlive) {
-			// We're going to close the connection as soon as the response is sent,
-			// so we should also make it clear for the client
-			response.headers()
-					.set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
-		} else if (request.protocolVersion()
-				.equals(HTTP_1_0)) {
-			response.headers()
-					.set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
-		}
-
-		final ChannelFuture flushPromise = ctx.writeAndFlush(response);
-
-		if (!keepAlive) {
-			// Close the connection as soon as the response is sent
-			flushPromise.addListener(ChannelFutureListener.CLOSE);
-		}
+		HttpRepoUtils.sendError(ctx, request, status);
 		ctx.channel()
 				.config()
 				.setAutoRead(true);

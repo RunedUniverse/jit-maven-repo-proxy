@@ -21,9 +21,8 @@ import java.util.Map.Entry;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import net.runeduniverse.lib.repo.maven.proxy.DefaultProxyServer;
-import net.runeduniverse.lib.repo.maven.proxy.api.FileContentType;
-import net.runeduniverse.lib.repo.maven.proxy.api.ProxyServer;
+import net.runeduniverse.lib.repo.maven.api.FileContentType;
+import net.runeduniverse.lib.repo.maven.proxy.ProxyServer;
 import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
 
 public class ProxyServerBuilder {
@@ -68,7 +67,7 @@ public class ProxyServerBuilder {
 		fType2cTypeMap.putAll(this.fType2cTypeMap);
 		fTypeMap.putAll(this.fTypeMap);
 
-		final DefaultProxyServer server = new DefaultProxyServer(fType2cTypeMap, fTypeMap);
+		final ProxyServer server = new ProxyServer(fType2cTypeMap, fTypeMap);
 
 		for (Entry<String, RepoInstanceBuilder> entry : this.instanceMap.entrySet()) {
 			server.addInstance(entry.getValue()

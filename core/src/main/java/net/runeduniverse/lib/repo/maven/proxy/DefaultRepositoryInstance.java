@@ -19,13 +19,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import net.runeduniverse.lib.repo.maven.proxy.api.ArtifactData;
-import net.runeduniverse.lib.repo.maven.proxy.api.ArtifactMetadata;
-import net.runeduniverse.lib.repo.maven.proxy.api.RepositoryInstance;
+import net.runeduniverse.lib.repo.maven.api.ArtifactData;
+import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySourceClient;
 import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
 
-public class DefaultRepositoryInstance implements RepositoryInstance {
+public class DefaultRepositoryInstance implements MavenRepositoryInstance {
 
 	protected final Map<String, RepositorySourceClient> sources = new LinkedHashMap<>();
 

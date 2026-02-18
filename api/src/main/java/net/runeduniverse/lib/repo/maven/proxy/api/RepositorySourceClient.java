@@ -17,6 +17,9 @@ package net.runeduniverse.lib.repo.maven.proxy.api;
 
 import java.util.concurrent.CompletableFuture;
 
+import net.runeduniverse.lib.repo.maven.api.ArtifactData;
+import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+
 public interface RepositorySourceClient {
 
 	public RepositorySource getSource();

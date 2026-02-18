@@ -13,12 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.proxy.api;
+package net.runeduniverse.lib.repo.maven.api;
 
-public interface ArtifactCoordinates {
+import java.nio.file.Path;
+import java.util.Map;
 
-	public String getGroupId();
+public interface ArtifactData extends ArtifactCoordinates {
 
-	public String getArtifactId();
+	public String getVersion();
+
+	public String getClassifier();
+
+	public String getExtension();
+
+	public Path getArtifactPath();
+
+	public Path getSignaturePath();
+
+	public Map<String, String> getHashes();
 
 }

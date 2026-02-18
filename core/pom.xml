@@ -22,16 +22,16 @@
 
 	<parent>
 		<groupId>net.runeduniverse.lib.repo</groupId>
-		<artifactId>jit-maven-repo-proxy-parent</artifactId>
+		<artifactId>maven-repo-proxy-parent</artifactId>
 		<version>0.1.0</version>
 	</parent>
 
-	<artifactId>jit-maven-repo-proxy</artifactId>
+	<artifactId>maven-repo-proxy</artifactId>
 	<version>0.1.0</version>
 	<packaging>jar</packaging>
 
-	<name>JIT Maven Repository Proxy</name>
-	<url>https://github.com/RunedUniverse/jit-maven-repo-proxy</url>
+	<name>Maven Repository Proxy</name>
+	<url>https://github.com/RunedUniverse/maven-repo-proxy</url>
 	<inceptionYear>2026</inceptionYear>
 
 	<licenses>
@@ -62,17 +62,17 @@
 	</developers>
 
 	<scm>
-		<url>https://github.com/RunedUniverse/jit-maven-repo-proxy</url>
+		<url>https://github.com/RunedUniverse/maven-repo-proxy</url>
 		<connection>
-			scm:git:git://github.com/RunedUniverse/jit-maven-repo-proxy.git
+			scm:git:git://github.com/RunedUniverse/maven-repo-proxy.git
 		</connection>
 		<developerConnection>
-			scm:git:git@github.com:RunedUniverse/jit-maven-repo-proxy.git
+			scm:git:git@github.com:RunedUniverse/maven-repo-proxy.git
 		</developerConnection>
 	</scm>
 	<issueManagement>
 		<system>GitHub Issues</system>
-		<url>https://github.com/RunedUniverse/jit-maven-repo-proxy/issues</url>
+		<url>https://github.com/RunedUniverse/maven-repo-proxy/issues</url>
 	</issueManagement>
 
 	<properties>
@@ -83,14 +83,14 @@
 		<!-- VERSIONS -->
 		<java-source-version>1.8</java-source-version>
 		<!-- ARTIFACT VERSIONS -->
-		<jit-maven-repo-proxy-bom-version>0.1.0</jit-maven-repo-proxy-bom-version>
+		<maven-repo-proxy-bom-version>0.1.0</maven-repo-proxy-bom-version>
 		<runeduniverse-utils-bom-version>2.0.0</runeduniverse-utils-bom-version>
 	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>net.runeduniverse.lib.repo</groupId>
-			<artifactId>jit-maven-repo-proxy-api</artifactId>
+			<artifactId>maven-repo-proxy-api</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents.client5</groupId>
@@ -141,8 +141,8 @@
 		<dependencies>
 			<dependency>
 				<groupId>net.runeduniverse.lib.repo</groupId>
-				<artifactId>jit-maven-repo-proxy-bom</artifactId>
-				<version>${jit-maven-repo-proxy-bom-version}</version>
+				<artifactId>maven-repo-proxy-bom</artifactId>
+				<version>${maven-repo-proxy-bom-version}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>

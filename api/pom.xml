@@ -22,16 +22,16 @@
 
 	<parent>
 		<groupId>net.runeduniverse.lib.repo</groupId>
-		<artifactId>jit-maven-repo-proxy-parent</artifactId>
+		<artifactId>maven-repo-proxy-parent</artifactId>
 		<version>0.1.0</version>
 	</parent>
 
-	<artifactId>jit-maven-repo-proxy-api</artifactId>
+	<artifactId>maven-repo-proxy-api</artifactId>
 	<version>0.1.0</version>
 	<packaging>jar</packaging>
 
-	<name>JIT Maven Repository Proxy [API]</name>
-	<url>https://github.com/RunedUniverse/jit-maven-repo-proxy</url>
+	<name>Maven Repository Proxy [API]</name>
+	<url>https://github.com/RunedUniverse/maven-repo-proxy</url>
 	<inceptionYear>2026</inceptionYear>
 
 	<licenses>
@@ -62,13 +62,13 @@
 	</developers>
 
 	<scm>
-		<url>https://github.com/RunedUniverse/jit-maven-repo-proxy</url>
-		<connection>scm:git:git://github.com/RunedUniverse/jit-maven-repo-proxy.git</connection>
-		<developerConnection>scm:git:git@github.com:RunedUniverse/jit-maven-repo-proxy.git</developerConnection>
+		<url>https://github.com/RunedUniverse/maven-repo-proxy</url>
+		<connection>scm:git:git://github.com/RunedUniverse/maven-repo-proxy.git</connection>
+		<developerConnection>scm:git:git@github.com:RunedUniverse/maven-repo-proxy.git</developerConnection>
 	</scm>
 	<issueManagement>
 		<system>GitHub Issues</system>
-		<url>https://github.com/RunedUniverse/jit-maven-repo-proxy/issues</url>
+		<url>https://github.com/RunedUniverse/maven-repo-proxy/issues</url>
 	</issueManagement>
 
 	<properties>

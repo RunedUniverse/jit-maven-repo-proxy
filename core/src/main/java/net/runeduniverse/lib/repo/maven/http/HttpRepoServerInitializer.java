@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.proxy;
+package net.runeduniverse.lib.repo.maven.http;
 
 import java.util.Map;
 import java.util.function.Function;
@@ -24,16 +24,16 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.stream.ChunkedWriteHandler;
-import net.runeduniverse.lib.repo.maven.proxy.api.FileContentType;
-import net.runeduniverse.lib.repo.maven.proxy.api.RepositoryInstance;
+import net.runeduniverse.lib.repo.maven.api.FileContentType;
+import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
 
 public class HttpRepoServerInitializer extends ChannelInitializer<SocketChannel> {
 
-	protected final Function<String, RepositoryInstance> repoProvider;
+	protected final Function<String, MavenRepositoryInstance> repoProvider;
 	protected final Map<String, String> fType2cTypeMap;
 	protected final Map<String, FileContentType> fTypeMap;
 
-	public HttpRepoServerInitializer(final Function<String, RepositoryInstance> repoProvider,
+	public HttpRepoServerInitializer(final Function<String, MavenRepositoryInstance> repoProvider,
 			final Map<String, String> fType2cTypeMap, final Map<String, FileContentType> fTypeMap) {
 		this.repoProvider = repoProvider;
 		this.fType2cTypeMap = fType2cTypeMap;
@@ -47,7 +47,9 @@ public class HttpRepoServerInitializer extends ChannelInitializer<SocketChannel>
 		pipeline.addLast(new HttpServerCodec());
 		pipeline.addLast(new HttpObjectAggregator(65536));
 		pipeline.addLast(new ChunkedWriteHandler());
-		pipeline.addLast(new HttpRepoServerHandler(this.repoProvider, this.fType2cTypeMap, this.fTypeMap));
+		pipeline.addLast(new HttpRepoDecodeValidationHandler());
+		pipeline.addLast(new HttpRepoRoutingHandler(this.repoProvider));
+		pipeline.addLast(new HttpRepoServerHandler(this.fType2cTypeMap, this.fTypeMap));
 	}
 
 }

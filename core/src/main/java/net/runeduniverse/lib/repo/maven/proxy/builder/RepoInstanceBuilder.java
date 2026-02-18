@@ -19,8 +19,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
 import net.runeduniverse.lib.repo.maven.proxy.DefaultRepositoryInstance;
-import net.runeduniverse.lib.repo.maven.proxy.api.RepositoryInstance;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
 
@@ -55,7 +55,7 @@ public class RepoInstanceBuilder {
 		return removeSource(source.key());
 	}
 
-	protected RepositoryInstance build(Function<String, Cache> factory) {
+	protected MavenRepositoryInstance build(Function<String, Cache> factory) {
 		return new DefaultRepositoryInstance(this.path, factory.apply(this.path));
 	}
 

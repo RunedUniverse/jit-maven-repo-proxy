@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import net.runeduniverse.lib.repo.maven.proxy.builder.ProxyServerBuilder;
 import net.runeduniverse.lib.repo.maven.proxy.source.http.HttpSource;
-import net.runeduniverse.lib.repo.maven.proxy.api.ProxyServer;
+import net.runeduniverse.lib.repo.maven.proxy.ProxyServer;
 
 public class RepoBuilderTest {
 

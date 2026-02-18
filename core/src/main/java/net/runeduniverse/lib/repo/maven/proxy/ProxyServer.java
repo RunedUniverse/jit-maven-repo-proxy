@@ -15,12 +15,12 @@
  */
 package net.runeduniverse.lib.repo.maven.proxy;
 
+import java.net.InetAddress;
+import java.net.SocketAddress;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.MultiThreadIoEventLoopGroup;
@@ -28,13 +28,13 @@ import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import net.runeduniverse.lib.repo.maven.proxy.api.RepositoryInstance;
-import net.runeduniverse.lib.repo.maven.proxy.api.FileContentType;
-import net.runeduniverse.lib.repo.maven.proxy.api.ProxyServer;
+import net.runeduniverse.lib.repo.maven.api.FileContentType;
+import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
+import net.runeduniverse.lib.repo.maven.http.HttpRepoServerInitializer;
 
-public class DefaultProxyServer implements ProxyServer {
+public class ProxyServer {
 
-	protected final Map<String, RepositoryInstance> instances = new LinkedHashMap<>();
+	protected final Map<String, MavenRepositoryInstance> instances = new LinkedHashMap<>();
 	protected final Map<String, String> fType2cTypeMap;
 	protected final Map<String, FileContentType> fTypeMap;
 
@@ -43,15 +43,15 @@ public class DefaultProxyServer implements ProxyServer {
 
 	protected ServerBootstrap serverBootstrap = null;
 
-	public DefaultProxyServer(final Map<String, FileContentType> fTypeMap) {
+	public ProxyServer(final Map<String, FileContentType> fTypeMap) {
 		this(null, null, Collections.emptyMap(), fTypeMap);
 	}
 
-	public DefaultProxyServer(final Map<String, String> fType2cTypeMap, final Map<String, FileContentType> fTypeMap) {
+	public ProxyServer(final Map<String, String> fType2cTypeMap, final Map<String, FileContentType> fTypeMap) {
 		this(null, null, fType2cTypeMap, fTypeMap);
 	}
 
-	public DefaultProxyServer(final EventLoopGroup mainGroup, final EventLoopGroup workerGroup,
+	public ProxyServer(final EventLoopGroup mainGroup, final EventLoopGroup workerGroup,
 			final Map<String, String> fType2cTypeMap, final Map<String, FileContentType> fTypeMap) {
 		this.mainGroup = mainGroup == null ? //
 				new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory()) : mainGroup;
@@ -61,7 +61,7 @@ public class DefaultProxyServer implements ProxyServer {
 		this.fTypeMap = fTypeMap;
 	}
 
-	public void addInstance(final RepositoryInstance instance) {
+	public void addInstance(final MavenRepositoryInstance instance) {
 		this.instances.put(instance.getPath(), instance);
 	}
 
@@ -78,25 +78,21 @@ public class DefaultProxyServer implements ProxyServer {
 		return this.serverBootstrap = bootstrap;
 	}
 
-	protected ChannelFuture bindChannel(int port) {
+	public ChannelFuture bindChannel(final int port) {
 		return bootstrap().bind(port);
 	}
 
-	public void start() throws InterruptedException {
-		try {
+	public ChannelFuture bindChannel(final SocketAddress localAddress) {
+		return bootstrap().bind(localAddress);
+	}
 
-			Channel ch = bindChannel(8080).sync()
-					.channel();
+	public ChannelFuture bindChannel(final InetAddress inetHost, final int port) {
+		return bootstrap().bind(inetHost, port);
+	}
 
-			// it's active!
-
-			ch.closeFuture()
-					.sync();
-
-		} finally {
-			this.workerGroup.shutdownGracefully();
-			this.mainGroup.shutdownGracefully();
-		}
+	public void shutdownGracefully() {
+		this.workerGroup.shutdownGracefully();
+		this.mainGroup.shutdownGracefully();
 	}
 
 }
