@@ -52,11 +52,9 @@ def installArtifact(mod, parent = null) {
 	}
 }
 
-def testArtifacts(toolchainId, tag, testProfile, parent = null) {
+def testArtifacts(mods, tag, toolchainId, testProfile, parent = null) {
 	stage(tag) {
-		def mods = getModules(withTags: [ 'test', tag ]);
-
-		if(!mods) {
+		if(!mods.any({ it.hasTag(tag) })) {
 			skipStage()
 			return
 		}
@@ -99,11 +97,11 @@ node( label: 'linux' ) {
 			sh "mkdir -p ${ RESULT_PATH }"
 			sh "mkdir -p ${ ARCHIVE_PATH }"
 			
-			addModule( id: 'maven-parent',    path: '.',               name: 'Maven Parent',                                 tags: [ 'parent' ])
-			addModule( id: 'bom',             path: 'bom',             name: 'Bill of Materials',                            tags: [ 'bom' ])
-			addModule( id: 'api',             path: 'api',             name: 'JIT Maven Repository Proxy [API]',             tags: [         'build1a', 'pack-jar', 'jdk-1.8.0' ])
-			addModule( id: 'mvn-repo-proxy',  path: 'core',            name: 'JIT Maven Repository Proxy',                   tags: [ 'test', 'build1',  'pack-jar', 'jdk-1.8.0' ])
-			addModule( id: 'cache-caffeine',  path: 'cache-caffeine',  name: 'JIT Maven Repository Proxy [cache:caffeine]',  tags: [ 'test', 'build1',  'pack-jar', 'jdk-11'    ])
+			addModule( id: 'maven-parent',    path: '.',               name: 'Maven Parent',                             tags: [  ])
+			addModule( id: 'bom',             path: 'bom',             name: 'Bill of Materials',                        tags: [ 'bom' ])
+			addModule( id: 'api',             path: 'api',             name: 'Maven Repository Proxy [API]',             tags: [ 'build1a', 'pack-jar', 'jdk-1.8.0' ])
+			addModule( id: 'mvn-repo-proxy',  path: 'core',            name: 'Maven Repository Proxy',                   tags: [ 'build1',  'pack-jar', 'jdk-1.8.0', 'test-smoke', 'test-live' ])
+			addModule( id: 'cache-caffeine',  path: 'cache-caffeine',  name: 'Maven Repository Proxy [cache:caffeine]',  tags: [ 'build1',  'pack-jar', 'jdk-11'   , 'test-smoke' ])
 		}
 		def parentMod = getModule(id: 'maven-parent')
 
@@ -163,23 +161,25 @@ node( label: 'linux' ) {
 			}
 
 			stage('Smoke Test') {
-				if(!checkAllModules(withTagIn: [ 'test' ], active: true)) {
+				def mods = getModules(withTags: [ 'test-smoke', tag ]);
+				if(!mods.any({ it.active() })) {
 					skipStage()
 					return
 				}
 
-				testArtifacts('toolchain-openjdk-1-8-0', 'jdk-1.8.0', 'test-smoke', parentMod);
-				testArtifacts('toolchain-openjdk-11',    'jdk-11',    'test-smoke', parentMod);
+				testArtifacts(mods, 'jdk-1.8.0', 'toolchain-openjdk-1-8-0', 'test-smoke', parentMod);
+				testArtifacts(mods, 'jdk-11',    'toolchain-openjdk-11',    'test-smoke', parentMod);
 			}
 
 			stage('Live Test') {
-				if(!checkAllModules(withTagIn: [ 'test' ], active: true)) {
+				def mods = getModules(withTags: [ 'test-live', tag ]);
+				if(!mods.any({ it.active() })) {
 					skipStage()
 					return
 				}
 
-				testArtifacts('toolchain-openjdk-1-8-0', 'jdk-1.8.0', 'test-live', parentMod);
-				testArtifacts('toolchain-openjdk-11',    'jdk-11',    'test-live', parentMod);
+				testArtifacts(mods, 'jdk-1.8.0', 'toolchain-openjdk-1-8-0', 'test-live', parentMod);
+				testArtifacts(mods, 'jdk-11',    'toolchain-openjdk-11',    'test-live', parentMod);
 			}
 
 			stage('Package Build Result') {
