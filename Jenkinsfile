@@ -53,12 +53,13 @@ def installArtifact(mod, parent = null) {
 }
 
 def testArtifacts(mods, tag, toolchainId, testProfile, parent = null) {
+	mods = mods.grep({ it.hasTag(tag) })
 	stage(tag) {
-		if(!mods.any({ it.hasTag(tag) })) {
+		if(mods.isEmpty()) {
 			skipStage()
 			return
 		}
-		
+
 		def modPaths = mods.collect({ it.relPathFrom(parent) }).join(',');
 		sh "mvn-dev -P ${ REPOS },${ toolchainId },ci-test-build -pl=${ modPaths }"
 		sh "mvn-dev --fail-never -P ${ REPOS },${ toolchainId },ci-test-exec,${ testProfile } -pl=${ modPaths }"
