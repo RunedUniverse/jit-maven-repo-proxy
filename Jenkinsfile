@@ -69,6 +69,8 @@ def testArtifacts(toolchainId, tag, testProfile, parent = null) {
 		if(currentBuild.resultIsWorseOrEqualTo('UNSTABLE')) {
 			archiveArtifacts artifacts: '*/target/surefire-reports/*.xml'
 		}
+		// clean up the test reports
+		sh 'rm -R */target/surefire-reports/*'
 	}
 }
 

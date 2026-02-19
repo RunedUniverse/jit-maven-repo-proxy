@@ -180,7 +180,7 @@
 			<build>
 				<defaultGoal>
 					install/clean@pipeline
-					install/install@pipeline
+					install/install]@pipeline
 				</defaultGoal>
 			</build>
 		</profile>
@@ -196,8 +196,8 @@
 			<id>ci-test-exec</id>
 			<build>
 				<defaultGoal>
-					test/validate@pipeline
-					test/test@pipeline
+					test/[validate]@pipeline
+					test/[test]@pipeline
 				</defaultGoal>
 			</build>
 		</profile>
