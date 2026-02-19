@@ -53,7 +53,7 @@ def installArtifact(mod, parent = null) {
 }
 
 def testArtifacts(mods, tag, toolchainId, testProfile, parent = null) {
-	mods = mods.grep({ it.hasTag(tag) })
+	mods = mods.findAll({ it.hasTag(tag) })
 	stage(tag) {
 		if(mods.isEmpty()) {
 			skipStage()
