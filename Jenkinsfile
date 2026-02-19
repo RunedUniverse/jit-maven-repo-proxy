@@ -161,7 +161,7 @@ node( label: 'linux' ) {
 			}
 
 			stage('Smoke Test') {
-				def mods = getModules(withTags: [ 'test-smoke', tag ]);
+				def mods = getModules(withTags: [ 'test-smoke' ]);
 				if(!mods.any({ it.active() })) {
 					skipStage()
 					return
@@ -172,7 +172,7 @@ node( label: 'linux' ) {
 			}
 
 			stage('Live Test') {
-				def mods = getModules(withTags: [ 'test-live', tag ]);
+				def mods = getModules(withTags: [ 'test-live' ]);
 				if(!mods.any({ it.active() })) {
 					skipStage()
 					return
