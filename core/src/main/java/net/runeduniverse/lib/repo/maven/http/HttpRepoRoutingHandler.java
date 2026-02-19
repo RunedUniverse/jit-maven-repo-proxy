@@ -20,7 +20,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
-
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.function.Function;
@@ -52,17 +51,17 @@ public class HttpRepoRoutingHandler extends SimpleChannelInboundHandler<FullHttp
 		// NOTE: repos with path lengths >1 are currently not supported!
 
 		final String repoPath = StringUtils.trimToNull(pathFragments.pollFirst());
-		final MavenRepositoryInstance repoInst = this.repoProvider.apply(repoPath);
+		final MavenRepositoryInstance provider = this.repoProvider.apply(repoPath);
 
-		if (repoInst == null) {
+		if (provider == null) {
 			HttpRepoUtils.sendError(ctx, request, BAD_REQUEST);
 			return;
 		}
 
 		request.setUri(String.join("/", pathFragments));
 		ctx.channel()
-				.attr(HttpRepoUtils.ATTKEY_REPO_INSTANCE)
-				.set(repoInst);
+				.attr(HttpRepoUtils.ATTKEY_ARTIFACT_PROVIDER)
+				.set(provider);
 
 		ctx.fireChannelRead(request.retain());
 	}

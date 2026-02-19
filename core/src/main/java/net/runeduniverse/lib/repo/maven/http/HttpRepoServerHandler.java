@@ -32,6 +32,7 @@ import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
 import net.runeduniverse.lib.repo.maven.api.FileContentType;
 import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
 
@@ -72,27 +73,27 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 	protected final Map<String, String> fType2cTypeMap;
 	protected final Map<String, FileContentType> fTypeMap;
 
-	protected MavenRepositoryInstance repoInst;
+	protected ArtifactProvider artifactProvider;
 
 	public HttpRepoServerHandler(final Map<String, String> fType2cTypeMap,
 			final Map<String, FileContentType> fTypeMap) {
 		this(null, fType2cTypeMap, fTypeMap);
 	}
 
-	public HttpRepoServerHandler(final MavenRepositoryInstance repoInst, final Map<String, String> fType2cTypeMap,
+	public HttpRepoServerHandler(final ArtifactProvider artifactProvider, final Map<String, String> fType2cTypeMap,
 			final Map<String, FileContentType> fTypeMap) {
-		this.repoInst = repoInst;
+		this.artifactProvider = artifactProvider;
 		this.fType2cTypeMap = fType2cTypeMap;
 		this.fTypeMap = fTypeMap;
 	}
 
-	protected MavenRepositoryInstance getRepoInstance(final ChannelHandlerContext ctx) {
-		if (this.repoInst == null) {
-			this.repoInst = ctx.channel()
-					.attr(HttpRepoUtils.ATTKEY_REPO_INSTANCE)
+	protected ArtifactProvider getArtifactProvider(final ChannelHandlerContext ctx) {
+		if (this.artifactProvider == null) {
+			this.artifactProvider = ctx.channel()
+					.attr(HttpRepoUtils.ATTKEY_ARTIFACT_PROVIDER)
 					.get();
 		}
-		return this.repoInst;
+		return this.artifactProvider;
 	}
 
 	@Override
@@ -123,10 +124,10 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 			return;
 		}
 
-		final MavenRepositoryInstance repoInst = getRepoInstance(ctx);
+		final ArtifactProvider provider = getArtifactProvider(ctx);
 		final String fileName = StringUtils.trimToNull(pathFragments.pollLast());
 
-		if (repoInst == null || fileName == null) {
+		if (provider == null || fileName == null) {
 			sendError(ctx, request, BAD_REQUEST);
 			return;
 		}
@@ -135,14 +136,14 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 		// https://repo1.maven.org/maven2/net/runeduniverse/lib/utils/utils-common/
 
 		if (fileName.startsWith("maven-metadata.xml")) {
-			handleMavenMetadata(ctx, request, repoInst, fileName, pathFragments);
+			handleMavenMetadata(ctx, request, provider, fileName, pathFragments);
 		} else {
-			handleArtifact(ctx, request, repoInst, fileName, pathFragments);
+			handleArtifact(ctx, request, provider, fileName, pathFragments);
 		}
 	}
 
 	protected void handleMavenMetadata(final ChannelHandlerContext ctx, final FullHttpRequest request,
-			final MavenRepositoryInstance repoInst, final String fileName, final LinkedList<String> pathFragments) {
+			final ArtifactProvider provider, final String fileName, final LinkedList<String> pathFragments) {
 		final String artifactId = StringUtils.trimToEmpty(pathFragments.pollLast());
 		final String groupId = StringUtils.trimToEmpty(String.join(".", pathFragments));
 		final String fileType;
@@ -188,7 +189,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 		}
 
 		final CompletableFuture<ArtifactMetadata> artifactFuture = //
-				repoInst.getMetadata(groupId, artifactId);
+				provider.getMetadata(groupId, artifactId);
 
 		artifactFuture.whenCompleteAsync((metadata, throwable) -> {
 			if (!ctx.channel()
@@ -226,7 +227,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 	}
 
 	protected void handleArtifact(final ChannelHandlerContext ctx, final FullHttpRequest request,
-			final MavenRepositoryInstance repoInst, final String fileName, final LinkedList<String> pathFragments) {
+			final ArtifactProvider provider, final String fileName, final LinkedList<String> pathFragments) {
 		final String version = StringUtils.trimToEmpty(pathFragments.pollLast());
 		final String artifactId = StringUtils.trimToEmpty(pathFragments.pollLast());
 		final String groupId = StringUtils.trimToEmpty(String.join(".", pathFragments));
@@ -294,7 +295,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 		}
 
 		final CompletableFuture<ArtifactData> artifactFuture = //
-				repoInst.getArtifact(groupId, artifactId, classifier, extension, version);
+				provider.getArtifact(groupId, artifactId, classifier, extension, version);
 
 		artifactFuture.whenCompleteAsync((data, throwable) -> {
 			if (!ctx.channel()
