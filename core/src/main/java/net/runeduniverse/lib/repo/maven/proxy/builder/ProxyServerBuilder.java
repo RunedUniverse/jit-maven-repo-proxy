@@ -20,9 +20,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
 import net.runeduniverse.lib.repo.maven.api.FileContentType;
 import net.runeduniverse.lib.repo.maven.proxy.ProxyServer;
+import net.runeduniverse.lib.repo.maven.proxy.api.MavenRepositoryProxyInstance;
 import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
 
 public class ProxyServerBuilder {
@@ -31,13 +31,19 @@ public class ProxyServerBuilder {
 	protected final Map<String, String> fType2cTypeMap = new LinkedHashMap<>();
 	protected final Map<String, FileContentType> fTypeMap = new LinkedHashMap<>();
 
-	protected Function<String, Cache> cacheFactory = null;
+	protected Function<String, RepoInstanceBuilder> repoBuilderFactory = RepoInstanceBuilder::new;
+	protected Function<MavenRepositoryProxyInstance, Cache> cacheFactory = Cache::uncached;
+
+	public ProxyServerBuilder setInstanceBuilderFactory(Function<String, RepoInstanceBuilder> factory) {
+		this.repoBuilderFactory = factory;
+		return this;
+	}
 
 	public RepoInstanceBuilder instance(String path) {
 		path = path.trim();
 		path = path.replace("/", "");
 		path = path.replace(".", "");
-		return this.instanceMap.computeIfAbsent(path, RepoInstanceBuilder::new);
+		return this.instanceMap.computeIfAbsent(path, this.repoBuilderFactory);
 	}
 
 	public ProxyServerBuilder instance(final String path, final Consumer<RepoInstanceBuilder> consumer) {
@@ -45,8 +51,8 @@ public class ProxyServerBuilder {
 		return this;
 	}
 
-	public ProxyServerBuilder cacheFactory(final Function<String, Cache> factory) {
-		this.cacheFactory = factory;
+	public ProxyServerBuilder cacheFactory(final Function<MavenRepositoryProxyInstance, Cache> factory) {
+		this.cacheFactory = factory == null ? Cache::uncached : factory;
 		return this;
 	}
 

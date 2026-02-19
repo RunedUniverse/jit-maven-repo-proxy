@@ -13,30 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.proxy.cache.api;
+package net.runeduniverse.lib.repo.maven.proxy.itest.dummy;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
-import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
+import net.runeduniverse.lib.repo.maven.proxy.DefaultRepositoryInstance;
 import net.runeduniverse.lib.repo.maven.proxy.api.MavenRepositoryProxyInstance;
+import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
 
-public interface Cache extends ArtifactProvider {
+public class NotFoundRepoInstance extends DefaultRepositoryInstance {
 
-	public static Cache uncached(final MavenRepositoryProxyInstance proxy) {
-		return new Cache() {
-
-			@Override
-			public CompletableFuture<ArtifactMetadata> getMetadata(final String groupId, final String artifactId) {
-				return proxy.lookupMetadata(groupId, artifactId);
-			}
-
-			@Override
-			public CompletableFuture<ArtifactData> getArtifact(final String groupId, final String artifactId,
-					final String classifier, final String extension, final String version) {
-				return proxy.lookupArtifact(groupId, artifactId, classifier, extension, version);
-			}
-		};
+	public NotFoundRepoInstance(String path, Function<MavenRepositoryProxyInstance, Cache> factory) {
+		super(path, factory);
 	}
+
+	public CompletableFuture<ArtifactMetadata> lookupMetadata(String groupId, String artifactId) {
+		// TODO implement lookup
+		return CompletableFuture.completedFuture(null);
+	}
+
+	public CompletableFuture<ArtifactData> lookupArtifact(String groupId, String artifactId, String classifier,
+			String extension, String version) {
+		// TODO implement lookup
+		return CompletableFuture.completedFuture(null);
+	}
+
 }

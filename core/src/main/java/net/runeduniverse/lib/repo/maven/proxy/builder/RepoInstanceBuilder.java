@@ -17,10 +17,11 @@ package net.runeduniverse.lib.repo.maven.proxy.builder;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
 import net.runeduniverse.lib.repo.maven.proxy.DefaultRepositoryInstance;
+import net.runeduniverse.lib.repo.maven.proxy.api.MavenRepositoryProxyInstance;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
 
@@ -29,12 +30,20 @@ public class RepoInstanceBuilder {
 	protected final Map<String, RepositorySource> sources = new LinkedHashMap<>();
 	protected final String path;
 
+	protected BiFunction<String, Function<MavenRepositoryProxyInstance, Cache>, MavenRepositoryProxyInstance> instanceFacory = DefaultRepositoryInstance::new;
+
 	public RepoInstanceBuilder(final String path) {
 		this.path = path;
 	}
 
 	public String getPath() {
 		return this.path;
+	}
+
+	public RepoInstanceBuilder setInstanceFacory(
+			BiFunction<String, Function<MavenRepositoryProxyInstance, Cache>, MavenRepositoryProxyInstance> factory) {
+		this.instanceFacory = factory;
+		return this;
 	}
 
 	public Map<String, RepositorySource> sourceMap() {
@@ -55,8 +64,8 @@ public class RepoInstanceBuilder {
 		return removeSource(source.key());
 	}
 
-	public MavenRepositoryInstance build(final Function<String, Cache> factory) {
-		return new DefaultRepositoryInstance(this.path, factory.apply(this.path));
+	public MavenRepositoryProxyInstance build(final Function<MavenRepositoryProxyInstance, Cache> factory) {
+		return this.instanceFacory.apply(this.path, factory);
 	}
 
 }

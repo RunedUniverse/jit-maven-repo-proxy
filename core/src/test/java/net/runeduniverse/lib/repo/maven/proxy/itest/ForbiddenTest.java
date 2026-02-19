@@ -13,37 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.proxy.builder.test;
+package net.runeduniverse.lib.repo.maven.proxy.itest;
 
 import java.net.URI;
-import java.time.LocalDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import net.runeduniverse.lib.repo.maven.proxy.builder.ProxyServerBuilder;
+import net.runeduniverse.lib.repo.maven.proxy.itest.dummy.ForbiddenRepoInstance;
 import net.runeduniverse.lib.repo.maven.proxy.source.http.HttpSource;
-import net.runeduniverse.lib.repo.maven.proxy.ProxyServer;
 
-public class RepoBuilderTest {
+public class ForbiddenTest extends ARepoTest {
 
-	public void print(String line) {
-		System.out.println(LocalDateTime.now() + ": " + line);
+	@Override
+	protected ProxyServerBuilder configure(ProxyServerBuilder builder) {
+		return builder.instance("maven-central", instance -> {
+			// ensure no artifact is ever found
+			instance.setInstanceFacory(ForbiddenRepoInstance::new)
+					.putSource(new HttpSource("repo1.maven.org", URI.create("https://repo1.maven.org/maven2/")));
+		});
 	}
 
 	@Test
-	@Tag("smoke")
-	public void exec() throws InterruptedException {
-		print("starting test");
-
-		ProxyServer server = new ProxyServerBuilder()//
-				.cacheFactory(null)
-				.instance("maven-central", instance -> {
-					instance.putSource(
-							new HttpSource("repo1.maven.org", URI.create("https://repo1.maven.org/maven2/")));
-				})
-				.build();
-
-		assert server != null;
+	@Tag("live")
+	public void forbidden() throws InterruptedException {
+		// TODO implement client!
 	}
 
 }

@@ -35,6 +35,8 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
 import net.runeduniverse.lib.repo.maven.api.FileContentType;
 import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
+import net.runeduniverse.lib.repo.maven.error.ForbiddenArtifactException;
+import net.runeduniverse.lib.repo.maven.error.UnauthorizedArtifactException;
 
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -53,6 +55,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.Unpooled;
 
@@ -61,6 +65,8 @@ import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static io.netty.handler.codec.http.HttpVersion.*;
 
 public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
+
+	private final static Logger logger = LoggerFactory.getLogger(HttpRepoServerHandler.class);
 
 	protected static final Pattern PATTERN_GROUP_ID = Pattern.compile("^[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+)*$");
 
@@ -103,26 +109,21 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 				.config()
 				.setAutoRead(false);
 
-		if (!request.decoderResult()
-				.isSuccess()) {
-			sendError(ctx, request, BAD_REQUEST);
-			return;
-		}
-
 		if (!GET.equals(request.method())) {
 			sendError(ctx, request, METHOD_NOT_ALLOWED);
 			return;
 		}
 
 		final QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-
 		final LinkedList<String> pathFragments = Arrays.stream(decoder.path()
 				.split("/"))
 				.collect(Collectors.toCollection(LinkedList::new));
-		if (pathFragments.size() < 3) {
+		if (pathFragments.size() < 4) {
 			sendError(ctx, request, BAD_REQUEST);
 			return;
 		}
+		// void first (it's empty) -> uri starts with /
+		pathFragments.removeFirst();
 
 		final ArtifactProvider provider = getArtifactProvider(ctx);
 		final String fileName = StringUtils.trimToNull(pathFragments.pollLast());
@@ -136,13 +137,13 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 		// https://repo1.maven.org/maven2/net/runeduniverse/lib/utils/utils-common/
 
 		if (fileName.startsWith("maven-metadata.xml")) {
-			handleMavenMetadata(ctx, request, provider, fileName, pathFragments);
+			handleMetadata(ctx, request, provider, fileName, pathFragments);
 		} else {
 			handleArtifact(ctx, request, provider, fileName, pathFragments);
 		}
 	}
 
-	protected void handleMavenMetadata(final ChannelHandlerContext ctx, final FullHttpRequest request,
+	protected void handleMetadata(final ChannelHandlerContext ctx, final FullHttpRequest request,
 			final ArtifactProvider provider, final String fileName, final LinkedList<String> pathFragments) {
 		final String artifactId = StringUtils.trimToEmpty(pathFragments.pollLast());
 		final String groupId = StringUtils.trimToEmpty(String.join(".", pathFragments));
@@ -161,7 +162,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 		{
 			// split fileName = maven-metadata.<ext>.<fileType> | <name>.<ext=fileType>
 			final LinkedList<String> splitExt = new LinkedList<>();
-			for (String part : fileName.split(".")) {
+			for (String part : fileName.split("\\.")) {
 				if (StringUtils.isEmpty(part)) {
 					sendError(ctx, request, BAD_REQUEST);
 					return;
@@ -176,10 +177,10 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 			if (FileContentType.CHECKSUM == this.fTypeMap.getOrDefault(splitExt.getLast(), FileContentType.DATA)) {
 				isChecksum = true;
 				fileType = splitExt.pollLast();
-				extension = String.join(".", splitExt);
+				extension = String.join("\\.", splitExt);
 			} else {
 				isChecksum = false;
-				extension = fileType = String.join(".", splitExt);
+				extension = fileType = String.join("\\.", splitExt);
 			}
 		}
 
@@ -199,8 +200,18 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 			}
 			if (throwable != null) {
 				// handle errors
-				// TODO -> if validation failed it -> FORBIDDEN (or similar)
-				sendError(ctx, request, INTERNAL_SERVER_ERROR);
+				if (throwable instanceof ForbiddenArtifactException)
+					sendError(ctx, request, FORBIDDEN);
+				else if (throwable instanceof UnauthorizedArtifactException)
+					sendError(ctx, request, UNAUTHORIZED);
+				else {
+					sendError(ctx, request, INTERNAL_SERVER_ERROR);
+					logger.error("artifact metadata resolution failed!", throwable);
+				}
+				return;
+			}
+			if (metadata == null) {
+				sendError(ctx, request, NOT_FOUND);
 				return;
 			}
 
@@ -258,7 +269,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 			final String other = fileName.substring(nameSplit, fileNameLength);
 			// split other = <nameElements>.<ext>.<fileType> | <nameElements>.<ext=fileType>
 			final LinkedList<String> splitExt = new LinkedList<>();
-			for (String part : other.split("."))
+			for (String part : other.split("\\."))
 				splitExt.add(part);
 			if (splitExt.size() < 2) {
 				sendError(ctx, request, BAD_REQUEST);
@@ -305,8 +316,18 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 			}
 			if (throwable != null) {
 				// handle errors
-				// TODO -> if validation failed it -> FORBIDDEN (or similar)
-				sendError(ctx, request, INTERNAL_SERVER_ERROR);
+				if (throwable instanceof ForbiddenArtifactException)
+					sendError(ctx, request, FORBIDDEN);
+				else if (throwable instanceof UnauthorizedArtifactException)
+					sendError(ctx, request, UNAUTHORIZED);
+				else {
+					sendError(ctx, request, INTERNAL_SERVER_ERROR);
+					logger.error("artifact resolution failed!", throwable);
+				}
+				return;
+			}
+			if (data == null) {
+				sendError(ctx, request, NOT_FOUND);
 				return;
 			}
 

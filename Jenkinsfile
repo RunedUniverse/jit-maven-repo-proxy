@@ -52,7 +52,7 @@ def installArtifact(mod, parent = null) {
 	}
 }
 
-def testArtifacts(toolchainId, tag, parent = null) {
+def testArtifacts(toolchainId, tag, testProfile, parent = null) {
 	stage(tag) {
 		def mods = getModules(withTags: [ 'test', tag ]);
 
@@ -63,7 +63,7 @@ def testArtifacts(toolchainId, tag, parent = null) {
 		
 		def modPaths = mods.collect({ it.relPathFrom(parent) }).join(',');
 		sh "mvn-dev -P ${ REPOS },${ toolchainId },ci-test-build -pl=${ modPaths }"
-		sh "mvn-dev --fail-never -P ${ REPOS },${ toolchainId },ci-test-exec,test-system -pl=${ modPaths }"
+		sh "mvn-dev --fail-never -P ${ REPOS },${ toolchainId },ci-test-exec,${ testProfile } -pl=${ modPaths }"
 		// check tests, archive reports in case junit flags errors
 		junit '*/target/surefire-reports/*.xml'
 		if(currentBuild.resultIsWorseOrEqualTo('UNSTABLE')) {
@@ -160,14 +160,24 @@ node( label: 'linux' ) {
 				}
 			}
 
-			stage('Test') {
+			stage('Smoke Test') {
 				if(!checkAllModules(withTagIn: [ 'test' ], active: true)) {
 					skipStage()
 					return
 				}
 
-				testArtifacts('toolchain-openjdk-1-8-0', 'jdk-1.8.0', parentMod);
-				testArtifacts('toolchain-openjdk-11',    'jdk-11',    parentMod);
+				testArtifacts('toolchain-openjdk-1-8-0', 'jdk-1.8.0', 'test-smoke', parentMod);
+				testArtifacts('toolchain-openjdk-11',    'jdk-11',    'test-smoke', parentMod);
+			}
+
+			stage('Live Test') {
+				if(!checkAllModules(withTagIn: [ 'test' ], active: true)) {
+					skipStage()
+					return
+				}
+
+				testArtifacts('toolchain-openjdk-1-8-0', 'jdk-1.8.0', 'test-live', parentMod);
+				testArtifacts('toolchain-openjdk-11',    'jdk-11',    'test-live', parentMod);
 			}
 
 			stage('Package Build Result') {

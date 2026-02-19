@@ -13,55 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.proxy;
+package net.runeduniverse.lib.repo.maven.proxy.itest.dummy;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.error.ForbiddenArtifactException;
+import net.runeduniverse.lib.repo.maven.proxy.DefaultRepositoryInstance;
 import net.runeduniverse.lib.repo.maven.proxy.api.MavenRepositoryProxyInstance;
-import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySourceClient;
 import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
 
-public class DefaultRepositoryInstance implements MavenRepositoryProxyInstance {
+public class ForbiddenRepoInstance extends DefaultRepositoryInstance {
 
-	protected final Map<String, RepositorySourceClient> sources = new LinkedHashMap<>();
-
-	protected final String path;
-	protected final Cache cache;
-
-	public DefaultRepositoryInstance(final String path, Function<MavenRepositoryProxyInstance, Cache> factory) {
-		this.path = path;
-		this.cache = factory.apply(this);
-	}
-
-	public String getPath() {
-		return this.path;
-	}
-
-	@Override
-	public CompletableFuture<ArtifactMetadata> getMetadata(String groupId, String artifactId) {
-		return this.cache.getMetadata(groupId, artifactId);
-	}
-
-	@Override
-	public CompletableFuture<ArtifactData> getArtifact(String groupId, String artifactId, String classifier,
-			String extension, String version) {
-		return this.cache.getArtifact(groupId, artifactId, classifier, extension, version);
+	public ForbiddenRepoInstance(String path, Function<MavenRepositoryProxyInstance, Cache> factory) {
+		super(path, factory);
 	}
 
 	public CompletableFuture<ArtifactMetadata> lookupMetadata(String groupId, String artifactId) {
-		// TODO implement lookup
-		return CompletableFuture.completedFuture(null);
+		CompletableFuture<ArtifactMetadata> future = CompletableFuture.supplyAsync(() -> null);
+		future.completeExceptionally(new ForbiddenArtifactException());
+		return future;
 	}
 
 	public CompletableFuture<ArtifactData> lookupArtifact(String groupId, String artifactId, String classifier,
 			String extension, String version) {
-		// TODO implement lookup
-		return CompletableFuture.completedFuture(null);
+		CompletableFuture<ArtifactData> future = CompletableFuture.supplyAsync(() -> null);
+		future.completeExceptionally(new ForbiddenArtifactException());
+		return future;
 	}
 
 }

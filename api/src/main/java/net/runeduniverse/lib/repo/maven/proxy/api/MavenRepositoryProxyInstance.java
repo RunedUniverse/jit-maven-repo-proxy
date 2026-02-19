@@ -13,22 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.proxy.cache.caffeine.test;
+package net.runeduniverse.lib.repo.maven.proxy.api;
 
-import java.time.LocalDateTime;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import java.util.concurrent.CompletableFuture;
 
-public class ExampleTest {
+import net.runeduniverse.lib.repo.maven.api.ArtifactData;
+import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
 
-	public void print(String line) {
-		System.out.println(LocalDateTime.now() + ": " + line);
-	}
+public interface MavenRepositoryProxyInstance extends MavenRepositoryInstance {
 
-	@Test
-	@Tag("smoke")
-	public void exec() throws InterruptedException {
-		print("test example log");
-	}
+	public CompletableFuture<ArtifactMetadata> lookupMetadata(String groupId, String artifactId);
 
+	public CompletableFuture<ArtifactData> lookupArtifact(String groupId, String artifactId, String classifier,
+			String extension, String version);
 }

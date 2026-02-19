@@ -18,5 +18,4 @@ package net.runeduniverse.lib.repo.maven.api;
 public interface MavenRepositoryInstance extends ArtifactProvider {
 
 	public String getPath();
-
 }

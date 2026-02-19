@@ -18,8 +18,9 @@ package net.runeduniverse.lib.repo.maven.proxy;
 import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
@@ -34,7 +35,7 @@ import net.runeduniverse.lib.repo.maven.http.HttpRepoServerInitializer;
 
 public class ProxyServer {
 
-	protected final Map<String, MavenRepositoryInstance> instances = new LinkedHashMap<>();
+	protected final Map<String, MavenRepositoryInstance> instances = new ConcurrentHashMap<>();
 	protected final Map<String, String> fType2cTypeMap;
 	protected final Map<String, FileContentType> fTypeMap;
 

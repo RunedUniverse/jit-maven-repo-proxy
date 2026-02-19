@@ -21,11 +21,11 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 
@@ -43,26 +43,54 @@ public class HttpRepoRoutingHandler extends SimpleChannelInboundHandler<FullHttp
 		final LinkedList<String> pathFragments = Arrays.stream(decoder.path()
 				.split("/"))
 				.collect(Collectors.toCollection(LinkedList::new));
-		if (pathFragments.isEmpty()) {
+		if (pathFragments.size() < 2) {
 			HttpRepoUtils.sendError(ctx, request, BAD_REQUEST);
 			return;
 		}
 
-		// NOTE: repos with path lengths >1 are currently not supported!
-
-		final String repoPath = StringUtils.trimToNull(pathFragments.pollFirst());
-		final MavenRepositoryInstance provider = this.repoProvider.apply(repoPath);
-
-		if (provider == null) {
+		final MavenRepositoryInstance repoInst = findRepo(pathFragments);
+		if (repoInst == null) {
 			HttpRepoUtils.sendError(ctx, request, BAD_REQUEST);
 			return;
 		}
 
-		request.setUri(String.join("/", pathFragments));
+		// note: findRepo() removed used path fragments
+		request.setUri(rebuildUri(decoder, String.join("/", pathFragments)));
 		ctx.channel()
 				.attr(HttpRepoUtils.ATTKEY_ARTIFACT_PROVIDER)
-				.set(provider);
+				.set(repoInst);
 
 		ctx.fireChannelRead(request.retain());
+	}
+
+	protected MavenRepositoryInstance findRepo(final List<String> pathFragments) {
+		final Iterator<String> seek = pathFragments.iterator();
+		// void first (it's empty) -> uri starts with /
+		seek.next();
+		String path = null;
+		MavenRepositoryInstance provider = null;
+		while (provider == null && seek.hasNext()) {
+			final String fragment = seek.next();
+			seek.remove();
+			path = path == null ? fragment : path + '/' + fragment;
+			provider = this.repoProvider.apply(path);
+		}
+		return provider;
+	}
+
+	protected String rebuildUri(final QueryStringDecoder decoder, final String newPath) {
+		final String rawUri = decoder.uri();
+		final int rawUriLen = rawUri.length();
+		// sadly the QueryStringDecoder does not expose the query splitter or it's
+		// index, so we have to calculate backwards
+
+		final String rawQuery = decoder.rawQuery();
+		final int rawQueryLen = rawQuery.length();
+
+		if (0 < rawQueryLen) {
+			final char splitter = rawUri.charAt(rawUriLen - rawQueryLen - 1);
+			return newPath + splitter + rawQuery;
+		}
+		return newPath;
 	}
 }
