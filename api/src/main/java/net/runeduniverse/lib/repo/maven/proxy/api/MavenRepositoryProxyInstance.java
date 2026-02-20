@@ -18,6 +18,8 @@ package net.runeduniverse.lib.repo.maven.proxy.api;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
+import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
 import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
 
@@ -27,9 +29,8 @@ public interface MavenRepositoryProxyInstance extends MavenRepositoryInstance {
 
 	public Map<String, RepositorySource> sources();
 
-	public CompletableFuture<SourceArtifactMetadata> lookupMetadata(String sourceKey, String groupId,
-			String artifactId);
+	public CompletableFuture<SourceArtifactMetadata> lookupMetadata(String sourceKey, ArtifactCoordinates coords);
 
-	public CompletableFuture<SourceArtifactData> lookupArtifact(String sourceKey, String groupId, String artifactId,
-			String classifier, String extension, String version);
+	public CompletableFuture<SourceArtifactData> lookupArtifact(String sourceKey, ArtifactDataCoordinates coords);
+
 }

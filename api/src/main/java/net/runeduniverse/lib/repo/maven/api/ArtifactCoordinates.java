@@ -21,4 +21,28 @@ public interface ArtifactCoordinates {
 
 	public String getArtifactId();
 
+	public static ArtifactCoordinates request(final String groupId, final String artifactId) {
+		return new Request(groupId, artifactId);
+	}
+
+	public static class Request implements ArtifactCoordinates {
+
+		protected String groupId;
+		protected String artifactId;
+
+		public Request(final String groupId, final String artifactId) {
+			this.groupId = groupId;
+			this.artifactId = artifactId;
+		}
+
+		@Override
+		public String getGroupId() {
+			return this.groupId;
+		}
+
+		@Override
+		public String getArtifactId() {
+			return this.artifactId;
+		}
+	}
 }

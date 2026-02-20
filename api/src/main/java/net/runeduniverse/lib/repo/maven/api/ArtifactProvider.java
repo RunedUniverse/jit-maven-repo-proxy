@@ -19,9 +19,8 @@ import java.util.concurrent.CompletableFuture;
 
 public interface ArtifactProvider {
 
-	public CompletableFuture<ArtifactMetadata> getMetadata(String groupId, String artifactId);
+	public CompletableFuture<ArtifactMetadata> getMetadata(ArtifactCoordinates coords);
 
-	public CompletableFuture<ArtifactData> getArtifact(String groupId, String artifactId, String classifier,
-			String extension, String version);
+	public CompletableFuture<ArtifactData> getArtifact(ArtifactDataCoordinates coords);
 
 }

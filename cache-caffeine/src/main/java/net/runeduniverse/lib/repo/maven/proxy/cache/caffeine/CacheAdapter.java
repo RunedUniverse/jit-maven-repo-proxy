@@ -17,23 +17,31 @@ package net.runeduniverse.lib.repo.maven.proxy.cache.caffeine;
 
 import java.util.concurrent.CompletableFuture;
 
+import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
+import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.proxy.api.MavenRepositoryProxyInstance;
 import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
 
 public class CacheAdapter implements Cache {
 
-	@Override
-	public CompletableFuture<ArtifactMetadata> getMetadata(final String groupId, final String artifactId) {
-		// TODO Auto-generated method stub
-		return null;
+	protected final MavenRepositoryProxyInstance proxy;
+
+	public CacheAdapter(final MavenRepositoryProxyInstance proxy) {
+		this.proxy = proxy;
 	}
 
 	@Override
-	public CompletableFuture<ArtifactData> getArtifact(final String groupId, final String artifactId,
-			final String classifier, final String extension, final String version) {
-		// TODO Auto-generated method stub
-		return null;
+	public CompletableFuture<ArtifactMetadata> getMetadata(ArtifactCoordinates coords) {
+		// TODO implement cache
+		return this.proxy.getMetadata(coords);
+	}
+
+	@Override
+	public CompletableFuture<ArtifactData> getArtifact(ArtifactDataCoordinates coords) {
+		// TODO implement cache
+		return this.proxy.getArtifact(coords);
 	}
 
 }

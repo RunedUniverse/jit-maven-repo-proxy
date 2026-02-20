@@ -30,11 +30,12 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.QueryStringDecoder;
+import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
+import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
 import net.runeduniverse.lib.repo.maven.api.FileContentType;
-import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
 import net.runeduniverse.lib.repo.maven.error.ForbiddenArtifactException;
 import net.runeduniverse.lib.repo.maven.error.UnauthorizedArtifactException;
 
@@ -190,7 +191,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 		}
 
 		final CompletableFuture<ArtifactMetadata> artifactFuture = //
-				provider.getMetadata(groupId, artifactId);
+				provider.getMetadata(ArtifactCoordinates.request(groupId, artifactId));
 
 		artifactFuture.whenCompleteAsync((metadata, throwable) -> {
 			if (!ctx.channel()
@@ -306,7 +307,8 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 		}
 
 		final CompletableFuture<ArtifactData> artifactFuture = //
-				provider.getArtifact(groupId, artifactId, classifier, extension, version);
+				provider.getArtifact(
+						ArtifactDataCoordinates.request(groupId, artifactId, version, classifier, extension));
 
 		artifactFuture.whenCompleteAsync((data, throwable) -> {
 			if (!ctx.channel()

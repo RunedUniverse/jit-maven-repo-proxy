@@ -22,7 +22,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
+import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.proxy.api.MavenRepositoryProxyInstance;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
@@ -59,23 +61,22 @@ public class DefaultRepositoryInstance implements MavenRepositoryProxyInstance {
 	}
 
 	@Override
-	public CompletableFuture<ArtifactMetadata> getMetadata(final String groupId, final String artifactId) {
-		return this.cache.getMetadata(groupId, artifactId);
+	public CompletableFuture<ArtifactMetadata> getMetadata(final ArtifactCoordinates coords) {
+		return this.cache.getMetadata(coords);
 	}
 
 	@Override
-	public CompletableFuture<ArtifactData> getArtifact(final String groupId, final String artifactId,
-			final String classifier, final String extension, final String version) {
-		return this.cache.getArtifact(groupId, artifactId, classifier, extension, version);
+	public CompletableFuture<ArtifactData> getArtifact(final ArtifactDataCoordinates coords) {
+		return this.cache.getArtifact(coords);
 	}
 
 	@Override
-	public CompletableFuture<SourceArtifactMetadata> lookupMetadata(final String sourceKey, final String groupId,
-			final String artifactId) {
+	public CompletableFuture<SourceArtifactMetadata> lookupMetadata(final String sourceKey,
+			final ArtifactCoordinates coords) {
 		final RepositorySource defSource = this.sources.get(sourceKey);
 		RepositorySourceClient client;
 		if (defSource != null && (client = defSource.client()) != null) {
-			return client.getMetadata(groupId, artifactId)
+			return client.getMetadata(coords)
 					.thenApply(metadata -> SourceArtifactMetadata.wrap(defSource, metadata));
 		}
 
@@ -85,7 +86,7 @@ public class DefaultRepositoryInstance implements MavenRepositoryProxyInstance {
 		for (RepositorySource source : this.sources.values()) {
 			if ((client = source.client()) == null)
 				continue;
-			upstream.add(client.getMetadata(groupId, artifactId)
+			upstream.add(client.getMetadata(coords)
 					.thenAccept(metadata -> {
 						if (metadata == null)
 							return;
@@ -99,13 +100,13 @@ public class DefaultRepositoryInstance implements MavenRepositoryProxyInstance {
 	}
 
 	@Override
-	public CompletableFuture<SourceArtifactData> lookupArtifact(final String sourceKey, final String groupId,
-			final String artifactId, final String classifier, final String extension, final String version) {
+	public CompletableFuture<SourceArtifactData> lookupArtifact(final String sourceKey,
+			final ArtifactDataCoordinates coords) {
 		final RepositorySource defSource = this.sources.get(sourceKey);
 		RepositorySourceClient client;
 		if (defSource != null && (client = defSource.client()) != null) {
 			return defSource.client()
-					.getArtifact(groupId, artifactId, classifier, extension, version)
+					.getArtifact(coords)
 					.thenApply(data -> SourceArtifactData.wrap(defSource, data));
 		}
 
@@ -115,7 +116,7 @@ public class DefaultRepositoryInstance implements MavenRepositoryProxyInstance {
 		for (RepositorySource source : this.sources.values()) {
 			if ((client = source.client()) == null)
 				continue;
-			upstream.add(client.getArtifact(groupId, artifactId, classifier, extension, version)
+			upstream.add(client.getArtifact(coords)
 					.thenAccept(data -> {
 						if (data == null)
 							return;

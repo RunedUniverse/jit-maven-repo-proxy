@@ -17,7 +17,9 @@ package net.runeduniverse.lib.repo.maven.proxy.source.http;
 
 import java.util.concurrent.CompletableFuture;
 
+import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
+import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySourceClient;
@@ -35,14 +37,13 @@ public class HttpSourceClient implements RepositorySourceClient {
 	}
 
 	@Override
-	public CompletableFuture<ArtifactMetadata> getMetadata(final String groupId, final String artifactId) {
+	public CompletableFuture<ArtifactMetadata> getMetadata(final ArtifactCoordinates coords) {
 		// TODO implement lookup
 		return null;
 	}
 
 	@Override
-	public CompletableFuture<ArtifactData> getArtifact(final String groupId, final String artifactId,
-			final String classifier, final String extension, final String version) {
+	public CompletableFuture<ArtifactData> getArtifact(final ArtifactDataCoordinates coords) {
 		// TODO implement lookup
 		return null;
 	}

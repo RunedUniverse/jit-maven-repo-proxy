@@ -18,7 +18,7 @@ package net.runeduniverse.lib.repo.maven.api;
 import java.nio.file.Path;
 import java.util.Map;
 
-public interface ArtifactData extends ArtifactCoordinates {
+public interface ArtifactData extends ArtifactDataCoordinates {
 
 	public String getVersion();
 
