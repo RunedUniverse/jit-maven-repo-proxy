@@ -31,13 +31,11 @@ public class NotFoundRepoInstance extends DefaultRepositoryInstance {
 	}
 
 	public CompletableFuture<ArtifactMetadata> lookupMetadata(String groupId, String artifactId) {
-		// TODO implement lookup
 		return CompletableFuture.completedFuture(null);
 	}
 
 	public CompletableFuture<ArtifactData> lookupArtifact(String groupId, String artifactId, String classifier,
 			String extension, String version) {
-		// TODO implement lookup
 		return CompletableFuture.completedFuture(null);
 	}
 

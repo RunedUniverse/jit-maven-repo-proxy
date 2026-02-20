@@ -65,7 +65,10 @@ public class RepoInstanceBuilder {
 	}
 
 	public MavenRepositoryProxyInstance build(final Function<MavenRepositoryProxyInstance, Cache> factory) {
-		return this.instanceFacory.apply(this.path, factory);
+		final MavenRepositoryProxyInstance instance = this.instanceFacory.apply(this.path, factory);
+		instance.sources()
+				.putAll(this.sources);
+		return instance;
 	}
 
 }

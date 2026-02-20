@@ -15,53 +15,116 @@
  */
 package net.runeduniverse.lib.repo.maven.proxy;
 
-import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.proxy.api.MavenRepositoryProxyInstance;
+import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySourceClient;
+import net.runeduniverse.lib.repo.maven.proxy.api.SourceArtifactData;
+import net.runeduniverse.lib.repo.maven.proxy.api.SourceArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
 
 public class DefaultRepositoryInstance implements MavenRepositoryProxyInstance {
 
-	protected final Map<String, RepositorySourceClient> sources = new LinkedHashMap<>();
+	protected final Map<String, RepositorySource> sources = new ConcurrentHashMap<>();
 
 	protected final String path;
 	protected final Cache cache;
 
-	public DefaultRepositoryInstance(final String path, Function<MavenRepositoryProxyInstance, Cache> factory) {
+	public DefaultRepositoryInstance(final String path, final Function<MavenRepositoryProxyInstance, Cache> factory) {
 		this.path = path;
 		this.cache = factory.apply(this);
 	}
 
-	public String getPath() {
+	@Override
+	public String path() {
 		return this.path;
 	}
 
 	@Override
-	public CompletableFuture<ArtifactMetadata> getMetadata(String groupId, String artifactId) {
+	public Cache cache() {
+		return this.cache;
+	}
+
+	@Override
+	public Map<String, RepositorySource> sources() {
+		return this.sources;
+	}
+
+	@Override
+	public CompletableFuture<ArtifactMetadata> getMetadata(final String groupId, final String artifactId) {
 		return this.cache.getMetadata(groupId, artifactId);
 	}
 
 	@Override
-	public CompletableFuture<ArtifactData> getArtifact(String groupId, String artifactId, String classifier,
-			String extension, String version) {
+	public CompletableFuture<ArtifactData> getArtifact(final String groupId, final String artifactId,
+			final String classifier, final String extension, final String version) {
 		return this.cache.getArtifact(groupId, artifactId, classifier, extension, version);
 	}
 
-	public CompletableFuture<ArtifactMetadata> lookupMetadata(String groupId, String artifactId) {
-		// TODO implement lookup
-		return CompletableFuture.completedFuture(null);
+	@Override
+	public CompletableFuture<SourceArtifactMetadata> lookupMetadata(final String sourceKey, final String groupId,
+			final String artifactId) {
+		final RepositorySource defSource = this.sources.get(sourceKey);
+		RepositorySourceClient client;
+		if (defSource != null && (client = defSource.client()) != null) {
+			return client.getMetadata(groupId, artifactId)
+					.thenApply(metadata -> SourceArtifactMetadata.wrap(defSource, metadata));
+		}
+
+		final CompletableFuture<SourceArtifactMetadata> future = new CompletableFuture<>();
+		final List<CompletableFuture<Void>> upstream = new LinkedList<>();
+
+		for (RepositorySource source : this.sources.values()) {
+			if ((client = source.client()) == null)
+				continue;
+			upstream.add(client.getMetadata(groupId, artifactId)
+					.thenAccept(metadata -> {
+						if (metadata == null)
+							return;
+						future.complete(SourceArtifactMetadata.wrap(source, metadata));
+					}));
+		}
+		CompletableFuture.allOf(upstream.toArray(new CompletableFuture[upstream.size()]))
+				.thenRun(() -> future.complete(null));
+
+		return future;
 	}
 
-	public CompletableFuture<ArtifactData> lookupArtifact(String groupId, String artifactId, String classifier,
-			String extension, String version) {
-		// TODO implement lookup
-		return CompletableFuture.completedFuture(null);
-	}
+	@Override
+	public CompletableFuture<SourceArtifactData> lookupArtifact(final String sourceKey, final String groupId,
+			final String artifactId, final String classifier, final String extension, final String version) {
+		final RepositorySource defSource = this.sources.get(sourceKey);
+		RepositorySourceClient client;
+		if (defSource != null && (client = defSource.client()) != null) {
+			return defSource.client()
+					.getArtifact(groupId, artifactId, classifier, extension, version)
+					.thenApply(data -> SourceArtifactData.wrap(defSource, data));
+		}
 
+		final CompletableFuture<SourceArtifactData> future = new CompletableFuture<>();
+		final List<CompletableFuture<Void>> upstream = new LinkedList<>();
+
+		for (RepositorySource source : this.sources.values()) {
+			if ((client = source.client()) == null)
+				continue;
+			upstream.add(client.getArtifact(groupId, artifactId, classifier, extension, version)
+					.thenAccept(data -> {
+						if (data == null)
+							return;
+						future.complete(SourceArtifactData.wrap(source, data));
+					}));
+		}
+		CompletableFuture.allOf(upstream.toArray(new CompletableFuture[upstream.size()]))
+				.thenRun(() -> future.complete(null));
+
+		return future;
+	}
 }

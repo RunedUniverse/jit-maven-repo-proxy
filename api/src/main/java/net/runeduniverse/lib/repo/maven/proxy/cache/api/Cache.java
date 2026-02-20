@@ -29,13 +29,15 @@ public interface Cache extends ArtifactProvider {
 
 			@Override
 			public CompletableFuture<ArtifactMetadata> getMetadata(final String groupId, final String artifactId) {
-				return proxy.lookupMetadata(groupId, artifactId);
+				return proxy.lookupMetadata(null, groupId, artifactId)
+						.thenApply(metadata -> metadata);
 			}
 
 			@Override
 			public CompletableFuture<ArtifactData> getArtifact(final String groupId, final String artifactId,
 					final String classifier, final String extension, final String version) {
-				return proxy.lookupArtifact(groupId, artifactId, classifier, extension, version);
+				return proxy.lookupArtifact(null, groupId, artifactId, classifier, extension, version)
+						.thenApply(data -> data);
 			}
 		};
 	}

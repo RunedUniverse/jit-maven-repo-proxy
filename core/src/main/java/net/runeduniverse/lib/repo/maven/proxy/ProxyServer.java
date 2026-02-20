@@ -63,7 +63,7 @@ public class ProxyServer {
 	}
 
 	public void addInstance(final MavenRepositoryInstance instance) {
-		this.instances.put(instance.getPath(), instance);
+		this.instances.put(instance.path(), instance);
 	}
 
 	protected ServerBootstrap bootstrap() {
