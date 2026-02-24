@@ -83,8 +83,8 @@ public interface SourceArtifactData extends ArtifactData {
 		}
 
 		@Override
-		public Map<String, String> getHashes() {
-			return this.data.getHashes();
+		public Map<String, String> getChecksums() {
+			return this.data.getChecksums();
 		}
 	}
 }

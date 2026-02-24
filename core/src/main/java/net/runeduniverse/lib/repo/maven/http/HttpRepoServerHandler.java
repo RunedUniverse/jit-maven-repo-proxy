@@ -35,6 +35,7 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
+import net.runeduniverse.lib.repo.maven.api.ChecksumType;
 import net.runeduniverse.lib.repo.maven.api.FileContentType;
 import net.runeduniverse.lib.repo.maven.error.ForbiddenArtifactException;
 import net.runeduniverse.lib.repo.maven.error.UnauthorizedArtifactException;
@@ -44,7 +45,6 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -54,7 +54,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -224,8 +223,9 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 				final String checksum;
 				try {
 					checksum = Hex.encodeHexString(//
-							MessageDigest.getInstance(findAlgorithm(fileType))
-									.digest(utf8Data));
+							ChecksumType.newMessageDigestFor(fileType)
+									.digest(utf8Data),
+							true);
 				} catch (NoSuchAlgorithmException e) {
 					sendError(ctx, request, NOT_FOUND);
 					return;
@@ -341,7 +341,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 				sendFileData(ctx, request, data.getSignaturePath(), fileName, fileType);
 			} else {
 				// checksums
-				final String textData = data.getHashes()
+				final String textData = data.getChecksums()
 						.get(fileType);
 				if (textData == null) {
 					sendError(ctx, request, NOT_FOUND);
@@ -487,20 +487,5 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 
 		return text.append("  </versioning>\n</metadata>\n")
 				.toString();
-	}
-
-	protected String findAlgorithm(final String fileType) throws NoSuchAlgorithmException {
-		switch (fileType) {
-		case "md5":
-			return MessageDigestAlgorithms.MD5;
-		case "sha1":
-			return MessageDigestAlgorithms.SHA_1;
-		case "sha256":
-			return MessageDigestAlgorithms.SHA_256;
-		case "sha512":
-			return MessageDigestAlgorithms.SHA_512;
-		default:
-			throw new NoSuchAlgorithmException();
-		}
 	}
 }

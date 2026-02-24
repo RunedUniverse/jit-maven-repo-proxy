@@ -13,17 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.api;
+package net.runeduniverse.lib.repo.maven.http.data;
 
-import java.nio.file.Path;
-import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
-public interface ArtifactData extends ArtifactDataCoordinates {
+public abstract class AContentProcessor<T> {
 
-	public Path getArtifactPath();
+	protected final CompletableFuture<T> future;
 
-	public Path getSignaturePath();
+	public AContentProcessor() {
+		this.future = new CompletableFuture<T>();
+	}
 
-	public Map<String, String> getChecksums();
+	public CompletableFuture<T> future() {
+		return this.future;
+	}
 
+	public boolean hasCompleted() {
+		return this.future.isDone() || this.future.isCancelled();
+	}
+
+	public abstract void process(byte[] bytes);
+
+	public abstract void complete();
+
+	public void completeExceptionally(final Throwable ex) {
+		this.future.completeExceptionally(ex);
+	}
 }

@@ -15,8 +15,15 @@
  */
 package net.runeduniverse.lib.repo.maven.error;
 
-public class ForbiddenArtifactException extends Exception {
+public class ForbiddenArtifactException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;
 
+	public ForbiddenArtifactException() {
+		super();
+	}
+
+	public ForbiddenArtifactException(final String message) {
+		super(message);
+	}
 }

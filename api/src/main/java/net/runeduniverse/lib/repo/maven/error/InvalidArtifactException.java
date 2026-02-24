@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.api;
+package net.runeduniverse.lib.repo.maven.error;
 
-import java.nio.file.Path;
-import java.util.Map;
+public class InvalidArtifactException extends ForbiddenArtifactException {
 
-public interface ArtifactData extends ArtifactDataCoordinates {
+	private static final long serialVersionUID = 1L;
 
-	public Path getArtifactPath();
+	public InvalidArtifactException() {
+		super();
+	}
 
-	public Path getSignaturePath();
-
-	public Map<String, String> getChecksums();
-
+	public InvalidArtifactException(final String message) {
+		super(message);
+	}
 }

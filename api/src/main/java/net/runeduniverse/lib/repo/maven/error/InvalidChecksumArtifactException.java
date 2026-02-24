@@ -15,8 +15,31 @@
  */
 package net.runeduniverse.lib.repo.maven.error;
 
-public class UnauthorizedArtifactException extends RuntimeException {
+public class InvalidChecksumArtifactException extends InvalidArtifactException {
 
 	private static final long serialVersionUID = 1L;
 
+	protected final String checksumExt;
+	protected final String localChecksum;
+	protected final String remoteChecksum;
+
+	public InvalidChecksumArtifactException(final String checksumExt, final String localChecksum,
+			final String remoteChecksum) {
+		super("Checksum missmatch detected upon Artifact download!");
+		this.checksumExt = checksumExt;
+		this.localChecksum = localChecksum;
+		this.remoteChecksum = remoteChecksum;
+	}
+
+	public String getChecksumExt() {
+		return this.checksumExt;
+	}
+
+	public String getLocalChecksum() {
+		return this.localChecksum;
+	}
+
+	public String getRemoteChecksum() {
+		return this.remoteChecksum;
+	}
 }
