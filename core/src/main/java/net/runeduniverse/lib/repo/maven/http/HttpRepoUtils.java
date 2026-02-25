@@ -32,11 +32,14 @@ import io.netty.handler.codec.http.HttpUtil;
 import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
 import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
+import net.runeduniverse.lib.repo.maven.http.data.HttpDataRequest;
 
 public class HttpRepoUtils {
 
 	public static final AttributeKey<ArtifactProvider> ATTKEY_ARTIFACT_PROVIDER = AttributeKey
 			.valueOf(ArtifactProvider.class.getCanonicalName());
+	public static final AttributeKey<HttpDataRequest> ATTKEY_HTTP_DATA_REQUEST = AttributeKey
+			.valueOf(HttpDataRequest.class.getCanonicalName());
 
 	public static void sendError(final ChannelHandlerContext ctx, final FullHttpRequest request,
 			final HttpResponseStatus status) {

@@ -15,7 +15,7 @@
  */
 package net.runeduniverse.lib.repo.maven.error;
 
-public class UnauthorizedArtifactException extends RuntimeException {
+public class UnauthorizedArtifactException extends ArtifactException {
 
 	private static final long serialVersionUID = 1L;
 

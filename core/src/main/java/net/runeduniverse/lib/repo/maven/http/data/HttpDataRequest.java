@@ -21,14 +21,26 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import org.apache.commons.lang3.StringUtils;
 
+import io.netty.handler.codec.http.DefaultFullHttpRequest;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaderValues;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpVersion;
+import net.runeduniverse.lib.repo.maven.data.AContentProcessor;
+import net.runeduniverse.lib.repo.maven.error.ArtifactException;
+import net.runeduniverse.lib.repo.maven.error.RedirectRepoException;
+
 public class HttpDataRequest {
 
-	protected final Map<String, AContentProcessor<?>> checksumMap = new HashMap<>();
+	protected final Map<String, AContentProcessor<?>> subProcessorMap = new HashMap<>();
 	protected final List<String> redirects = new LinkedList<>();
 
 	protected final CompletableFuture<?> future;
@@ -62,32 +74,80 @@ public class HttpDataRequest {
 		return this.future;
 	}
 
-	public Map<String, AContentProcessor<?>> checksumMap() {
-		return this.checksumMap;
+	public Map<String, AContentProcessor<?>> subProcessorMap() {
+		return this.subProcessorMap;
 	}
 
-	public URI redirect(final String location) throws URISyntaxException {
-		if (StringUtils.isBlank(location))
-			throw new URISyntaxException(location, "Invalid Redirect");
+	public String getHost() {
+		return this.uri.getHost();
+	}
+
+	public String getScheme() {
+		final String scheme = uri.getScheme();
+		if (scheme == null)
+			return "http";
+		return scheme;
+	}
+
+	public int getPort() {
+		int port = uri.getPort();
+		if (port != -1)
+			return port;
+		return "https".equalsIgnoreCase(getScheme()) ? 443 : 80;
+	}
+
+	public boolean getUriTLS() {
+		return "https".equalsIgnoreCase(getScheme());
+	}
+
+	public URI redirect(final String location) throws RedirectRepoException {
+		if (StringUtils.isBlank(location)) {
+			throw new RedirectRepoException(RedirectRepoException.MSG_INVALID_REDIRECT, this.uri.toString(),
+					this.redirects, location);
+		}
 		if (this.maxRedirects <= this.redirects.size())
-			throw new URISyntaxException(location, "Too Many Redirects");
-		final URI redirected = new URI(location);
+			throw new RedirectRepoException(RedirectRepoException.MSG_TOO_MANY_REDIRECTS, this.uri.toString(),
+					this.redirects, location);
+		URI redirected;
+		try {
+			redirected = new URI(location);
+		} catch (URISyntaxException cause) {
+			throw new RedirectRepoException(RedirectRepoException.MSG_INVALID_REDIRECT, this.uri.toString(),
+					this.redirects, location, cause);
+		}
 		this.uri = redirected.isAbsolute() ? redirected : this.uri.resolve(redirected);
 		this.redirects.add(this.uri.toString());
 		return this.uri;
 	}
 
-	public HttpDataRequest newChecksumRequest(final String ext) {
-		final AContentProcessor<?> processor = this.checksumMap.get(ext);
-		if (processor == null)
-			return null;
-		final URI uri;
-		try {
-			uri = new URI(this.uri.getScheme(), this.uri.getAuthority(), this.uri.getPath() + '.' + ext,
-					this.uri.getQuery(), this.uri.getFragment());
-		} catch (URISyntaxException ignored) {
-			return null;
+	public FullHttpRequest asHttpRequest() {
+		String path = uri.getRawPath();
+		if (path == null || path.isEmpty()) {
+			path = "/";
 		}
-		return new HttpDataRequest(uri, processor, this.maxRedirects);
+		final FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, path);
+		final HttpHeaders headers = request.headers();
+		headers.set(HttpHeaderNames.HOST, getHost());
+		headers.set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+		return request;
+	}
+
+	public List<HttpDataRequest> remainingSubRequests() {
+		final List<HttpDataRequest> requests = new LinkedList<>();
+		for (Entry<String, AContentProcessor<?>> entry : this.subProcessorMap.entrySet()) {
+			final AContentProcessor<?> processor = entry.getValue();
+			if (processor == null || processor.isDone())
+				continue;
+			final URI uri;
+			try {
+				uri = new URI(this.uri.getScheme(), this.uri.getAuthority(), this.uri.getPath() + '.' + entry.getKey(),
+						this.uri.getQuery(), this.uri.getFragment());
+			} catch (URISyntaxException e) {
+				processor.completeExceptionally(new ArtifactException("Artifact can not be requested!", e));
+				continue;
+			}
+			requests.add(new HttpDataRequest(uri, processor, this.maxRedirects));
+		}
+		return requests;
 	}
 }

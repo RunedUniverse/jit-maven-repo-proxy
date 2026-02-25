@@ -16,6 +16,7 @@
 package net.runeduniverse.lib.repo.maven.proxy.source.http;
 
 import java.net.URI;
+import java.nio.file.Path;
 
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySourceClient;
@@ -23,11 +24,18 @@ import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySourceClient;
 public class HttpSource implements RepositorySource {
 
 	protected final String key;
-	protected URI uri;
+	protected final URI uri;
+	protected final Path repoPath;
+	protected final int maxRedirects;
+	protected final int maxRetries;
 
-	public HttpSource(final String key, URI uri) {
+	public HttpSource(final String key, final URI uri, final Path repoPath, final int maxRedirects,
+			final int maxRetries) {
 		this.key = key;
 		this.uri = uri;
+		this.repoPath = repoPath;
+		this.maxRedirects = maxRedirects;
+		this.maxRetries = maxRetries;
 	}
 
 	@Override
@@ -35,13 +43,19 @@ public class HttpSource implements RepositorySource {
 		return this.key;
 	}
 
-	public URI getUri() {
+	@Override
+	public URI getRepoUri() {
 		return this.uri;
 	}
 
 	@Override
+	public Path getLocalRepoPath() {
+		return this.repoPath;
+	}
+
+	@Override
 	public RepositorySourceClient client() {
-		return new HttpSourceClient(this);
+		return new HttpSourceClient(this, this.maxRedirects, this.maxRetries);
 	}
 
 }

@@ -15,9 +15,16 @@
  */
 package net.runeduniverse.lib.repo.maven.proxy.api;
 
+import java.net.URI;
+import java.nio.file.Path;
+
 public interface RepositorySource {
 
 	public String key();
+
+	public URI getRepoUri();
+
+	public Path getLocalRepoPath();
 
 	public RepositorySourceClient client();
 

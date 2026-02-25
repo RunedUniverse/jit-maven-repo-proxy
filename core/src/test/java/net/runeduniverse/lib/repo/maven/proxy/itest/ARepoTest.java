@@ -18,11 +18,13 @@ package net.runeduniverse.lib.repo.maven.proxy.itest;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.junit.jupiter.api.io.TempDir;
 
 import io.netty.channel.Channel;
 import net.runeduniverse.lib.repo.maven.proxy.builder.ProxyServerBuilder;
@@ -31,13 +33,16 @@ import net.runeduniverse.lib.repo.maven.proxy.ProxyServer;
 @TestInstance(Lifecycle.PER_CLASS)
 public abstract class ARepoTest {
 
-	public void print(String line) {
-		System.out.println(LocalDateTime.now() + ": " + line);
-	}
+	@TempDir
+	protected Path repoPath;
 
 	protected ProxyServer server = null;
 	protected SocketAddress socketAddress = null;
 	protected Channel channel = null;
+
+	public Path repoPath() {
+		return this.repoPath;
+	}
 
 	protected abstract ProxyServerBuilder configure(ProxyServerBuilder builder);
 
@@ -64,6 +69,10 @@ public abstract class ARepoTest {
 		} finally {
 			server.shutdownGracefully();
 		}
+	}
+
+	public void print(String line) {
+		System.out.println(LocalDateTime.now() + ": " + line);
 	}
 
 }

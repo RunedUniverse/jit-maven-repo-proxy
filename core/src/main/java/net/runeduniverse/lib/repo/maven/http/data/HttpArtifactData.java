@@ -33,69 +33,44 @@ import org.apache.commons.codec.binary.Hex;
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ChecksumType;
+import net.runeduniverse.lib.repo.maven.data.AArtifactData;
+import net.runeduniverse.lib.repo.maven.data.AContentProcessor;
+import net.runeduniverse.lib.repo.maven.data.FileProcessor;
+import net.runeduniverse.lib.repo.maven.data.TextProcessor;
 import net.runeduniverse.lib.repo.maven.error.InvalidChecksumArtifactException;
 
-public class HttpArtifactData implements ArtifactData {
+public class HttpArtifactData extends AArtifactData implements ArtifactData {
 
 	protected final Map<String, String> checksums = new ConcurrentHashMap<>();
 
 	protected final Path repoPath;
+	protected final URI repoUri;
+	protected final int maxRedirects;
 
-	protected final String groupId;
-	protected final String artifactId;
-	protected final String version;
-	protected final String classifier;
-	protected final String extension;
+	// even when overridden - only access via Getter
+	private String gavPath = null;
+	private String artifactName = null;
+	private Path artifactPath = null;
+	private Path signaturePath = null;
+	private HttpDataRequest artifactRequest = null;
 
-	protected String gavPath = null;
-	protected String artifactName = null;
-	protected Path artifactPath = null;
-	protected Path signaturePath = null;
-	protected HttpDataRequest artifactRequest = null;
-	protected HttpDataRequest signatureRequest = null;
-
-	public HttpArtifactData(final Path repoPath, //
+	public HttpArtifactData(final Path repoPath, final URI repoUri, final int maxRedirects, //
 			final String groupId, final String artifactId, final String version, //
 			final String classifier, final String extension) {
+		super(groupId, artifactId, version, classifier, extension);
+
 		this.repoPath = repoPath;
-		this.groupId = groupId;
-		this.artifactId = artifactId;
-		this.version = version;
-		this.classifier = classifier;
-		this.extension = extension;
-		ChecksumType.fill(this.checksums, t -> null);
+		this.repoUri = repoUri;
+		this.maxRedirects = maxRedirects;
 	}
 
-	public HttpArtifactData(final Path repoPath, final ArtifactDataCoordinates coords) {
-		this(repoPath, //
-				coords.getGroupId(), coords.getArtifactId(), coords.getVersion(), //
-				coords.getClassifier(), coords.getExtension() //
-		);
-	}
+	public HttpArtifactData(final Path repoPath, final URI repoUri, final int maxRedirects,
+			final ArtifactDataCoordinates coords) {
+		super(coords);
 
-	@Override
-	public String getGroupId() {
-		return this.groupId;
-	}
-
-	@Override
-	public String getArtifactId() {
-		return this.artifactId;
-	}
-
-	@Override
-	public String getVersion() {
-		return this.version;
-	}
-
-	@Override
-	public String getClassifier() {
-		return this.classifier;
-	}
-
-	@Override
-	public String getExtension() {
-		return this.extension;
+		this.repoPath = repoPath;
+		this.repoUri = repoUri;
+		this.maxRedirects = maxRedirects;
 	}
 
 	public String getGAVPath() {
@@ -127,7 +102,7 @@ public class HttpArtifactData implements ArtifactData {
 	@Override
 	public Path getArtifactPath() {
 		if (this.artifactPath == null) {
-			this.artifactPath = this.repoPath.resolve(getGAVPath() + '.' + getArtifactName());
+			this.artifactPath = this.repoPath.resolve(getGAVPath() + '/' + getArtifactName());
 		}
 		return this.artifactPath;
 	}
@@ -135,14 +110,26 @@ public class HttpArtifactData implements ArtifactData {
 	@Override
 	public Path getSignaturePath() {
 		if (this.signaturePath == null) {
-			this.signaturePath = this.repoPath.resolve(getGAVPath() + '.' + getArtifactName() + ".asc");
+			this.signaturePath = this.repoPath.resolve(getGAVPath() + '/' + getArtifactName() + ".asc");
 		}
 		return this.signaturePath;
 	}
 
-	@Override
-	public Map<String, String> getChecksums() {
-		return this.checksums;
+	public List<HttpDataRequest> getDataRequests() throws IOException {
+		final List<HttpDataRequest> dataRequests = new LinkedList<>();
+		dataRequests.add(getArtifactRequest(this.repoUri, this.maxRedirects));
+		return dataRequests;
+	}
+
+	public CompletableFuture<ArtifactData> asFuture() throws IOException {
+		final List<HttpDataRequest> dataRequests = getDataRequests();
+		final CompletableFuture<?>[] futures = new CompletableFuture<?>[dataRequests.size()];
+		for (int i = 0; i < dataRequests.size(); i++) {
+			futures[i] = dataRequests.get(i)
+					.future();
+		}
+		return CompletableFuture.allOf(futures)
+				.thenApply(v -> HttpArtifactData.this);
 	}
 
 	public synchronized HttpDataRequest getArtifactRequest(final URI repoUri, final int maxRedirects)
@@ -150,36 +137,49 @@ public class HttpArtifactData implements ArtifactData {
 		if (this.artifactRequest != null)
 			return this.artifactRequest;
 
-		final List<CompletableFuture<?>> rawFutures = new LinkedList<>();
+		// --- Prepare for building the Future Tree
+		// --> build in reverse order!
+		// --> execute in order!
+		// --> on error -> cancel subtree!
+		final Map<String, AContentProcessor<?>> subProcessorMap = new HashMap<>();
 		final List<CompletableFuture<?>> futures = new LinkedList<>();
 		final Map<String, MessageDigest> localChecksums = ChecksumType.tryFill(new ConcurrentHashMap<>(), null);
 		final FileProcessor fileProcessor = new FileProcessor(getArtifactPath(), localChecksums);
 		final CompletableFuture<?> fileFuture = fileProcessor.future();
 		futures.add(fileFuture.whenComplete((v, t) -> {
-			// file future is dominant! => kill the others!
+			// file future is dominant! => kill all sub-processors others!
 			if (t != null)
-				rawFutures.forEach(f -> f.cancel(true));
+				subProcessorMap.values()
+						.forEach(p -> p.cancel(true));
 		}));
 
-		final Map<String, AContentProcessor<?>> checksumMap = new HashMap<>();
+		// --- Build Checksum Requests ---
 		for (ChecksumType type : ChecksumType.allEntries()) {
 			final String ext = type.extension();
 			final TextProcessor textProcessor = new TextProcessor(true);
-			final CompletableFuture<String> textFuture = textProcessor.future();
-			rawFutures.add(textFuture);
-			futures.add(textFuture.handle((value, ignoredEx) -> {
-				// we don't care about checksum exceptions -> they are basically optional
-				HttpArtifactData.this.checksums.put(ext, value);
-				return value;
-			}));
-			checksumMap.put(ext, textProcessor);
+			futures.add(textProcessor.future()
+					.handle((value, ignoredEx) -> {
+						// we don't care about checksum exceptions -> they are basically optional
+						HttpArtifactData.this.checksums.put(ext, value);
+						return value;
+					}));
+			subProcessorMap.put(ext, textProcessor);
 		}
 
-		final HttpDataRequest request = new HttpDataRequest(//
-				repoUri.resolve(getGAVPath() + '.' + getArtifactName()), fileProcessor, () -> {
+		// --- Build Signature Request ---
+		final FileProcessor sigFileProcessor = new FileProcessor(getSignaturePath(), Collections.emptyMap());
+		subProcessorMap.put("asc", sigFileProcessor);
+		futures.add(sigFileProcessor.future()
+				.handle(HttpArtifactData::voidThrowable));
+
+		// --- Build Artifact Request ---
+		final HttpDataRequest artifactRequest = new HttpDataRequest(//
+				repoUri.resolve(getGAVPath() + '/' + getArtifactName()), fileProcessor, () -> {
 					return CompletableFuture.allOf(//
 							futures.toArray(new CompletableFuture<?>[futures.size()]))
 							.thenApply(v -> {
+								// --- Verify Artifact - Data
+								// verify checksums / update if missing
 								for (Entry<String, MessageDigest> entry : localChecksums.entrySet()) {
 									final String ext = entry.getKey();
 									final String localChecksum = Hex.encodeHexString(entry.getValue()
@@ -190,37 +190,19 @@ public class HttpArtifactData implements ArtifactData {
 										this.checksums.put(ext, localChecksum);
 										continue;
 									}
-									if (!refChecksum.equals(localChecksum)) {
+									if (!refChecksum.trim()
+											.equals(localChecksum)) {
 										// somthing is wrong !!!
 										throw new InvalidChecksumArtifactException(ext, localChecksum, refChecksum);
 									}
 								}
-								return null;
-							});
-				}, maxRedirects);
-		request.checksumMap()
-				.putAll(checksumMap);
-		return this.artifactRequest = request;
-	}
-
-	public synchronized HttpDataRequest getSignatureRequest(final URI repoUri, final int maxRedirects)
-			throws IOException {
-		if (this.signatureRequest != null)
-			return this.signatureRequest;
-
-		final HttpDataRequest artifactRequest = getArtifactRequest(repoUri, maxRedirects);
-
-		final FileProcessor fileProcessor = new FileProcessor(getSignaturePath(), Collections.emptyMap());
-		final CompletableFuture<?> fileFuture = fileProcessor.future();
-
-		final HttpDataRequest request = new HttpDataRequest(//
-				repoUri.resolve(getGAVPath() + '.' + getArtifactName() + ".asc"), fileProcessor, () -> {
-					return CompletableFuture.allOf(artifactRequest.future(), fileFuture)
-							.thenApply(v -> {
+								// verify signature
 								// TODO validate PGP Signature
 								return null;
 							});
 				}, maxRedirects);
-		return this.signatureRequest = request;
+		artifactRequest.subProcessorMap()
+				.putAll(subProcessorMap);
+		return this.artifactRequest = artifactRequest;
 	}
 }

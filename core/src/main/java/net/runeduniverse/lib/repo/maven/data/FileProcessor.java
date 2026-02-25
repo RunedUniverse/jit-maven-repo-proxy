@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.http.data;
+package net.runeduniverse.lib.repo.maven.data;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -37,7 +37,7 @@ public class FileProcessor extends AContentProcessor<Void> {
 
 	@Override
 	public void process(final byte[] bytes) {
-		if (hasCompleted() || bytes == null)
+		if (isDone() || bytes == null)
 			return;
 		try {
 			this.stream.write(bytes);
@@ -48,6 +48,10 @@ public class FileProcessor extends AContentProcessor<Void> {
 				}
 			}
 		} catch (IOException e) {
+			try {
+				this.stream.close();
+			} catch (IOException ignored) {
+			}
 			this.future.completeExceptionally(e);
 		}
 	}
@@ -55,10 +59,29 @@ public class FileProcessor extends AContentProcessor<Void> {
 	@Override
 	public void complete() {
 		try {
+			this.stream.flush();
 			this.stream.close();
 			this.future.complete(null);
 		} catch (IOException e) {
 			this.future.completeExceptionally(e);
 		}
+	}
+
+	@Override
+	public void completeExceptionally(final Throwable ex) {
+		try {
+			this.stream.close();
+		} catch (IOException ignored) {
+		}
+		super.completeExceptionally(ex);
+	}
+
+	@Override
+	public void cancel(final boolean mayInterruptIfRunning) {
+		try {
+			this.stream.close();
+		} catch (IOException ignored) {
+		}
+		super.cancel(mayInterruptIfRunning);
 	}
 }

@@ -96,7 +96,7 @@ public class ChecksumType {
 		return type.newMessageDigest();
 	}
 
-	public static <T> Map<String, T> fill(final Map<String, T> checksumMap, Function<ChecksumType, T> function) {
+	public static <T> Map<String, T> fill(final Map<String, T> checksumMap, final Function<ChecksumType, T> function) {
 		for (Entry<String, ChecksumType> entry : KNWON_VALUES.entrySet()) {
 			checksumMap.put(entry.getKey(), function.apply(entry.getValue()));
 		}

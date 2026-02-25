@@ -16,9 +16,11 @@
 package net.runeduniverse.lib.repo.maven.proxy.builder.test;
 
 import java.net.URI;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import net.runeduniverse.lib.repo.maven.proxy.builder.ProxyServerBuilder;
 import net.runeduniverse.lib.repo.maven.proxy.source.http.HttpSource;
@@ -30,6 +32,9 @@ public class RepoBuilderTest {
 		System.out.println(LocalDateTime.now() + ": " + line);
 	}
 
+	@TempDir
+	protected Path repoPath;
+
 	@Test
 	@Tag("smoke")
 	public void exec() throws InterruptedException {
@@ -38,8 +43,8 @@ public class RepoBuilderTest {
 		ProxyServer server = new ProxyServerBuilder()//
 				.cacheFactory(null)
 				.instance("maven-central", instance -> {
-					instance.putSource(
-							new HttpSource("repo1.maven.org", URI.create("https://repo1.maven.org/maven2/")));
+					instance.putSource(new HttpSource("repo1.maven.org", URI.create("https://repo1.maven.org/maven2/"),
+							this.repoPath, 3, 10));
 				})
 				.build();
 

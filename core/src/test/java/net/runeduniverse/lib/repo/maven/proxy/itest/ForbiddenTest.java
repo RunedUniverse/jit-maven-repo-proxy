@@ -30,7 +30,8 @@ public class ForbiddenTest extends ARepoTest {
 		return builder.instance("maven-central", instance -> {
 			// ensure no artifact is ever found
 			instance.setInstanceFacory(ForbiddenRepoInstance::new)
-					.putSource(new HttpSource("repo1.maven.org", URI.create("https://repo1.maven.org/maven2/")));
+					.putSource(new HttpSource("repo1.maven.org", URI.create("https://repo1.maven.org/maven2/"),
+							repoPath(), 3, 10));
 		});
 	}
 

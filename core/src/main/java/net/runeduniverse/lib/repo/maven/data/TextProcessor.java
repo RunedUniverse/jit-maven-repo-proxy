@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.http.data;
+package net.runeduniverse.lib.repo.maven.data;
 
 import java.nio.charset.StandardCharsets;
 
@@ -34,7 +34,7 @@ public class TextProcessor extends AContentProcessor<String> {
 	@Override
 	public void process(byte[] bytes) {
 		// null is ignored
-		if (hasCompleted() || bytes == null)
+		if (isDone() || bytes == null)
 			return;
 		// init on first data
 		if (this.text == null)
