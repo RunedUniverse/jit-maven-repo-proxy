@@ -21,4 +21,6 @@ public interface RepositorySourceClient extends ArtifactProvider {
 
 	public RepositorySource getSource();
 
+	public void shutdownGracefully();
+
 }

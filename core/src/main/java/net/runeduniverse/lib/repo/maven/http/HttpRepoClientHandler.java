@@ -15,6 +15,8 @@
  */
 package net.runeduniverse.lib.repo.maven.http;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.lang3.StringUtils;
@@ -50,12 +52,10 @@ public class HttpRepoClientHandler extends SimpleChannelInboundHandler<HttpObjec
 
 		if (msg instanceof HttpResponse) {
 			readResponse(ctx, (HttpResponse) msg, dataRequest, processor);
-			return;
 		}
 
 		if (msg instanceof HttpContent) {
 			readContent(ctx, (HttpContent) msg, processor);
-			return;
 		}
 	}
 
@@ -90,17 +90,26 @@ public class HttpRepoClientHandler extends SimpleChannelInboundHandler<HttpObjec
 			ctx.close();
 			return;
 		}
-		if (statusCode <= 400) {
+		if (400 <= statusCode) {
 			ctx.close();
 			// -> retry -> it eventually throws RepoException
 		}
 
 		// process checksum headers if available
 		final HttpHeaders headers = response.headers();
+		// NOTE: headers may be written a lot of funny ways -> so we normalize all to
+		// lower case!
+		final Map<String, String> normNames = new HashMap<>();
+		for (String name : headers.names()) {
+			normNames.put(name.toLowerCase(), name);
+		}
 
 		for (Entry<String, AContentProcessor<?>> entry : dataRequest.subProcessorMap()
 				.entrySet()) {
-			final String value = StringUtils.trimToNull(headers.get("x-checksum-" + entry.getKey()));
+			final String name = normNames.get("x-checksum-" + entry.getKey());
+			if (name == null)
+				continue;
+			final String value = StringUtils.trimToNull(headers.get(name));
 			final AContentProcessor<?> checksumProcessor = entry.getValue();
 			if (checksumProcessor.isDone() || value == null)
 				continue;
@@ -113,11 +122,13 @@ public class HttpRepoClientHandler extends SimpleChannelInboundHandler<HttpObjec
 	protected void readContent(final ChannelHandlerContext ctx, final HttpContent httpContent,
 			final AContentProcessor<?> processor) {
 		final ByteBuf buf = httpContent.content();
-		final byte[] bytes = new byte[buf.readableBytes()];
 
-		buf.readBytes(bytes);
+		if (buf.isReadable()) {
+			final byte[] bytes = new byte[buf.readableBytes()];
 
-		processor.process(bytes);
+			buf.readBytes(bytes);
+			processor.process(bytes);
+		}
 
 		if (httpContent instanceof LastHttpContent) {
 			processor.complete();

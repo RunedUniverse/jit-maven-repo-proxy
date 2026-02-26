@@ -72,6 +72,12 @@ public class RequestingChannelFutureListener implements ChannelFutureListener {
 	}
 
 	protected void retry() {
+		// clear the last collected data
+		this.processor.reset();
+		if (this.processor.isDone()) {
+			execAfter();
+			return;
+		}
 		if (this.maxRetries < this.retryCnt.incrementAndGet()) {
 			// ok, we are done trying!
 			this.processor.completeExceptionally(new RepoException("Max Retries exceeded!"));

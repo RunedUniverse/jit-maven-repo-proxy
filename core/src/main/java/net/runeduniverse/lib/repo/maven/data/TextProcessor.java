@@ -32,6 +32,13 @@ public class TextProcessor extends AContentProcessor<String> {
 	}
 
 	@Override
+	public void reset() {
+		if (isDone())
+			return;
+		this.text = null;
+	}
+
+	@Override
 	public void process(byte[] bytes) {
 		// null is ignored
 		if (isDone() || bytes == null)

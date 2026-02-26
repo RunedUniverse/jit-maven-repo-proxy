@@ -41,6 +41,8 @@ public abstract class AContentProcessor<T> {
 		return this.future.isCancelled();
 	}
 
+	public abstract void reset();
+
 	public abstract void process(byte[] bytes);
 
 	public abstract void complete();

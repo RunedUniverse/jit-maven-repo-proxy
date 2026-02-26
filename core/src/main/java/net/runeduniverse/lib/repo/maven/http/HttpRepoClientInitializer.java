@@ -37,7 +37,7 @@ public class HttpRepoClientInitializer extends ChannelInitializer<SocketChannel>
 		final HttpDataRequest dataRequest = ch.attr(HttpRepoUtils.ATTKEY_HTTP_DATA_REQUEST)
 				.get();
 
-		if (dataRequest.getUriTLS()) {
+		if (dataRequest.withSSL()) {
 			if (this.sslContext == null) {
 				dataRequest.processor()
 						.completeExceptionally(new RepoException("SslContext was not initialized!"));
@@ -47,6 +47,7 @@ public class HttpRepoClientInitializer extends ChannelInitializer<SocketChannel>
 			pipeline.addLast(sslContext.newHandler(ch.alloc(), dataRequest.getHost(), dataRequest.getPort()));
 		}
 		pipeline.addLast(new HttpClientCodec());
+		pipeline.addLast(new HttpRepoClientHandler());
 	}
 
 }

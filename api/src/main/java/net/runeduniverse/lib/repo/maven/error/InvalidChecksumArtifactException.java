@@ -17,6 +17,8 @@ package net.runeduniverse.lib.repo.maven.error;
 
 public class InvalidChecksumArtifactException extends InvalidArtifactException {
 
+	public static final String MSG_MISSMATCH = "Checksum missmatch detected upon Artifact download!";
+
 	private static final long serialVersionUID = 1L;
 
 	protected final String checksumExt;
@@ -25,10 +27,19 @@ public class InvalidChecksumArtifactException extends InvalidArtifactException {
 
 	public InvalidChecksumArtifactException(final String checksumExt, final String localChecksum,
 			final String remoteChecksum) {
-		super("Checksum missmatch detected upon Artifact download!");
+		this(MSG_MISSMATCH, checksumExt, localChecksum, remoteChecksum);
+	}
+
+	public InvalidChecksumArtifactException(final String reason, final String checksumExt, final String localChecksum,
+			final String remoteChecksum) {
+		super(reason);
 		this.checksumExt = checksumExt;
 		this.localChecksum = localChecksum;
 		this.remoteChecksum = remoteChecksum;
+	}
+
+	public String getReason() {
+		return super.getMessage();
 	}
 
 	public String getChecksumExt() {
@@ -41,5 +52,19 @@ public class InvalidChecksumArtifactException extends InvalidArtifactException {
 
 	public String getRemoteChecksum() {
 		return this.remoteChecksum;
+	}
+
+	@Override
+	public String getMessage() {
+		final StringBuffer sb = new StringBuffer();
+		sb.append(getReason());
+		sb.append(" [ ");
+		sb.append(this.checksumExt);
+		sb.append(" » ");
+		sb.append(this.localChecksum);
+		sb.append(" / ");
+		sb.append(this.remoteChecksum);
+		sb.append(" ]");
+		return sb.toString();
 	}
 }

@@ -21,7 +21,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
-import net.runeduniverse.lib.repo.maven.api.ChecksumType;
 
 public abstract class AArtifactData implements ArtifactData {
 
@@ -41,7 +40,6 @@ public abstract class AArtifactData implements ArtifactData {
 		this.version = version;
 		this.classifier = classifier;
 		this.extension = extension;
-		ChecksumType.fill(this.checksums, t -> null);
 	}
 
 	public AArtifactData(final ArtifactDataCoordinates coords) {

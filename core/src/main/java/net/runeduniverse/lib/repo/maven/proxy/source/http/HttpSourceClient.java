@@ -106,6 +106,7 @@ public class HttpSourceClient implements RepositorySourceClient {
 		}
 	}
 
+	@Override
 	public void shutdownGracefully() {
 		this.loopGroup.shutdownGracefully();
 	}

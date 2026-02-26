@@ -96,11 +96,12 @@ public class HttpDataRequest {
 		return "https".equalsIgnoreCase(getScheme()) ? 443 : 80;
 	}
 
-	public boolean getUriTLS() {
+	public boolean withSSL() {
 		return "https".equalsIgnoreCase(getScheme());
 	}
 
 	public URI redirect(final String location) throws RedirectRepoException {
+		System.out.println("Redirect to: " + location);
 		if (StringUtils.isBlank(location)) {
 			throw new RedirectRepoException(RedirectRepoException.MSG_INVALID_REDIRECT, this.uri.toString(),
 					this.redirects, location);
@@ -111,24 +112,31 @@ public class HttpDataRequest {
 		URI redirected;
 		try {
 			redirected = new URI(location);
+			// handle maven central (sonatype) special
+			if (redirected.getPath()
+					.endsWith("501-https-required.html")) {
+				return this.uri = new URI(redirected.getScheme(), this.uri.getUserInfo(), redirected.getHost(),
+						redirected.getPort(), this.uri.getPath(), this.uri.getQuery(), this.uri.getFragment());
+			}
 		} catch (URISyntaxException cause) {
 			throw new RedirectRepoException(RedirectRepoException.MSG_INVALID_REDIRECT, this.uri.toString(),
 					this.redirects, location, cause);
 		}
+
 		this.uri = redirected.isAbsolute() ? redirected : this.uri.resolve(redirected);
 		this.redirects.add(this.uri.toString());
 		return this.uri;
 	}
 
 	public FullHttpRequest asHttpRequest() {
-		String path = uri.getRawPath();
+		String path = this.uri.getRawPath();
 		if (path == null || path.isEmpty()) {
 			path = "/";
 		}
 		final FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, path);
 		final HttpHeaders headers = request.headers();
 		headers.set(HttpHeaderNames.HOST, getHost());
-		headers.set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+		headers.set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
 		return request;
 	}
 

@@ -41,8 +41,6 @@ import net.runeduniverse.lib.repo.maven.error.InvalidChecksumArtifactException;
 
 public class HttpArtifactData extends AArtifactData implements ArtifactData {
 
-	protected final Map<String, String> checksums = new ConcurrentHashMap<>();
-
 	protected final Path repoPath;
 	protected final URI repoUri;
 	protected final int maxRedirects;
@@ -76,7 +74,7 @@ public class HttpArtifactData extends AArtifactData implements ArtifactData {
 	public String getGAVPath() {
 		if (this.gavPath == null) {
 			// net/runeduniverse/lib/utils/utils-common/1.0.0/
-			String.join("/", this.groupId.replace('.', '/'), this.artifactId, this.version);
+			this.gavPath = String.join("/", this.groupId.replace('.', '/'), this.artifactId, this.version);
 		}
 		return this.gavPath;
 	}
@@ -160,7 +158,8 @@ public class HttpArtifactData extends AArtifactData implements ArtifactData {
 			futures.add(textProcessor.future()
 					.handle((value, ignoredEx) -> {
 						// we don't care about checksum exceptions -> they are basically optional
-						HttpArtifactData.this.checksums.put(ext, value);
+						if (value != null)
+							HttpArtifactData.this.checksums.put(ext, value);
 						return value;
 					}));
 			subProcessorMap.put(ext, textProcessor);
