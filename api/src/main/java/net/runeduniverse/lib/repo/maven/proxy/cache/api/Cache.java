@@ -31,7 +31,7 @@ public interface Cache extends ArtifactProvider {
 
 			@Override
 			public CompletableFuture<ArtifactMetadata> getMetadata(final ArtifactCoordinates coords) {
-				return proxy.lookupMetadata(null, coords)
+				return proxy.lookupMetadata(coords)
 						.thenApply(metadata -> metadata);
 			}
 

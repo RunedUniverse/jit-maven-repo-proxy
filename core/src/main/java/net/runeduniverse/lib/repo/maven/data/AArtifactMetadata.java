@@ -15,21 +15,24 @@
  */
 package net.runeduniverse.lib.repo.maven.data;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+
 import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
 
 public abstract class AArtifactMetadata implements ArtifactMetadata {
 
-	protected final Set<String> versions;
+	protected final SortedSet<ComparableVersion> versions;
 	protected final String groupId;
 	protected final String artifactId;
 
-	protected String release = null;
-	protected String latest = null;
+	protected ComparableVersion release = null;
+	protected ComparableVersion latest = null;
 	protected String lastUpdated = null;
 
 	public AArtifactMetadata(final ArtifactCoordinates coords) {
@@ -37,10 +40,11 @@ public abstract class AArtifactMetadata implements ArtifactMetadata {
 	}
 
 	public AArtifactMetadata(final String groupId, final String artifactId) {
-		this(new HashSet<>(), groupId, artifactId);
+		this(new TreeSet<>(), groupId, artifactId);
 	}
 
-	public AArtifactMetadata(final Set<String> versions, final String groupId, final String artifactId) {
+	public AArtifactMetadata(final SortedSet<ComparableVersion> versions, final String groupId,
+			final String artifactId) {
 		this.versions = versions;
 		this.groupId = groupId;
 		this.artifactId = artifactId;
@@ -58,29 +62,51 @@ public abstract class AArtifactMetadata implements ArtifactMetadata {
 
 	@Override
 	public String getReleaseVersion() {
+		return getReleaseVersion2().toString();
+	}
+
+	public ComparableVersion getReleaseVersion2() {
 		return this.release;
 	}
 
 	@Override
 	public String getLatestVersion() {
+		return getLatestVersion2().toString();
+	}
+
+	public ComparableVersion getLatestVersion2() {
 		return this.latest;
 	}
 
 	@Override
 	public Set<String> getVersions() {
+		return this.versions.stream()
+				.map(ComparableVersion::toString)
+				.collect(Collectors.toSet());
+	}
+
+	public Set<ComparableVersion> getVersions2() {
 		return this.versions;
 	}
 
 	@Override
 	public String getLastUpdated() {
-		return this.lastUpdated;
+		return this.lastUpdated.toString();
 	}
 
 	public void setRelease(final String release) {
+		setRelease(new ComparableVersion(release));
+	}
+
+	public void setRelease(final ComparableVersion release) {
 		this.release = release;
 	}
 
 	public void setLatest(final String latest) {
+		setLatest(new ComparableVersion(latest));
+	}
+
+	public void setLatest(final ComparableVersion latest) {
 		this.latest = latest;
 	}
 
@@ -91,10 +117,16 @@ public abstract class AArtifactMetadata implements ArtifactMetadata {
 	public void addVersion(final String version) {
 		if (version == null)
 			return;
+		addVersion(new ComparableVersion(version));
+	}
+
+	public void addVersion(final ComparableVersion version) {
+		if (version == null)
+			return;
 		this.versions.add(version);
 	}
 
-	public CompletableFuture<ArtifactMetadata> asFuture() throws Exception {
+	public CompletableFuture<ArtifactMetadata> asFuture() {
 		return CompletableFuture.completedFuture(this);
 	}
 

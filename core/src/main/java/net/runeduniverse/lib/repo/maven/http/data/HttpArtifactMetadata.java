@@ -15,7 +15,6 @@
  */
 package net.runeduniverse.lib.repo.maven.http.data;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.net.URI;
 import java.util.LinkedList;

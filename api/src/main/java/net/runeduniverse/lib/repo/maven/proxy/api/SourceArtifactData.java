@@ -22,25 +22,25 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 
 public interface SourceArtifactData extends ArtifactData {
 
-	public RepositorySource source();
+	public String sourceKey();
 
-	public static SourceArtifactData wrap(final RepositorySource source, final ArtifactData data) {
-		return new WrappedAdapter(source, data);
+	public static SourceArtifactData wrap(final String sourceKey, final ArtifactData data) {
+		return new WrappedAdapter(sourceKey, data);
 	}
 
 	public static class WrappedAdapter implements SourceArtifactData {
 
-		protected final RepositorySource source;
+		protected final String sourceKey;
 		protected final ArtifactData data;
 
-		public WrappedAdapter(final RepositorySource source, final ArtifactData data) {
-			this.source = source;
+		public WrappedAdapter(final String sourceKey, final ArtifactData data) {
+			this.sourceKey = sourceKey;
 			this.data = data;
 		}
 
 		@Override
-		public RepositorySource source() {
-			return this.source;
+		public String sourceKey() {
+			return this.sourceKey;
 		}
 
 		public ArtifactData wrappedData() {

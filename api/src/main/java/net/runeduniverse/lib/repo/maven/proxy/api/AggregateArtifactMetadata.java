@@ -15,23 +15,16 @@
  */
 package net.runeduniverse.lib.repo.maven.proxy.api;
 
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-
-import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
-import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
-import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
-import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
 
-public interface MavenRepositoryProxyInstance extends MavenRepositoryInstance {
+public interface AggregateArtifactMetadata extends ArtifactMetadata {
 
-	public Cache cache();
+	public void updateRelease(String release);
 
-	public Map<String, RepositorySource> sources();
+	public void updateLatest(String latest);
 
-	public CompletableFuture<ArtifactMetadata> lookupMetadata(ArtifactCoordinates coords);
+	public void updateLastUpdated(String lastUpdated);
 
-	public CompletableFuture<SourceArtifactData> lookupArtifact(String sourceKey, ArtifactDataCoordinates coords);
+	public void add(ArtifactMetadata metadata);
 
 }

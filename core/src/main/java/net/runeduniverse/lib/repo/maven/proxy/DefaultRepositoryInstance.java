@@ -30,8 +30,8 @@ import net.runeduniverse.lib.repo.maven.proxy.api.MavenRepositoryProxyInstance;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySourceClient;
 import net.runeduniverse.lib.repo.maven.proxy.api.SourceArtifactData;
-import net.runeduniverse.lib.repo.maven.proxy.api.SourceArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
+import net.runeduniverse.lib.repo.maven.proxy.data.DefaultAggregateArtifactMetadata;
 
 public class DefaultRepositoryInstance implements MavenRepositoryProxyInstance {
 
@@ -71,32 +71,17 @@ public class DefaultRepositoryInstance implements MavenRepositoryProxyInstance {
 	}
 
 	@Override
-	public CompletableFuture<SourceArtifactMetadata> lookupMetadata(final String sourceKey,
-			final ArtifactCoordinates coords) {
-		final RepositorySource defSource = this.sources.get(sourceKey);
+	public CompletableFuture<ArtifactMetadata> lookupMetadata(final ArtifactCoordinates coords) {
+		final DefaultAggregateArtifactMetadata aggMetadata = new DefaultAggregateArtifactMetadata(coords);
+
 		RepositorySourceClient client;
-		if (defSource != null && (client = defSource.client()) != null) {
-			return client.getMetadata(coords)
-					.thenApply(metadata -> SourceArtifactMetadata.wrap(defSource, metadata));
-		}
-
-		final CompletableFuture<SourceArtifactMetadata> future = new CompletableFuture<>();
-		final List<CompletableFuture<Void>> upstream = new LinkedList<>();
-
 		for (RepositorySource source : this.sources.values()) {
 			if ((client = source.client()) == null)
 				continue;
-			upstream.add(client.getMetadata(coords)
-					.thenAccept(metadata -> {
-						if (metadata == null)
-							return;
-						future.complete(SourceArtifactMetadata.wrap(source, metadata));
-					}));
+			aggMetadata.track(client.getMetadata(coords));
 		}
-		CompletableFuture.allOf(upstream.toArray(new CompletableFuture[upstream.size()]))
-				.thenRun(() -> future.complete(null));
 
-		return future;
+		return aggMetadata.asFuture();
 	}
 
 	@Override
@@ -107,7 +92,7 @@ public class DefaultRepositoryInstance implements MavenRepositoryProxyInstance {
 		if (defSource != null && (client = defSource.client()) != null) {
 			return defSource.client()
 					.getArtifact(coords)
-					.thenApply(data -> SourceArtifactData.wrap(defSource, data));
+					.thenApply(data -> SourceArtifactData.wrap(sourceKey, data));
 		}
 
 		final CompletableFuture<SourceArtifactData> future = new CompletableFuture<>();
@@ -120,7 +105,7 @@ public class DefaultRepositoryInstance implements MavenRepositoryProxyInstance {
 					.thenAccept(data -> {
 						if (data == null)
 							return;
-						future.complete(SourceArtifactData.wrap(source, data));
+						future.complete(SourceArtifactData.wrap(source.key(), data));
 					}));
 		}
 		CompletableFuture.allOf(upstream.toArray(new CompletableFuture[upstream.size()]))

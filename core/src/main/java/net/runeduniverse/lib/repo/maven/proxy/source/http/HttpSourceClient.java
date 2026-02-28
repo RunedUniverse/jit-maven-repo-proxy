@@ -15,7 +15,6 @@
  */
 package net.runeduniverse.lib.repo.maven.proxy.source.http;
 
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import javax.net.ssl.SSLException;
 
