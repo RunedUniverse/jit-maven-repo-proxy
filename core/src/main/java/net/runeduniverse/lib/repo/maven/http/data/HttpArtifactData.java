@@ -39,7 +39,7 @@ import net.runeduniverse.lib.repo.maven.data.FileProcessor;
 import net.runeduniverse.lib.repo.maven.data.TextProcessor;
 import net.runeduniverse.lib.repo.maven.error.InvalidChecksumArtifactException;
 
-public class HttpArtifactData extends AArtifactData implements ArtifactData {
+public class HttpArtifactData extends AArtifactData {
 
 	protected final Path repoPath;
 	protected final URI repoUri;
@@ -113,13 +113,13 @@ public class HttpArtifactData extends AArtifactData implements ArtifactData {
 		return this.signaturePath;
 	}
 
-	public List<HttpDataRequest> getDataRequests() throws IOException {
+	public List<HttpDataRequest> getDataRequests() {
 		final List<HttpDataRequest> dataRequests = new LinkedList<>();
 		dataRequests.add(getArtifactRequest(this.repoUri, this.maxRedirects));
 		return dataRequests;
 	}
 
-	public CompletableFuture<ArtifactData> asFuture() throws IOException {
+	public CompletableFuture<ArtifactData> asFuture() {
 		final List<HttpDataRequest> dataRequests = getDataRequests();
 		final CompletableFuture<?>[] futures = new CompletableFuture<?>[dataRequests.size()];
 		for (int i = 0; i < dataRequests.size(); i++) {
@@ -130,8 +130,7 @@ public class HttpArtifactData extends AArtifactData implements ArtifactData {
 				.thenApply(v -> HttpArtifactData.this);
 	}
 
-	public synchronized HttpDataRequest getArtifactRequest(final URI repoUri, final int maxRedirects)
-			throws IOException {
+	public synchronized HttpDataRequest getArtifactRequest(final URI repoUri, final int maxRedirects) {
 		if (this.artifactRequest != null)
 			return this.artifactRequest;
 
@@ -144,12 +143,13 @@ public class HttpArtifactData extends AArtifactData implements ArtifactData {
 		final Map<String, MessageDigest> localChecksums = ChecksumType.tryFill(new ConcurrentHashMap<>(), null);
 		final FileProcessor fileProcessor = new FileProcessor(getArtifactPath(), localChecksums);
 		final CompletableFuture<?> fileFuture = fileProcessor.future();
-		futures.add(fileFuture.whenComplete((v, t) -> {
-			// file future is dominant! => kill all sub-processors others!
-			if (t != null)
-				subProcessorMap.values()
-						.forEach(p -> p.cancel(true));
-		}));
+		futures.add(fileFuture.thenApply(AArtifactData::throwNullAsNotFound)
+				.whenComplete((v, t) -> {
+					// file future is dominant! => kill all sub-processors others!
+					if (t != null)
+						subProcessorMap.values()
+								.forEach(p -> p.cancel(true));
+				}));
 
 		// --- Build Checksum Requests ---
 		for (ChecksumType type : ChecksumType.allEntries()) {

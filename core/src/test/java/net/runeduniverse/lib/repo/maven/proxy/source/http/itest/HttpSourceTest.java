@@ -18,11 +18,18 @@ package net.runeduniverse.lib.repo.maven.proxy.source.http.itest;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+
+import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
+import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.source.http.HttpSource;
 import net.runeduniverse.lib.repo.maven.proxy.source.itest.ASourceTest;
@@ -38,6 +45,50 @@ public class HttpSourceTest extends ASourceTest {
 		// mirror!
 		return new HttpSource("maven-central", URI.create("https://nexus.runeduniverse.net/repository/maven-central/"),
 				repoPath(), 3, 5);
+	}
+
+	@Test
+	@Tag("live")
+	public void downloadMetadata() throws Exception {
+		final ArtifactCoordinates coords = ArtifactCoordinates.request(//
+				"net.runeduniverse.tools.maven.r4m", "r4m-maven-extension");
+
+		final CompletableFuture<ArtifactMetadata> future = client().getMetadata(coords);
+
+		final ArtifactMetadata data = future.get();
+
+		// Metadata
+		final Set<String> versions = data.getVersions();
+		final String latest = data.getLatestVersion();
+		final String release = data.getReleaseVersion();
+
+		System.out.println("latest: " + latest);
+		System.out.println("release: " + release);
+		System.out.println("updated: " + data.getLastUpdated());
+		System.out.println("versions: " + String.join(", ", versions));
+
+		assertTrue(latest == null || versions.contains(latest), //
+				"versions-set must include the latest-version value");
+		assertTrue(release == null || versions.contains(release), //
+				"versions-set must include the release-version value");
+	}
+
+	@Test
+	@Tag("live")
+	public void downloadMetaNotFound() throws Exception {
+		final ArtifactCoordinates coords = ArtifactCoordinates.request(//
+				"net.runeduniverse.tools.maven.r4m", "r4m-maven-extensionX");
+
+		final CompletableFuture<ArtifactMetadata> future = client().getMetadata(coords);
+
+		Throwable t = null;
+		try {
+			future.get();
+		} catch (ExecutionException e) {
+			t = e.getCause();
+		}
+
+		assertInstanceOf(NotFoundArtifactException.class, t, "missing metadata should throw NotFoundArtifactException");
 	}
 
 	@Test
@@ -105,15 +156,14 @@ public class HttpSourceTest extends ASourceTest {
 
 		final CompletableFuture<ArtifactData> future = client().getArtifact(coords);
 
-		final ArtifactData data = future.get();
+		Throwable t = null;
+		try {
+			future.get();
+		} catch (ExecutionException e) {
+			t = e.getCause();
+		}
 
-		// Artifact
-		final Path artifact = data.getArtifactPath();
-		assertFileNotExists(artifact, "Artifact");
-
-		// Signature
-		final Path signature = data.getSignaturePath();
-		assertFileNotExists(signature, "Signature");
+		assertInstanceOf(NotFoundArtifactException.class, t, "missing artifact should throw NotFoundArtifactException");
 	}
 
 	protected void assertFileExists(final Path path, final String name) throws Exception {

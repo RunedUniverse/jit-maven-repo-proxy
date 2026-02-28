@@ -34,6 +34,7 @@ import net.runeduniverse.lib.repo.maven.http.HttpRepoClientInitializer;
 import net.runeduniverse.lib.repo.maven.http.HttpRepoUtils;
 import net.runeduniverse.lib.repo.maven.http.RequestingChannelFutureListener;
 import net.runeduniverse.lib.repo.maven.http.data.HttpArtifactData;
+import net.runeduniverse.lib.repo.maven.http.data.HttpArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.http.data.HttpDataRequest;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySourceClient;
@@ -84,8 +85,14 @@ public class HttpSourceClient implements RepositorySourceClient {
 
 	@Override
 	public CompletableFuture<ArtifactMetadata> getMetadata(final ArtifactCoordinates coords) {
-		// TODO implement lookup
-		return null;
+		final HttpArtifactMetadata artifactMetadata = new HttpArtifactMetadata(this.source.getRepoUri(),
+				this.maxRedirects, coords);
+
+		for (HttpDataRequest dataRequest : artifactMetadata.getDataRequests()) {
+			execRequest(dataRequest);
+		}
+
+		return artifactMetadata.asFuture();
 	}
 
 	@Override
@@ -93,17 +100,11 @@ public class HttpSourceClient implements RepositorySourceClient {
 		final HttpArtifactData artifactData = new HttpArtifactData(this.source.getLocalRepoPath(),
 				this.source.getRepoUri(), this.maxRedirects, coords);
 
-		try {
-			for (HttpDataRequest dataRequest : artifactData.getDataRequests()) {
-				execRequest(dataRequest);
-			}
-
-			return artifactData.asFuture();
-		} catch (IOException e) {
-			final CompletableFuture<ArtifactData> future = new CompletableFuture<>();
-			future.completeExceptionally(e);
-			return future;
+		for (HttpDataRequest dataRequest : artifactData.getDataRequests()) {
+			execRequest(dataRequest);
 		}
+
+		return artifactData.asFuture();
 	}
 
 	@Override

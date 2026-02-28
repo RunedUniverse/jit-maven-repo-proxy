@@ -24,7 +24,7 @@ import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.util.Map;
 
-public class FileProcessor extends AContentProcessor<Void> {
+public class FileProcessor extends AContentProcessor<Path> {
 
 	protected final Path resultPath;
 	protected final Path partPath;
@@ -108,13 +108,15 @@ public class FileProcessor extends AContentProcessor<Void> {
 			if (isDone())
 				return;
 			try {
-				if (this.stream != null) {
+				if (this.stream == null)
+					this.future.complete(null);
+				else {
 					this.stream.flush();
 					this.stream.close();
 					Files.move(this.partPath, this.resultPath, //
 							StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+					this.future.complete(this.resultPath);
 				}
-				this.future.complete(null);
 			} catch (IOException e) {
 				completeExceptionally(e);
 			}

@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
+import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
 
 public abstract class AArtifactData implements ArtifactData {
 
@@ -80,6 +81,12 @@ public abstract class AArtifactData implements ArtifactData {
 
 	public CompletableFuture<ArtifactData> asFuture() throws Exception {
 		return CompletableFuture.completedFuture(this);
+	}
+
+	protected static <T> T throwNullAsNotFound(final T value) {
+		if (value == null)
+			throw new NotFoundArtifactException();
+		return value;
 	}
 
 	protected static <T> T voidThrowable(final T value, final Throwable throwable) {
