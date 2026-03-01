@@ -23,6 +23,11 @@ public interface ArtifactDataCoordinates extends ArtifactCoordinates {
 
 	public String getExtension();
 
+	public static String key(final ArtifactDataCoordinates coords) {
+		return String.format("%s:%s:%s:%s:%s", coords.getGroupId(), coords.getArtifactId(), coords.getVersion(),
+				coords.getClassifier(), coords.getExtension());
+	}
+
 	public static ArtifactDataCoordinates request(final String groupId, final String artifactId, final String version,
 			final String classifier, final String extension) {
 		return new Request(groupId, artifactId, version, classifier, extension);

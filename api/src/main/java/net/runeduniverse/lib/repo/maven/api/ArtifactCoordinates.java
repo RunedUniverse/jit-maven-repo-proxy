@@ -21,6 +21,10 @@ public interface ArtifactCoordinates {
 
 	public String getArtifactId();
 
+	public static String key(final ArtifactCoordinates coords) {
+		return String.format("%s:%s", coords.getGroupId(), coords.getArtifactId());
+	}
+
 	public static ArtifactCoordinates request(final String groupId, final String artifactId) {
 		return new Request(groupId, artifactId);
 	}

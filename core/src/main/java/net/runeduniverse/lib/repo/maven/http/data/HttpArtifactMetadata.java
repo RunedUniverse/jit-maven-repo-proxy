@@ -46,7 +46,7 @@ public class HttpArtifactMetadata extends AArtifactMetadata {
 
 	public HttpArtifactMetadata(final URI repoUri, final int maxRedirects, //
 			final ArtifactCoordinates coords) {
-		super(coords.getGroupId(), coords.getArtifactId());
+		super(coords);
 
 		this.repoUri = repoUri;
 		this.maxRedirects = maxRedirects;

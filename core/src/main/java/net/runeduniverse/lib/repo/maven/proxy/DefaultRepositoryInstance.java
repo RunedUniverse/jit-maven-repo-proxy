@@ -19,6 +19,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -26,6 +27,7 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.api.MavenRepositoryProxyInstance;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySourceClient;
@@ -72,6 +74,7 @@ public class DefaultRepositoryInstance implements MavenRepositoryProxyInstance {
 
 	@Override
 	public CompletableFuture<ArtifactMetadata> lookupMetadata(final ArtifactCoordinates coords) {
+		System.err.println(ArtifactCoordinates.key(coords));
 		final DefaultAggregateArtifactMetadata aggMetadata = new DefaultAggregateArtifactMetadata(coords);
 
 		RepositorySourceClient client;
@@ -99,8 +102,18 @@ public class DefaultRepositoryInstance implements MavenRepositoryProxyInstance {
 	}
 
 	protected ArtifactMetadata interceptMetadataLookup(final RepositorySourceClient client,
-			final ArtifactCoordinates coords, final ArtifactMetadata metadata, final Throwable throwable)
-			throws Throwable {
+			final ArtifactCoordinates coords, final ArtifactMetadata metadata, Throwable throwable) throws Throwable {
+		if (throwable instanceof CompletionException)
+			throwable = throwable.getCause();
+		if (throwable instanceof NotFoundArtifactException) {
+			// not found is handled in aggregation
+			throw throwable;
+		} else if (throwable != null) {
+			// log and re-throw
+			throwable.printStackTrace(System.err);
+			throw throwable;
+		}
+
 		// TODO do something with it!
 		return metadata;
 	}
@@ -148,13 +161,16 @@ public class DefaultRepositoryInstance implements MavenRepositoryProxyInstance {
 	}
 
 	protected ArtifactData interceptArtifactLookup(final RepositorySourceClient client,
-			final ArtifactCoordinates coords, final boolean exact, final ArtifactData data, final Throwable throwable)
+			final ArtifactCoordinates coords, final boolean exact, final ArtifactData data, Throwable throwable)
 			throws Throwable {
+		if (throwable instanceof CompletionException)
+			throwable = throwable.getCause();
 		if (throwable != null) {
 			// exactly that source was requested -> errors are deserved
 			if (exact)
 				throw throwable;
 			// bury it! -> if 1 fails all do!
+			throwable.printStackTrace(System.err);
 			return data;
 		}
 

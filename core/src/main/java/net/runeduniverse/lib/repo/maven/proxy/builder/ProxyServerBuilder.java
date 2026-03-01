@@ -23,6 +23,7 @@ import java.util.function.Function;
 import net.runeduniverse.lib.repo.maven.api.FileContentType;
 import net.runeduniverse.lib.repo.maven.proxy.ProxyServer;
 import net.runeduniverse.lib.repo.maven.proxy.api.MavenRepositoryProxyInstance;
+import net.runeduniverse.lib.repo.maven.proxy.cache.DefaultCache;
 import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
 
 public class ProxyServerBuilder {
@@ -32,7 +33,7 @@ public class ProxyServerBuilder {
 	protected final Map<String, FileContentType> fTypeMap = new LinkedHashMap<>();
 
 	protected Function<String, RepoInstanceBuilder> repoBuilderFactory = RepoInstanceBuilder::new;
-	protected Function<MavenRepositoryProxyInstance, Cache> cacheFactory = Cache::uncached;
+	protected Function<MavenRepositoryProxyInstance, Cache> cacheFactory = DefaultCache::new;
 
 	public ProxyServerBuilder setInstanceBuilderFactory(Function<String, RepoInstanceBuilder> factory) {
 		this.repoBuilderFactory = factory;
@@ -51,8 +52,8 @@ public class ProxyServerBuilder {
 		return this;
 	}
 
-	public ProxyServerBuilder cacheFactory(final Function<MavenRepositoryProxyInstance, Cache> factory) {
-		this.cacheFactory = factory == null ? Cache::uncached : factory;
+	public ProxyServerBuilder setCacheFactory(final Function<MavenRepositoryProxyInstance, Cache> factory) {
+		this.cacheFactory = factory == null ? DefaultCache::new : factory;
 		return this;
 	}
 

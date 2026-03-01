@@ -32,6 +32,10 @@ public abstract class ASourceTest {
 	protected RepositorySource source = null;
 	protected RepositorySourceClient client = null;
 
+	public long timeout() {
+		return 10;
+	}
+
 	public Path repoPath() {
 		return this.repoPath;
 	}

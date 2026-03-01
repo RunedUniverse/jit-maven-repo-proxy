@@ -29,7 +29,6 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.data.AArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.data.ComparableVersion;
-import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.api.AggregateArtifactMetadata;
 
 public class DefaultAggregateArtifactMetadata extends AArtifactMetadata implements AggregateArtifactMetadata {
@@ -102,7 +101,7 @@ public class DefaultAggregateArtifactMetadata extends AArtifactMetadata implemen
 		this.releaseLock.writeLock()
 				.lock();
 		try {
-			if (0 < this.release.compareTo(release))
+			if (release != null && (this.release == null || 0 < this.release.compareTo(release)))
 				this.release = release;
 		} finally {
 			this.releaseLock.writeLock()
@@ -114,7 +113,7 @@ public class DefaultAggregateArtifactMetadata extends AArtifactMetadata implemen
 		this.latestLock.writeLock()
 				.lock();
 		try {
-			if (0 < this.latest.compareTo(latest))
+			if (latest != null && (this.latest == null || 0 < this.latest.compareTo(latest)))
 				this.latest = latest;
 		} finally {
 			this.latestLock.writeLock()
@@ -130,9 +129,8 @@ public class DefaultAggregateArtifactMetadata extends AArtifactMetadata implemen
 		this.lastUpdatedLock.writeLock()
 				.lock();
 		try {
-			if (Long.parseLong(this.lastUpdated) < Long.parseLong(lastUpdated)) {
+			if (this.lastUpdated == null || Long.parseLong(this.lastUpdated) < Long.parseLong(lastUpdated))
 				this.lastUpdated = lastUpdated;
-			}
 		} finally {
 			this.lastUpdatedLock.writeLock()
 					.unlock();
@@ -142,7 +140,10 @@ public class DefaultAggregateArtifactMetadata extends AArtifactMetadata implemen
 	@Override
 	public void add(final ArtifactMetadata metadata) {
 		// validate
-		if (metadata == null)
+		if (metadata instanceof AArtifactMetadata) {
+			add2((AArtifactMetadata) metadata);
+			return;
+		} else if (metadata == null)
 			return;
 		// track all versions
 		for (String version : metadata.getVersions()) {
@@ -154,7 +155,7 @@ public class DefaultAggregateArtifactMetadata extends AArtifactMetadata implemen
 		updateLastUpdated(metadata.getLastUpdated());
 	}
 
-	protected void add2(final AArtifactMetadata metadata) {
+	public void add2(final AArtifactMetadata metadata) {
 		// validate
 		if (metadata == null)
 			return;
@@ -173,19 +174,18 @@ public class DefaultAggregateArtifactMetadata extends AArtifactMetadata implemen
 				.handle(AArtifactMetadata::voidThrowable));
 	}
 
-	protected <T> T removeCompletedFutures(final T obj) {
+	protected ArtifactMetadata finalizeFuture(final Object obj) {
 		for (Iterator<CompletableFuture<Void>> i = this.trackedFutures.iterator(); i.hasNext();) {
 			final CompletableFuture<Void> future = i.next();
 			if (future.isDone())
 				i.remove();
 		}
-		return obj;
+		return this.versions.isEmpty() ? null : this;
 	}
 
 	@Override
 	public CompletableFuture<ArtifactMetadata> asFuture() {
 		return CompletableFuture.allOf(this.trackedFutures.toArray(new CompletableFuture<?>[0]))
-				.thenApply(DefaultAggregateArtifactMetadata.this::removeCompletedFutures)
-				.thenApply(v -> DefaultAggregateArtifactMetadata.this);
+				.thenApply(DefaultAggregateArtifactMetadata.this::finalizeFuture);
 	}
 }

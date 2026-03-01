@@ -41,7 +41,7 @@ public class TextProcessor extends AContentProcessor<String> {
 	@Override
 	public void process(byte[] bytes) {
 		// null is ignored
-		if (isDone() || bytes == null)
+		if (isDone() || bytes == null || bytes.length == 0)
 			return;
 		// init on first data
 		if (this.text == null)

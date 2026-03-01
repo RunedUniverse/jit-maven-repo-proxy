@@ -18,6 +18,7 @@ package net.runeduniverse.lib.repo.maven.data;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
@@ -47,7 +48,6 @@ public class FileProcessor extends AContentProcessor<Path> {
 			Files.createDirectories(this.resultPath.getParent());
 			this.stream = Files.newOutputStream(this.partPath, //
 					StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
-
 			return this.stream;
 		}
 	}
@@ -86,7 +86,7 @@ public class FileProcessor extends AContentProcessor<Path> {
 	@Override
 	public void process(final byte[] bytes) {
 		synchronized (this.future) {
-			if (isDone() || bytes == null)
+			if (isDone() || bytes == null || bytes.length == 0)
 				return;
 			try {
 				stream().write(bytes);
@@ -108,15 +108,16 @@ public class FileProcessor extends AContentProcessor<Path> {
 			if (isDone())
 				return;
 			try {
-				if (this.stream == null)
-					this.future.complete(null);
-				else {
+				if (this.stream != null) {
 					this.stream.flush();
 					this.stream.close();
-					Files.move(this.partPath, this.resultPath, //
-							StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-					this.future.complete(this.resultPath);
+					if (Files.exists(this.partPath, LinkOption.NOFOLLOW_LINKS)) {
+						Files.move(this.partPath, this.resultPath, //
+								StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+						this.future.complete(this.resultPath);
+					}
 				}
+				this.future.complete(null);
 			} catch (IOException e) {
 				completeExceptionally(e);
 			}

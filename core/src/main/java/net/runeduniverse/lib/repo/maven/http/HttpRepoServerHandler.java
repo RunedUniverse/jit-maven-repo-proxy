@@ -50,6 +50,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.regex.Pattern;
@@ -179,15 +180,15 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 			if (FileContentType.CHECKSUM == this.fTypeMap.getOrDefault(splitExt.getLast(), FileContentType.DATA)) {
 				isChecksum = true;
 				fileType = splitExt.pollLast();
-				extension = String.join("\\.", splitExt);
+				extension = String.join(".", splitExt);
 			} else {
 				isChecksum = false;
-				extension = fileType = String.join("\\.", splitExt);
+				extension = fileType = String.join(".", splitExt);
 			}
 		}
 
 		if (!"xml".equals(extension)) {
-			sendError(ctx, request, BAD_REQUEST);
+			sendError(ctx, request, NOT_FOUND);
 			return;
 		}
 
@@ -201,20 +202,22 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 				ctx.close();
 				return;
 			}
-			if (throwable instanceof CompletionException) {
+			// unwrap the exception, if wrapped
+			if (throwable instanceof CompletionException)
 				throwable = throwable.getCause();
-				// handle errors
+			// handle errors
+			if (throwable != null) {
 				if (throwable instanceof NotFoundArtifactException)
 					sendError(ctx, request, NOT_FOUND);
 				else if (throwable instanceof ForbiddenArtifactException)
 					sendError(ctx, request, FORBIDDEN);
 				else if (throwable instanceof UnauthorizedArtifactException)
 					sendError(ctx, request, UNAUTHORIZED);
-				return;
-			}
-			if (throwable != null) {
-				sendError(ctx, request, INTERNAL_SERVER_ERROR);
-				logger.error("artifact metadata resolution failed!", throwable);
+				else {
+					sendError(ctx, request, INTERNAL_SERVER_ERROR);
+					logger.error("artifact metadata resolution failed!", throwable);
+					throwable.printStackTrace(System.err);
+				}
 				return;
 			}
 			if (metadata == null) {
@@ -347,10 +350,10 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 
 			if (fileType == extension) {
 				// artifact
-				sendFileData(ctx, request, data.getArtifactPath(), fileName, fileType);
+				sendFileData(ctx, request, data.getArtifactPath(), fileName, fileType, data.getChecksums());
 			} else if (contentType == FileContentType.SIGNATURE) {
 				// asc = pgp-signature
-				sendFileData(ctx, request, data.getSignaturePath(), fileName, fileType);
+				sendFileData(ctx, request, data.getSignaturePath(), fileName, fileType, data.getChecksums());
 			} else {
 				// checksums
 				final String textData = data.getChecksums()
@@ -365,7 +368,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 	}
 
 	protected void sendFileData(final ChannelHandlerContext ctx, final FullHttpRequest request, final Path dataPath,
-			final String fileName, final String fileType) {
+			final String fileName, final String fileType, final Map<String, String> checksums) {
 		FileChannel fileChannel;
 		final long fileLength;
 		try {
@@ -378,6 +381,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 
 		final HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
 		setContentHeaders(response, fileLength, fileName, fileType);
+		setChecksumHeaders(response, checksums);
 		setCommonHeaders(request, response);
 
 		// Write the initial line and the header
@@ -422,6 +426,14 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 		headers.set(HttpHeaderNames.CONTENT_TYPE,
 				this.fType2cTypeMap.getOrDefault(fileType, "application/octet-stream"));
 		headers.set("X-Content-Type-Options", "nosniff");
+	}
+
+	protected void setChecksumHeaders(final HttpResponse response, final Map<String, String> checksums) {
+		final HttpHeaders headers = response.headers();
+
+		for (Entry<String, String> entry : checksums.entrySet()) {
+			headers.set("x-checksum-" + entry.getKey(), entry.getValue());
+		}
 	}
 
 	protected void setCommonHeaders(final FullHttpRequest request, final HttpResponse response) {

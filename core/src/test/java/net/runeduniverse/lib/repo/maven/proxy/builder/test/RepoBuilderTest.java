@@ -41,7 +41,7 @@ public class RepoBuilderTest {
 		print("starting test");
 
 		ProxyServer server = new ProxyServerBuilder()//
-				.cacheFactory(null)
+				.setCacheFactory(null)
 				.instance("maven-central", instance -> {
 					instance.putSource(new HttpSource("repo1.maven.org", URI.create("https://repo1.maven.org/maven2/"),
 							this.repoPath, 3, 10));

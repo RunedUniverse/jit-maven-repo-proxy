@@ -18,6 +18,8 @@ package net.runeduniverse.lib.repo.maven.proxy.itest;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -52,7 +54,7 @@ public class NotFoundTest extends ARepoTest {
 
 	@Test
 	@Tag("live")
-	public void notFoundMetadata() throws InterruptedException {
+	public void notFoundMetadata() throws InterruptedException, TimeoutException {
 		final ArtifactCoordinates coords = ArtifactCoordinates.request(//
 				"net.runeduniverse", "missing-artifact");
 
@@ -60,7 +62,7 @@ public class NotFoundTest extends ARepoTest {
 
 		Throwable t = null;
 		try {
-			future.get();
+			future.get(timeout(), TimeUnit.SECONDS);
 		} catch (ExecutionException e) {
 			t = e.getCause();
 		}
@@ -71,12 +73,14 @@ public class NotFoundTest extends ARepoTest {
 		} catch (Error e) {
 			t.printStackTrace();
 			throw e;
+		} finally {
+			shutdown();
 		}
 	}
 
 	@Test
 	@Tag("live")
-	public void notFoundArtifact() throws InterruptedException {
+	public void notFoundArtifact() throws InterruptedException, TimeoutException {
 		final ArtifactDataCoordinates coords = ArtifactDataCoordinates.request(//
 				"net.runeduniverse", "missing-artifact", "1", null, "jar");
 
@@ -84,7 +88,7 @@ public class NotFoundTest extends ARepoTest {
 
 		Throwable t = null;
 		try {
-			future.get();
+			future.get(timeout(), TimeUnit.SECONDS);
 		} catch (ExecutionException e) {
 			t = e.getCause();
 		}

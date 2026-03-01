@@ -15,31 +15,8 @@
  */
 package net.runeduniverse.lib.repo.maven.proxy.cache.api;
 
-import java.util.concurrent.CompletableFuture;
-
-import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
-import net.runeduniverse.lib.repo.maven.api.ArtifactData;
-import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
-import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
-import net.runeduniverse.lib.repo.maven.proxy.api.MavenRepositoryProxyInstance;
 
 public interface Cache extends ArtifactProvider {
 
-	public static Cache uncached(final MavenRepositoryProxyInstance proxy) {
-		return new Cache() {
-
-			@Override
-			public CompletableFuture<ArtifactMetadata> getMetadata(final ArtifactCoordinates coords) {
-				return proxy.lookupMetadata(coords)
-						.thenApply(metadata -> metadata);
-			}
-
-			@Override
-			public CompletableFuture<ArtifactData> getArtifact(final ArtifactDataCoordinates coords) {
-				return proxy.lookupArtifact(null, coords)
-						.thenApply(data -> data);
-			}
-		};
-	}
 }
