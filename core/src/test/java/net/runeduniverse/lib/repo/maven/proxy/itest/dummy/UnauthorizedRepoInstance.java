@@ -18,11 +18,13 @@ package net.runeduniverse.lib.repo.maven.proxy.itest.dummy;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import net.runeduniverse.lib.repo.maven.api.ArtifactData;
+import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
+import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.error.UnauthorizedArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.DefaultRepositoryInstance;
 import net.runeduniverse.lib.repo.maven.proxy.api.MavenRepositoryProxyInstance;
+import net.runeduniverse.lib.repo.maven.proxy.api.SourceArtifactData;
 import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
 
 public class UnauthorizedRepoInstance extends DefaultRepositoryInstance {
@@ -31,15 +33,16 @@ public class UnauthorizedRepoInstance extends DefaultRepositoryInstance {
 		super(path, factory);
 	}
 
-	public CompletableFuture<ArtifactMetadata> lookupMetadata(String groupId, String artifactId) {
-		CompletableFuture<ArtifactMetadata> future = CompletableFuture.supplyAsync(() -> null);
+	@Override
+	public CompletableFuture<ArtifactMetadata> lookupMetadata(ArtifactCoordinates coords) {
+		final CompletableFuture<ArtifactMetadata> future = new CompletableFuture<>();
 		future.completeExceptionally(new UnauthorizedArtifactException());
 		return future;
 	}
 
-	public CompletableFuture<ArtifactData> lookupArtifact(String groupId, String artifactId, String classifier,
-			String extension, String version) {
-		CompletableFuture<ArtifactData> future = CompletableFuture.supplyAsync(() -> null);
+	@Override
+	public CompletableFuture<SourceArtifactData> lookupArtifact(String sourceKey, ArtifactDataCoordinates coords) {
+		final CompletableFuture<SourceArtifactData> future = new CompletableFuture<>();
 		future.completeExceptionally(new UnauthorizedArtifactException());
 		return future;
 	}

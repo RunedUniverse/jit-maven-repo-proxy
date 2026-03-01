@@ -18,10 +18,13 @@ package net.runeduniverse.lib.repo.maven.proxy.itest.dummy;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import net.runeduniverse.lib.repo.maven.api.ArtifactData;
+import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
+import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.DefaultRepositoryInstance;
 import net.runeduniverse.lib.repo.maven.proxy.api.MavenRepositoryProxyInstance;
+import net.runeduniverse.lib.repo.maven.proxy.api.SourceArtifactData;
 import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
 
 public class NotFoundRepoInstance extends DefaultRepositoryInstance {
@@ -30,13 +33,18 @@ public class NotFoundRepoInstance extends DefaultRepositoryInstance {
 		super(path, factory);
 	}
 
-	public CompletableFuture<ArtifactMetadata> lookupMetadata(String groupId, String artifactId) {
-		return CompletableFuture.completedFuture(null);
+	@Override
+	public CompletableFuture<ArtifactMetadata> lookupMetadata(ArtifactCoordinates coords) {
+		final CompletableFuture<ArtifactMetadata> future = new CompletableFuture<>();
+		future.completeExceptionally(new NotFoundArtifactException());
+		return future;
 	}
 
-	public CompletableFuture<ArtifactData> lookupArtifact(String groupId, String artifactId, String classifier,
-			String extension, String version) {
-		return CompletableFuture.completedFuture(null);
+	@Override
+	public CompletableFuture<SourceArtifactData> lookupArtifact(String sourceKey, ArtifactDataCoordinates coords) {
+		final CompletableFuture<SourceArtifactData> future = new CompletableFuture<>();
+		future.completeExceptionally(new NotFoundArtifactException());
+		return future;
 	}
 
 }

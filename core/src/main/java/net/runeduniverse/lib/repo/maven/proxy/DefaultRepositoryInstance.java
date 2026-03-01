@@ -78,21 +78,41 @@ public class DefaultRepositoryInstance implements MavenRepositoryProxyInstance {
 		for (RepositorySource source : this.sources.values()) {
 			if ((client = source.client()) == null)
 				continue;
-			aggMetadata.track(client.getMetadata(coords));
+			aggMetadata.track(attachToMetadataLookup(client, coords, client.getMetadata(coords)));
 		}
 
 		return aggMetadata.asFuture();
 	}
 
+	protected CompletableFuture<ArtifactMetadata> attachToMetadataLookup(final RepositorySourceClient client,
+			final ArtifactCoordinates coords, final CompletableFuture<ArtifactMetadata> upstream) {
+		final CompletableFuture<ArtifactMetadata> future = new CompletableFuture<>();
+		upstream.handle((v, t) -> {
+			try {
+				future.complete(DefaultRepositoryInstance.this.interceptMetadataLookup(client, coords, v, t));
+			} catch (Throwable e) {
+				future.completeExceptionally(e);
+			}
+			return v;
+		});
+		return future;
+	}
+
+	protected ArtifactMetadata interceptMetadataLookup(final RepositorySourceClient client,
+			final ArtifactCoordinates coords, final ArtifactMetadata metadata, final Throwable throwable)
+			throws Throwable {
+		// TODO do something with it!
+		return metadata;
+	}
+
 	@Override
 	public CompletableFuture<SourceArtifactData> lookupArtifact(final String sourceKey,
 			final ArtifactDataCoordinates coords) {
-		final RepositorySource defSource = this.sources.get(sourceKey);
+		final RepositorySource defSource = sourceKey == null ? null : this.sources.get(sourceKey);
 		RepositorySourceClient client;
 		if (defSource != null && (client = defSource.client()) != null) {
-			return defSource.client()
-					.getArtifact(coords)
-					.thenApply(data -> SourceArtifactData.wrap(sourceKey, data));
+			return attachToArtifactLookup(client, coords, true, defSource.client()
+					.getArtifact(coords)).thenApply(data -> SourceArtifactData.wrap(sourceKey, data));
 		}
 
 		final CompletableFuture<SourceArtifactData> future = new CompletableFuture<>();
@@ -101,16 +121,44 @@ public class DefaultRepositoryInstance implements MavenRepositoryProxyInstance {
 		for (RepositorySource source : this.sources.values()) {
 			if ((client = source.client()) == null)
 				continue;
-			upstream.add(client.getArtifact(coords)
-					.thenAccept(data -> {
-						if (data == null)
-							return;
-						future.complete(SourceArtifactData.wrap(source.key(), data));
-					}));
+			upstream.add(attachToArtifactLookup(client, coords, false, client.getArtifact(coords)).thenAccept(data -> {
+				if (data == null)
+					return;
+				future.complete(SourceArtifactData.wrap(source.key(), data));
+			}));
 		}
-		CompletableFuture.allOf(upstream.toArray(new CompletableFuture[upstream.size()]))
+		CompletableFuture.allOf(upstream.toArray(new CompletableFuture<?>[0]))
 				.thenRun(() -> future.complete(null));
 
 		return future;
+	}
+
+	protected CompletableFuture<ArtifactData> attachToArtifactLookup(final RepositorySourceClient client,
+			final ArtifactCoordinates coords, final boolean exact, final CompletableFuture<ArtifactData> upstream) {
+		final CompletableFuture<ArtifactData> future = new CompletableFuture<>();
+		upstream.handle((v, t) -> {
+			try {
+				future.complete(DefaultRepositoryInstance.this.interceptArtifactLookup(client, coords, exact, v, t));
+			} catch (Throwable e) {
+				future.completeExceptionally(e);
+			}
+			return v;
+		});
+		return future;
+	}
+
+	protected ArtifactData interceptArtifactLookup(final RepositorySourceClient client,
+			final ArtifactCoordinates coords, final boolean exact, final ArtifactData data, final Throwable throwable)
+			throws Throwable {
+		if (throwable != null) {
+			// exactly that source was requested -> errors are deserved
+			if (exact)
+				throw throwable;
+			// bury it! -> if 1 fails all do!
+			return data;
+		}
+
+		// TODO do something with it!
+		return data;
 	}
 }

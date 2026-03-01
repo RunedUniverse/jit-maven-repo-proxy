@@ -19,6 +19,7 @@ import java.net.URI;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.builder.ProxyServerBuilder;
 import net.runeduniverse.lib.repo.maven.proxy.itest.dummy.UnauthorizedRepoInstance;
 import net.runeduniverse.lib.repo.maven.proxy.source.http.HttpSource;
@@ -26,13 +27,18 @@ import net.runeduniverse.lib.repo.maven.proxy.source.http.HttpSource;
 public class UnauthorizedTest extends ARepoTest {
 
 	@Override
-	protected ProxyServerBuilder configure(ProxyServerBuilder builder) {
+	protected ProxyServerBuilder configureServer(ProxyServerBuilder builder) {
 		return builder.instance("maven-central", instance -> {
 			// ensure no artifact is ever found
-			instance.setInstanceFacory(UnauthorizedRepoInstance::new)
-					.putSource(new HttpSource("repo1.maven.org", URI.create("https://repo1.maven.org/maven2/"),
-							repoPath(), 3, 10));
+			instance.setInstanceFacory(UnauthorizedRepoInstance::new);
 		});
+	}
+
+	@Override
+	protected RepositorySource configureClient() {
+		return new HttpSource("proxy",
+				URI.create(String.format("http://%s/repository/maven-central/", this.socketAddress.getHostString())),
+				clientPath(), 3, 5);
 	}
 
 	@Test

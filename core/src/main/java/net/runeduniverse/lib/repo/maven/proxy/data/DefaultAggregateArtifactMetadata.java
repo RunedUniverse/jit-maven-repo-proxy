@@ -29,6 +29,7 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.data.AArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.data.ComparableVersion;
+import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.api.AggregateArtifactMetadata;
 
 public class DefaultAggregateArtifactMetadata extends AArtifactMetadata implements AggregateArtifactMetadata {
@@ -168,7 +169,8 @@ public class DefaultAggregateArtifactMetadata extends AArtifactMetadata implemen
 	}
 
 	public void track(final CompletableFuture<ArtifactMetadata> future) {
-		this.trackedFutures.add(future.thenAccept(this::add));
+		this.trackedFutures.add(future.thenAccept(this::add)
+				.handle(AArtifactMetadata::voidThrowable));
 	}
 
 	protected <T> T removeCompletedFutures(final T obj) {

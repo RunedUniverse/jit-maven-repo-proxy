@@ -32,6 +32,8 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.LastHttpContent;
 import net.runeduniverse.lib.repo.maven.data.AContentProcessor;
 import net.runeduniverse.lib.repo.maven.error.ForbiddenArtifactException;
+import net.runeduniverse.lib.repo.maven.error.InvalidArtifactException;
+import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
 import net.runeduniverse.lib.repo.maven.error.UnauthorizedArtifactException;
 import net.runeduniverse.lib.repo.maven.http.data.HttpDataRequest;
 
@@ -68,7 +70,6 @@ public class HttpRepoClientHandler extends SimpleChannelInboundHandler<HttpObjec
 		default:
 			break;
 		case 204: // [ No Content ]
-		case 404: // [ Not Found ]
 			processor.complete();
 			ctx.close();
 			return;
@@ -89,10 +90,19 @@ public class HttpRepoClientHandler extends SimpleChannelInboundHandler<HttpObjec
 			processor.completeExceptionally(new ForbiddenArtifactException());
 			ctx.close();
 			return;
+		case 404: // [ Not Found ]
+			processor.completeExceptionally(new NotFoundArtifactException());
+			ctx.close();
+			return;
 		}
-		if (400 <= statusCode) {
+		if (500 <= statusCode) {
 			ctx.close();
 			// -> retry -> it eventually throws RepoException
+		}
+		if (400 <= statusCode) {
+			// -> I got invalid request data ...
+			processor.completeExceptionally(new InvalidArtifactException());
+			ctx.close();
 		}
 
 		// process checksum headers if available
@@ -135,5 +145,4 @@ public class HttpRepoClientHandler extends SimpleChannelInboundHandler<HttpObjec
 			ctx.close();
 		}
 	}
-
 }

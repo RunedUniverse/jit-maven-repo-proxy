@@ -38,6 +38,7 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
 import net.runeduniverse.lib.repo.maven.api.ChecksumType;
 import net.runeduniverse.lib.repo.maven.api.FileContentType;
 import net.runeduniverse.lib.repo.maven.error.ForbiddenArtifactException;
+import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
 import net.runeduniverse.lib.repo.maven.error.UnauthorizedArtifactException;
 
 import java.io.IOException;
@@ -50,6 +51,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -200,7 +202,9 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 			}
 			if (throwable != null) {
 				// handle errors
-				if (throwable instanceof ForbiddenArtifactException)
+				if (throwable instanceof NotFoundArtifactException)
+					sendError(ctx, request, NOT_FOUND);
+				else if (throwable instanceof ForbiddenArtifactException)
 					sendError(ctx, request, FORBIDDEN);
 				else if (throwable instanceof UnauthorizedArtifactException)
 					sendError(ctx, request, UNAUTHORIZED);
@@ -263,7 +267,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 			final String coreName = artifactId + '-' + version;
 			final int nameSplit = coreName.length();
 			final int fileNameLength = fileName.length();
-			if (!fileName.startsWith(coreName) || (nameSplit + 1) < fileNameLength) {
+			if (!fileName.startsWith(coreName) || fileNameLength <= (nameSplit + 1)) {
 				sendError(ctx, request, BAD_REQUEST);
 				return;
 			}
@@ -314,18 +318,23 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 			if (!ctx.channel()
 					.isActive()) {
 				// client disconnected
+				ctx.close();
 				return;
 			}
-			if (throwable != null) {
+			if (throwable instanceof CompletionException) {
+				throwable = throwable.getCause();
 				// handle errors
-				if (throwable instanceof ForbiddenArtifactException)
+				if (throwable instanceof NotFoundArtifactException)
+					sendError(ctx, request, NOT_FOUND);
+				else if (throwable instanceof ForbiddenArtifactException)
 					sendError(ctx, request, FORBIDDEN);
 				else if (throwable instanceof UnauthorizedArtifactException)
 					sendError(ctx, request, UNAUTHORIZED);
-				else {
-					sendError(ctx, request, INTERNAL_SERVER_ERROR);
-					logger.error("artifact resolution failed!", throwable);
-				}
+				return;
+			}
+			if (throwable != null) {
+				sendError(ctx, request, INTERNAL_SERVER_ERROR);
+				logger.error("artifact resolution failed!", throwable);
 				return;
 			}
 			if (data == null) {

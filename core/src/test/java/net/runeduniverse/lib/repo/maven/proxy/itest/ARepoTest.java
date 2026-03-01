@@ -17,38 +17,51 @@ package net.runeduniverse.lib.repo.maven.proxy.itest;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.netty.channel.Channel;
 import net.runeduniverse.lib.repo.maven.proxy.builder.ProxyServerBuilder;
 import net.runeduniverse.lib.repo.maven.proxy.ProxyServer;
+import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
+import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySourceClient;
 
-@TestInstance(Lifecycle.PER_CLASS)
 public abstract class ARepoTest {
 
 	@TempDir
 	protected Path repoPath;
+	@TempDir
+	protected Path clientPath;
 
 	protected ProxyServer server = null;
-	protected SocketAddress socketAddress = null;
+	protected InetSocketAddress socketAddress = null;
 	protected Channel channel = null;
+
+	protected RepositorySource source = null;
+	protected RepositorySourceClient client = null;
 
 	public Path repoPath() {
 		return this.repoPath;
 	}
 
-	protected abstract ProxyServerBuilder configure(ProxyServerBuilder builder);
+	public Path clientPath() {
+		return this.repoPath;
+	}
 
-	@BeforeAll
+	public RepositorySourceClient client() {
+		return this.client;
+	}
+
+	protected abstract ProxyServerBuilder configureServer(ProxyServerBuilder builder);
+
+	protected abstract RepositorySource configureClient();
+
+	@BeforeEach
 	public void before() throws InterruptedException {
-		this.server = configure(new ProxyServerBuilder()).build();
+		this.server = configureServer(new ProxyServerBuilder()).build();
 		assert this.server != null;
 
 		this.socketAddress = new InetSocketAddress(InetAddress.getLoopbackAddress(), 3333);
@@ -60,14 +73,23 @@ public abstract class ARepoTest {
 		assert this.channel != null;
 
 		// it's online
+
+		this.source = configureClient();
+		this.client = this.source.client();
+
+		assert this.source.getLocalRepoPath() != null;
+		assert this.client != null;
 	}
 
-	@AfterAll
+	@AfterEach
 	public void shutdown() {
+		if (this.client != null) {
+			this.client.shutdownGracefully();
+		}
 		try {
 			this.channel.close();
 		} finally {
-			server.shutdownGracefully();
+			this.server.shutdownGracefully();
 		}
 	}
 
