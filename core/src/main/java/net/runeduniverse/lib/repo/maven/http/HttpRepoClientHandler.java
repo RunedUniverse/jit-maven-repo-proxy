@@ -65,6 +65,8 @@ public class HttpRepoClientHandler extends SimpleChannelInboundHandler<HttpObjec
 			final HttpDataRequest dataRequest, final AContentProcessor<?> processor) {
 		final int statusCode = response.status()
 				.code();
+		// TODO add propper logging
+		System.out.println("CLIENT | " + statusCode + " » " + dataRequest.uri());
 		switch (statusCode) {
 		case 200: // [ OK ]
 		default:

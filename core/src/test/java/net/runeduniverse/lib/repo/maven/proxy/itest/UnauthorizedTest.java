@@ -16,13 +16,23 @@
 package net.runeduniverse.lib.repo.maven.proxy.itest;
 
 import java.net.URI;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
+import net.runeduniverse.lib.repo.maven.api.ArtifactData;
+import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
+import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.error.UnauthorizedArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.builder.ProxyServerBuilder;
 import net.runeduniverse.lib.repo.maven.proxy.itest.dummy.UnauthorizedRepoInstance;
 import net.runeduniverse.lib.repo.maven.proxy.source.http.HttpSource;
+
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 public class UnauthorizedTest extends ARepoTest {
 
@@ -36,15 +46,58 @@ public class UnauthorizedTest extends ARepoTest {
 
 	@Override
 	protected RepositorySource configureClient() {
-		return new HttpSource("proxy",
-				URI.create(String.format("http://%s/repository/maven-central/", this.socketAddress.getHostString())),
-				clientPath(), 3, 5);
+		return new HttpSource("proxy", URI.create(String.format("http://%s:%d/maven-central/",
+				this.socketAddress.getHostString(), this.socketAddress.getPort())), clientPath(), 3, 5);
 	}
 
 	@Test
 	@Tag("live")
-	public void unauthorized() throws InterruptedException {
-		// TODO implement client!
+	public void unauthorizedMetadata() throws InterruptedException {
+		final ArtifactCoordinates coords = ArtifactCoordinates.request(//
+				"net.runeduniverse", "missing-artifact");
+
+		final CompletableFuture<ArtifactMetadata> future = client().getMetadata(coords);
+
+		Throwable t = null;
+		try {
+			future.get();
+		} catch (ExecutionException e) {
+			t = e.getCause();
+		}
+
+		try {
+			assertInstanceOf(UnauthorizedArtifactException.class, t,
+					"missing metadata should throw UnauthorizedArtifactException");
+		} catch (Error e) {
+			t.printStackTrace();
+			throw e;
+		}
+	}
+
+	@Test
+	@Tag("live")
+	public void unauthorizedArtifact() throws InterruptedException {
+		final ArtifactDataCoordinates coords = ArtifactDataCoordinates.request(//
+				"net.runeduniverse", "missing-artifact", "1", null, "jar");
+
+		final CompletableFuture<ArtifactData> future = client().getArtifact(coords);
+
+		Throwable t = null;
+		try {
+			future.get();
+		} catch (ExecutionException e) {
+			t = e.getCause();
+		}
+
+		try {
+			assertInstanceOf(UnauthorizedArtifactException.class, t,
+					"missing artifact should throw UnauthorizedArtifactException");
+		} catch (Error e) {
+			t.printStackTrace();
+			throw e;
+		} finally {
+			shutdown();
+		}
 	}
 
 }

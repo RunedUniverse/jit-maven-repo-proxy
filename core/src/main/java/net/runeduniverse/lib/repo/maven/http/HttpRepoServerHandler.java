@@ -198,9 +198,11 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 			if (!ctx.channel()
 					.isActive()) {
 				// client disconnected
+				ctx.close();
 				return;
 			}
-			if (throwable != null) {
+			if (throwable instanceof CompletionException) {
+				throwable = throwable.getCause();
 				// handle errors
 				if (throwable instanceof NotFoundArtifactException)
 					sendError(ctx, request, NOT_FOUND);
@@ -208,10 +210,11 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 					sendError(ctx, request, FORBIDDEN);
 				else if (throwable instanceof UnauthorizedArtifactException)
 					sendError(ctx, request, UNAUTHORIZED);
-				else {
-					sendError(ctx, request, INTERNAL_SERVER_ERROR);
-					logger.error("artifact metadata resolution failed!", throwable);
-				}
+				return;
+			}
+			if (throwable != null) {
+				sendError(ctx, request, INTERNAL_SERVER_ERROR);
+				logger.error("artifact metadata resolution failed!", throwable);
 				return;
 			}
 			if (metadata == null) {
