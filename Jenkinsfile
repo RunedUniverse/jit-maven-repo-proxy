@@ -16,9 +16,9 @@ def installArtifact(mod, parent = null) {
 	}
 	def relPath = (parent == null ? '.' : mod.relPathFrom(parent))
 	// get module metadata
-	def groupId = evalValue('project.groupId', relPath)
-	def artifactId = evalValue('project.artifactId', relPath)
-	def version = evalValue('project.version', relPath)
+	def groupId = mod.metadata().get('maven.groupId');
+	def artifactId = mod.metadata().get('maven.artifactId');
+	def version = mod.metadata().get('maven.version');
 	echo "Building: ${ groupId }:${ artifactId }:${ version }"
 	try {
 		sh "mvn-dev -P ${ REPOS },${ getToolchainId(mod) },ci-install -pl=${ relPath }"
@@ -110,11 +110,18 @@ node( label: 'linux' ) {
 			sshagent (credentials: ['RunedUniverse-Jenkins']) {
 				perModule(failFast: true) {
 					def mod = getModule();
+					def relPath = mod.relPathFrom(parentMod);
+					mod.metadata().put('maven.groupId', evalValue('project.groupId', relPath));
+					mod.metadata().put('maven.artifactId', evalValue('project.artifactId', relPath));
+					mod.metadata().put('maven.version', evalValue('project.version', relPath));
+					// check skip flag
+					// if not skipped -> check if this version already exists!
 					mod.activate(
 						!mod.hasTag('skip') && sh(
-								returnStdout: true,
-								script: "git-check-version-tag ${ mod.id() } ${ mod.relPathFrom(parentMod) }"
-							) == '1'
+								label: "check if git tag \"${ mod.id() }/v${ version }\" exists",
+								returnStatus: true,
+								script: "git ls-remote --tags --exit-code origin refs/tags/${ mod.id() }/v${ version } &>/dev/null"
+							) != 0
 					);
 				}
 			}
@@ -219,9 +226,9 @@ node( label: 'linux' ) {
 							return
 						}
 						deployArtifacts( bundle: mod.id(), repo: 'nexus-runeduniverse>maven-releases' )
-						def groupId = evalValue('project.groupId', mod.relPathFrom(parentMod))
-						def artifactId = evalValue('project.artifactId', mod.relPathFrom(parentMod))
-						def version = evalValue('project.version', mod.relPathFrom(parentMod))
+						def groupId = mod.metadata().get('maven.groupId');
+						def artifactId = mod.metadata().get('maven.artifactId');
+						def version = mod.metadata().get('maven.version');
 						sshagent (credentials: ['RunedUniverse-Jenkins']) {
 							sh "git tag -a ${ mod.id() }/v${ version } -f -m '[artifact] ${ groupId }:${ artifactId }:${ version }'"
 							sh "git push origin ${ mod.id() }/v${ version }"
