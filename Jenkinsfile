@@ -113,7 +113,8 @@ node( label: 'linux' ) {
 					def relPath = mod.relPathFrom(parentMod);
 					mod.metadata().put('maven.groupId', evalValue('project.groupId', relPath));
 					mod.metadata().put('maven.artifactId', evalValue('project.artifactId', relPath));
-					mod.metadata().put('maven.version', evalValue('project.version', relPath));
+					def version = evalValue('project.version', relPath);
+					mod.metadata().put('maven.version', version);
 					// check skip flag
 					// if not skipped -> check if this version already exists!
 					mod.activate(
