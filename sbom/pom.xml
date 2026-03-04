@@ -26,11 +26,11 @@
 		<version>0.1.0</version>
 	</parent>
 
-	<artifactId>maven-repo-client-core</artifactId>
+	<artifactId>maven-repo-project-sbom</artifactId>
 	<version>0.1.0</version>
-	<packaging>jar</packaging>
+	<packaging>pom</packaging>
 
-	<name>Maven Repository Project [client:core]</name>
+	<name>Maven Repository Project [sbom]</name>
 	<url>https://github.com/RunedUniverse/maven-repo-project</url>
 	<inceptionYear>2026</inceptionYear>
 
@@ -78,96 +78,39 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<root-dir>..</root-dir>
-		<!-- ACTIVITIONS -->
-		<license-enforce>true</license-enforce>
-		<package-tests>true</package-tests>
-		<!-- VERSIONS -->
-		<java-source-version>1.8</java-source-version>
 		<!-- ARTIFACT VERSIONS -->
-		<maven-repo-project-bom-version>0.1.0</maven-repo-project-bom-version>
-		<maven-repo-project-sbom-version>0.1.0</maven-repo-project-sbom-version>
-		<runeduniverse-utils-bom-version>2.0.0</runeduniverse-utils-bom-version>
+		<netty-version>4.2.10.Final</netty-version>
+		<apache-commons-codec-version>1.21.0</apache-commons-codec-version>
+		<apache-commons-lang3-version>3.20.0</apache-commons-lang3-version>
 	</properties>
-
-	<profiles>
-		<profile>
-			<id>ci-install</id>
-			<build>
-				<defaultGoal>
-					install/clean@pipeline
-					install,install-test/install]@pipeline
-				</defaultGoal>
-			</build>
-		</profile>
-	</profiles>
-
-	<dependencies>
-		<dependency>
-			<groupId>net.runeduniverse.lib.repo</groupId>
-			<artifactId>maven-repo-project-api</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>net.runeduniverse.lib.repo</groupId>
-			<artifactId>maven-repo-core</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter-api</artifactId>
-			<scope>test</scope>
-		</dependency>
-	</dependencies>
 
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
-				<groupId>net.runeduniverse.lib.repo</groupId>
-				<artifactId>maven-repo-project-bom</artifactId>
-				<version>${maven-repo-project-bom-version}</version>
-				<type>pom</type>
-				<scope>import</scope>
+				<groupId>io.netty</groupId>
+				<artifactId>netty-transport</artifactId>
+				<version>${netty-version}</version>
 			</dependency>
 			<dependency>
-				<groupId>net.runeduniverse.lib.repo</groupId>
-				<artifactId>maven-repo-project-sbom</artifactId>
-				<version>${maven-repo-project-sbom-version}</version>
-				<type>pom</type>
-				<scope>import</scope>
+				<groupId>io.netty</groupId>
+				<artifactId>netty-transport-native-unix-common</artifactId>
+				<version>${netty-version}</version>
 			</dependency>
 			<dependency>
-				<groupId>net.runeduniverse.lib.utils</groupId>
-				<artifactId>utils-bom</artifactId>
-				<version>${runeduniverse-utils-bom-version}</version>
-				<type>pom</type>
-				<scope>import</scope>
+				<groupId>io.netty</groupId>
+				<artifactId>netty-codec-http2</artifactId>
+				<version>${netty-version}</version>
+			</dependency>
+			<dependency>
+				<groupId>commons-codec</groupId>
+				<artifactId>commons-codec</artifactId>
+				<version>${apache-commons-codec-version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-lang3</artifactId>
+				<version>${apache-commons-lang3-version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
-
-	<build>
-		<sourceDirectory>src/main/java</sourceDirectory>
-		<testSourceDirectory>src/test/java</testSourceDirectory>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-resources-plugin</artifactId>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-source-plugin</artifactId>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-			</plugin>
-		</plugins>
-	</build>
 </project>

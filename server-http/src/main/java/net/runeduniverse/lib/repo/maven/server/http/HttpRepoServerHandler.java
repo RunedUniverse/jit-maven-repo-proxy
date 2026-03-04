@@ -55,13 +55,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.Unpooled;
 
@@ -71,7 +71,7 @@ import static io.netty.handler.codec.http.HttpVersion.*;
 
 public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
-	private final static Logger logger = LoggerFactory.getLogger(HttpRepoServerHandler.class);
+	private final static Logger logger = Logger.getLogger(HttpRepoServerHandler.class.getCanonicalName());
 
 	protected static final Pattern PATTERN_GROUP_ID = Pattern.compile("^[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+)*$");
 
@@ -218,7 +218,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 					sendError(ctx, request, UNAUTHORIZED);
 				else {
 					sendError(ctx, request, INTERNAL_SERVER_ERROR);
-					logger.error("artifact metadata resolution failed!", throwable);
+					logger.log(Level.WARNING, "artifact metadata resolution failed!", throwable);
 					throwable.printStackTrace(System.err);
 				}
 				return;
@@ -343,7 +343,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 					sendError(ctx, request, UNAUTHORIZED);
 				else {
 					sendError(ctx, request, INTERNAL_SERVER_ERROR);
-					logger.error("artifact resolution failed!", throwable);
+					logger.log(Level.WARNING, "artifact resolution failed!", throwable);
 					throwable.printStackTrace(System.err);
 				}
 				return;

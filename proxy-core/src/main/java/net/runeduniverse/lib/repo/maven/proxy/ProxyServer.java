@@ -28,8 +28,6 @@ import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
 import net.runeduniverse.lib.repo.maven.api.FileTypeIndex;
 import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
 
@@ -71,7 +69,6 @@ public class ProxyServer {
 		final ServerBootstrap bootstrap = new ServerBootstrap()//
 				.group(this.mainGroup, this.workerGroup)
 				.channel(NioServerSocketChannel.class)
-				.handler(new LoggingHandler(LogLevel.INFO))
 				.childHandler(this.serverChannelInitializer.apply(this.instances, this.fileTypeIndex));
 		// new HttpRepoServerInitializer(this.instances::get, this.fType2cTypeMap,
 		// this.fTypeMap)

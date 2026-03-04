@@ -85,6 +85,7 @@
 		<java-source-version>1.8</java-source-version>
 		<!-- ARTIFACT VERSIONS -->
 		<maven-repo-project-bom-version>0.1.0</maven-repo-project-bom-version>
+		<maven-repo-project-sbom-version>0.1.0</maven-repo-project-sbom-version>
 		<runeduniverse-utils-bom-version>2.0.0</runeduniverse-utils-bom-version>
 	</properties>
 
@@ -110,37 +111,16 @@
 			<artifactId>maven-repo-core</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.httpcomponents.client5</groupId>
-			<artifactId>httpclient5</artifactId>
-			<version>5.6</version>
-		</dependency>
-		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-transport</artifactId>
-			<version>4.2.10.Final</version>
 		</dependency>
 		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-transport-native-unix-common</artifactId>
-			<version>4.2.10.Final</version>
 		</dependency>
 		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-codec-http2</artifactId>
-			<version>4.2.10.Final</version>
-		</dependency>
-		<!-- note: try to use cache-miss events as request reason - not directly
-		netty proxy -->
-		<dependency>
-			<groupId>commons-codec</groupId>
-			<artifactId>commons-codec</artifactId>
-			<version>1.21.0</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-lang3</artifactId>
-			<version>3.20.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
@@ -160,6 +140,13 @@
 				<groupId>net.runeduniverse.lib.repo</groupId>
 				<artifactId>maven-repo-project-bom</artifactId>
 				<version>${maven-repo-project-bom-version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>net.runeduniverse.lib.repo</groupId>
+				<artifactId>maven-repo-project-sbom</artifactId>
+				<version>${maven-repo-project-sbom-version}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
