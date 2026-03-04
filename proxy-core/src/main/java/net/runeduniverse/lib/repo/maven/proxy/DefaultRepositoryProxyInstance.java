@@ -75,7 +75,7 @@ public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInsta
 
 	@Override
 	public CompletableFuture<ArtifactMetadata> lookupMetadata(final ArtifactCoordinates coords) {
-		System.err.println(ArtifactCoordinates.key(coords));
+		System.out.println("lookup-metadata: " + ArtifactCoordinates.key(coords));
 		final DefaultAggregateArtifactMetadata aggMetadata = new DefaultAggregateArtifactMetadata(coords);
 
 		RepositorySourceClient client;
@@ -122,6 +122,7 @@ public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInsta
 	@Override
 	public CompletableFuture<SourceArtifactData> lookupArtifact(final String sourceKey,
 			final ArtifactDataCoordinates coords) {
+		System.out.println("lookup-artifact: " + ArtifactDataCoordinates.key(coords));
 		final RepositorySource defSource = sourceKey == null ? null : this.sources.get(sourceKey);
 		RepositorySourceClient client;
 		if (defSource != null && (client = defSource.client()) != null) {

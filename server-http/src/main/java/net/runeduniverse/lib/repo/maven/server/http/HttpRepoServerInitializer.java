@@ -48,5 +48,4 @@ public class HttpRepoServerInitializer extends ChannelInitializer<SocketChannel>
 		pipeline.addLast(new HttpRepoRoutingHandler(this.repoProvider));
 		pipeline.addLast(new HttpRepoServerHandler(this.typeIndex));
 	}
-
 }

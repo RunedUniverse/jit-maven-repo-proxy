@@ -20,6 +20,8 @@ import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
+import java.util.function.Function;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -34,7 +36,7 @@ import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
 public class ProxyServer {
 
 	protected final Map<String, MavenRepositoryInstance> instances = new ConcurrentHashMap<>();
-	protected final BiFunction<Map<String, MavenRepositoryInstance>, FileTypeIndex, ChannelInitializer<SocketChannel>> serverChannelInitializer;
+	protected final BiFunction<Function<String, MavenRepositoryInstance>, FileTypeIndex, ChannelInitializer<SocketChannel>> serverChannelInitializer;
 	protected final FileTypeIndex fileTypeIndex;
 
 	protected final EventLoopGroup mainGroup;
@@ -43,13 +45,13 @@ public class ProxyServer {
 	protected ServerBootstrap serverBootstrap = null;
 
 	public ProxyServer(final FileTypeIndex fileTypeIndex,
-			final BiFunction<Map<String, MavenRepositoryInstance>, FileTypeIndex, ChannelInitializer<SocketChannel>> serverChannelInitializer) {
+			final BiFunction<Function<String, MavenRepositoryInstance>, FileTypeIndex, ChannelInitializer<SocketChannel>> serverChannelInitializer) {
 		this(null, null, fileTypeIndex, serverChannelInitializer);
 	}
 
 	public ProxyServer(final EventLoopGroup mainGroup, final EventLoopGroup workerGroup,
 			final FileTypeIndex fileTypeIndex,
-			final BiFunction<Map<String, MavenRepositoryInstance>, FileTypeIndex, ChannelInitializer<SocketChannel>> serverChannelInitializer) {
+			final BiFunction<Function<String, MavenRepositoryInstance>, FileTypeIndex, ChannelInitializer<SocketChannel>> serverChannelInitializer) {
 		this.mainGroup = mainGroup == null ? //
 				new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory()) : mainGroup;
 		this.workerGroup = workerGroup == null ? //
@@ -69,9 +71,7 @@ public class ProxyServer {
 		final ServerBootstrap bootstrap = new ServerBootstrap()//
 				.group(this.mainGroup, this.workerGroup)
 				.channel(NioServerSocketChannel.class)
-				.childHandler(this.serverChannelInitializer.apply(this.instances, this.fileTypeIndex));
-		// new HttpRepoServerInitializer(this.instances::get, this.fType2cTypeMap,
-		// this.fTypeMap)
+				.childHandler(this.serverChannelInitializer.apply(this.instances::get, this.fileTypeIndex));
 
 		return this.serverBootstrap = bootstrap;
 	}

@@ -38,7 +38,7 @@ public class ProxyServerBuilder {
 
 	protected Function<String, RepoInstanceBuilder> repoBuilderFactory = RepoInstanceBuilder::new;
 	protected Function<MavenRepositoryProxyInstance, Cache> cacheFactory = DefaultCache::new;
-	protected BiFunction<Map<String, MavenRepositoryInstance>, FileTypeIndex, ChannelInitializer<SocketChannel>> serverChannelInitializer = null;
+	protected BiFunction<Function<String, MavenRepositoryInstance>, FileTypeIndex, ChannelInitializer<SocketChannel>> serverChannelInitializer = null;
 	protected FileTypeIndex fileTypeIndex = null;
 
 	public ProxyServerBuilder setInstanceBuilderFactory(Function<String, RepoInstanceBuilder> factory) {
@@ -64,7 +64,7 @@ public class ProxyServerBuilder {
 	}
 
 	public ProxyServerBuilder setServerChannelInitializer(
-			final BiFunction<Map<String, MavenRepositoryInstance>, FileTypeIndex, ChannelInitializer<SocketChannel>> initializer) {
+			final BiFunction<Function<String, MavenRepositoryInstance>, FileTypeIndex, ChannelInitializer<SocketChannel>> initializer) {
 		this.serverChannelInitializer = initializer;
 		return this;
 	}

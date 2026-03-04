@@ -33,6 +33,7 @@ import net.runeduniverse.lib.repo.maven.error.UnauthorizedArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.builder.ProxyServerBuilder;
 import net.runeduniverse.lib.repo.maven.proxy.itest.dummy.UnauthorizedRepoInstance;
+import net.runeduniverse.lib.repo.maven.server.http.HttpRepoServerInitializer;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
@@ -40,7 +41,7 @@ public class UnauthorizedProxyTest extends AProxyTest {
 
 	@Override
 	protected ProxyServerBuilder configureProxy(ProxyServerBuilder builder) {
-		return builder.setServerChannelInitializer(this::httpServerInit)
+		return builder.setServerChannelInitializer(HttpRepoServerInitializer::new)
 				.instance("maven-central", instance -> {
 					// ensure no artifact is ever found
 					instance.setInstanceFacory(UnauthorizedRepoInstance::new);

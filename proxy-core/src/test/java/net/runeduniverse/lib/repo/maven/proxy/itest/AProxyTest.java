@@ -19,18 +19,12 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.socket.SocketChannel;
 import net.runeduniverse.lib.repo.maven.proxy.builder.ProxyServerBuilder;
-import net.runeduniverse.lib.repo.maven.server.http.HttpRepoServerInitializer;
-import net.runeduniverse.lib.repo.maven.api.FileTypeIndex;
-import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
 import net.runeduniverse.lib.repo.maven.proxy.ProxyServer;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySourceClient;
@@ -105,10 +99,5 @@ public abstract class AProxyTest {
 
 	public void print(String line) {
 		System.out.println(LocalDateTime.now() + ": " + line);
-	}
-
-	protected ChannelInitializer<SocketChannel> httpServerInit(final Map<String, MavenRepositoryInstance> instances,
-			final FileTypeIndex fileTypeIndex) {
-		return new HttpRepoServerInitializer(instances::get, fileTypeIndex);
 	}
 }
