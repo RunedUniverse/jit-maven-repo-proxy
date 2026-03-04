@@ -30,7 +30,7 @@
 	<version>0.1.0</version>
 	<packaging>pom</packaging>
 
-	<name>Maven Repository Proxy - Bill of Materials</name>
+	<name>Maven Repository Project [bom]</name>
 	<url>https://github.com/RunedUniverse/maven-repo-project</url>
 	<inceptionYear>2026</inceptionYear>
 
@@ -81,6 +81,11 @@
 		<!-- ARTIFACT VERSIONS -->
 		<api-version>0.1.0</api-version>
 		<core-version>0.1.0</core-version>
+		<client-core-version>0.1.0</client-core-version>
+		<client-http-version>0.1.0</client-http-version>
+		<server-core-version>0.1.0</server-core-version>
+		<server-http-version>0.1.0</server-http-version>
+		<proxy-core-version>0.1.0</proxy-core-version>
 		<cache-caffeine-version>0.1.0</cache-caffeine-version>
 	</properties>
 
@@ -95,6 +100,43 @@
 				<groupId>net.runeduniverse.lib.repo</groupId>
 				<artifactId>maven-repo-core</artifactId>
 				<version>${core-version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.runeduniverse.lib.repo</groupId>
+				<artifactId>maven-repo-client-core</artifactId>
+				<version>${client-core-version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.runeduniverse.lib.repo</groupId>
+				<artifactId>maven-repo-client-core</artifactId>
+				<version>${client-core-version}</version>
+				<classifier>tests</classifier>
+			</dependency>
+			<dependency>
+				<groupId>net.runeduniverse.lib.repo</groupId>
+				<artifactId>maven-repo-client-http</artifactId>
+				<version>${client-http-version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.runeduniverse.lib.repo</groupId>
+				<artifactId>maven-repo-server-core</artifactId>
+				<version>${server-core-version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.runeduniverse.lib.repo</groupId>
+				<artifactId>maven-repo-server-core</artifactId>
+				<version>${server-core-version}</version>
+				<classifier>tests</classifier>
+			</dependency>
+			<dependency>
+				<groupId>net.runeduniverse.lib.repo</groupId>
+				<artifactId>maven-repo-server-http</artifactId>
+				<version>${server-http-version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.runeduniverse.lib.repo</groupId>
+				<artifactId>maven-repo-proxy-core</artifactId>
+				<version>${proxy-core-version}</version>
 			</dependency>
 			<dependency>
 				<groupId>net.runeduniverse.lib.repo</groupId>

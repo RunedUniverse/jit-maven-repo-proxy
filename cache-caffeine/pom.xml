@@ -30,7 +30,7 @@
 	<version>0.1.0</version>
 	<packaging>jar</packaging>
 
-	<name>Maven Repository Proxy [cache:caffeine]</name>
+	<name>Maven Repository Project [cache:caffeine]</name>
 	<url>https://github.com/RunedUniverse/maven-repo-project</url>
 	<inceptionYear>2026</inceptionYear>
 

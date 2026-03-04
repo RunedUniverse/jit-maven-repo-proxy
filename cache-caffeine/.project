@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>mvn-repo-proxy-cache-caffeine</name>
+	<name>mvn-repo-cache-caffeine</name>
 	<comment></comment>
 	<projects>
 	</projects>

@@ -34,6 +34,11 @@
 		<module>bom</module>
 		<module>api</module>
 		<module>core</module>
+		<module>client-core</module>
+		<module>client-http</module>
+		<module>server-core</module>
+		<module>server-http</module>
+		<module>proxy-core</module>
 		<module>cache-caffeine</module>
 	</modules>
 
