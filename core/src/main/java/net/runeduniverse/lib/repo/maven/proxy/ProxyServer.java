@@ -31,7 +31,7 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import net.runeduniverse.lib.repo.maven.api.FileContentType;
 import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
-import net.runeduniverse.lib.repo.maven.http.HttpRepoServerInitializer;
+import net.runeduniverse.lib.repo.maven.server.http.HttpRepoServerInitializer;
 
 public class ProxyServer {
 

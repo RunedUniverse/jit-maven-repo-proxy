@@ -13,38 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.proxy.itest.dummy;
+package net.runeduniverse.lib.repo.maven.server.itest.dummy;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-
 import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
+import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.error.ForbiddenArtifactException;
-import net.runeduniverse.lib.repo.maven.proxy.DefaultRepositoryProxyInstance;
-import net.runeduniverse.lib.repo.maven.proxy.api.MavenRepositoryProxyInstance;
-import net.runeduniverse.lib.repo.maven.proxy.api.SourceArtifactData;
-import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
+import net.runeduniverse.lib.repo.maven.server.itest.ARepositoryInstance;
 
-public class ForbiddenRepoInstance extends DefaultRepositoryProxyInstance {
+public class ForbiddenRepoInstance extends ARepositoryInstance {
 
-	public ForbiddenRepoInstance(String path, Function<MavenRepositoryProxyInstance, Cache> factory) {
-		super(path, factory);
+	public ForbiddenRepoInstance(final String path) {
+		super(path);
 	}
 
 	@Override
-	public CompletableFuture<ArtifactMetadata> lookupMetadata(ArtifactCoordinates coords) {
+	public CompletableFuture<ArtifactMetadata> getMetadata(final ArtifactCoordinates coords) {
 		final CompletableFuture<ArtifactMetadata> future = new CompletableFuture<>();
 		future.completeExceptionally(new ForbiddenArtifactException());
 		return future;
 	}
 
 	@Override
-	public CompletableFuture<SourceArtifactData> lookupArtifact(String sourceKey, ArtifactDataCoordinates coords) {
-		final CompletableFuture<SourceArtifactData> future = new CompletableFuture<>();
+	public CompletableFuture<ArtifactData> getArtifact(final ArtifactDataCoordinates coords) {
+		final CompletableFuture<ArtifactData> future = new CompletableFuture<>();
 		future.completeExceptionally(new ForbiddenArtifactException());
 		return future;
 	}
-
 }

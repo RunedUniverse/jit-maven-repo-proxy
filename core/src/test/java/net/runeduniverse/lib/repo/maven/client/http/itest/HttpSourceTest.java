@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.proxy.itest;
+package net.runeduniverse.lib.repo.maven.client.http.itest;
 
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -32,29 +31,21 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.client.http.HttpSource;
+import net.runeduniverse.lib.repo.maven.client.itest.ASourceTest;
 import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
-import net.runeduniverse.lib.repo.maven.proxy.builder.ProxyServerBuilder;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class HttpProxyTest extends AProxyTest {
+public class HttpSourceTest extends ASourceTest {
 
 	@Override
-	protected ProxyServerBuilder configureProxy(ProxyServerBuilder builder) {
+	protected RepositorySource configure() {
 		// NOTE: we obviously test against our mirror and not maven-central
 		// but of course it was tested against maven-central before moving to the
 		// mirror!
-		return builder.instance("maven-central-proxy", instance -> {
-			instance.putSource(new HttpSource("maven-central",
-					URI.create("https://nexus.runeduniverse.net/repository/maven-central/"), repoPath(), 3, 5));
-		});
-	}
-
-	@Override
-	protected RepositorySource configureClient() {
-		return new HttpSource("proxy", URI.create(String.format("http://%s:%d/maven-central-proxy/",
-				this.socketAddress.getHostString(), this.socketAddress.getPort())), clientPath(), 3, 5);
+		return new HttpSource("maven-central", URI.create("https://nexus.runeduniverse.net/repository/maven-central/"),
+				repoPath(), 3, 5);
 	}
 
 	@Test
@@ -98,15 +89,7 @@ public class HttpProxyTest extends AProxyTest {
 			t = e.getCause();
 		}
 
-		try {
-			assertInstanceOf(NotFoundArtifactException.class, t,
-					"missing metadata should throw NotFoundArtifactException");
-		} catch (Error e) {
-			t.printStackTrace();
-			throw e;
-		} finally {
-			shutdown();
-		}
+		assertInstanceOf(NotFoundArtifactException.class, t, "missing metadata should throw NotFoundArtifactException");
 	}
 
 	@Test
@@ -122,7 +105,6 @@ public class HttpProxyTest extends AProxyTest {
 		// Artifact
 		final Path artifact = data.getArtifactPath();
 		assertFileExists(artifact, "Artifact");
-		logArtifactChecksums(data);
 
 		// Signature
 		final Path signature = data.getSignaturePath();
@@ -142,7 +124,6 @@ public class HttpProxyTest extends AProxyTest {
 		// Artifact
 		final Path artifact = data.getArtifactPath();
 		assertFileExists(artifact, "Artifact");
-		logArtifactChecksums(data);
 
 		// Signature
 		final Path signature = data.getSignaturePath();
@@ -162,7 +143,6 @@ public class HttpProxyTest extends AProxyTest {
 		// Artifact
 		final Path artifact = data.getArtifactPath();
 		assertFileExists(artifact, "Artifact");
-		logArtifactChecksums(data);
 
 		// Signature
 		final Path signature = data.getSignaturePath();
@@ -184,24 +164,7 @@ public class HttpProxyTest extends AProxyTest {
 			t = e.getCause();
 		}
 
-		try {
-			assertInstanceOf(NotFoundArtifactException.class, t,
-					"missing artifact should throw NotFoundArtifactException");
-		} catch (Error e) {
-			t.printStackTrace();
-			throw e;
-		} finally {
-			shutdown();
-		}
-	}
-
-	protected void logArtifactChecksums(ArtifactData data) {
-		print("Checksums: Path = " + data.getArtifactPath()
-				.toString() + ".*");
-		for (Entry<String, String> entry : data.getChecksums()
-				.entrySet()) {
-			print("  ." + entry.getKey() + " = " + entry.getValue());
-		}
+		assertInstanceOf(NotFoundArtifactException.class, t, "missing artifact should throw NotFoundArtifactException");
 	}
 
 	protected void assertFileExists(final Path path, final String name) throws Exception {
@@ -217,4 +180,5 @@ public class HttpProxyTest extends AProxyTest {
 
 		assertFalse(Files.exists(path), name + ": File should not exist");
 	}
+
 }

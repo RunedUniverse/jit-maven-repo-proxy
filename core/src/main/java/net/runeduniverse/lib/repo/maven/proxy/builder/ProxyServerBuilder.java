@@ -21,9 +21,9 @@ import java.util.Map.Entry;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import net.runeduniverse.lib.repo.maven.api.FileContentType;
+import net.runeduniverse.lib.repo.maven.proxy.DefaultCache;
 import net.runeduniverse.lib.repo.maven.proxy.ProxyServer;
 import net.runeduniverse.lib.repo.maven.proxy.api.MavenRepositoryProxyInstance;
-import net.runeduniverse.lib.repo.maven.proxy.cache.DefaultCache;
 import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
 
 public class ProxyServerBuilder {

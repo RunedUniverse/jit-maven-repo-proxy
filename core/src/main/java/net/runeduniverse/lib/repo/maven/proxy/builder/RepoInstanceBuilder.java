@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import net.runeduniverse.lib.repo.maven.proxy.DefaultRepositoryInstance;
+import net.runeduniverse.lib.repo.maven.proxy.DefaultRepositoryProxyInstance;
 import net.runeduniverse.lib.repo.maven.proxy.api.MavenRepositoryProxyInstance;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
@@ -30,7 +30,7 @@ public class RepoInstanceBuilder {
 	protected final Map<String, RepositorySource> sources = new LinkedHashMap<>();
 	protected final String path;
 
-	protected BiFunction<String, Function<MavenRepositoryProxyInstance, Cache>, MavenRepositoryProxyInstance> instanceFacory = DefaultRepositoryInstance::new;
+	protected BiFunction<String, Function<MavenRepositoryProxyInstance, Cache>, MavenRepositoryProxyInstance> instanceFacory = DefaultRepositoryProxyInstance::new;
 
 	public RepoInstanceBuilder(final String path) {
 		this.path = path;
