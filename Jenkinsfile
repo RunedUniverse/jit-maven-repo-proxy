@@ -167,7 +167,8 @@ node( label: 'linux' ) {
 			}
 
 			stage('Build') {
-				for(int i = 1; i<9; i++) {
+				// note: for-loop must not use a tag that does not exit - yes it's a bug!
+				for(int i = 1; i<=6; i++) {
 					perModule(withTagIn: [ "build${ i }" ]) {
 						installArtifact( getModule(), parentMod )
 					}
