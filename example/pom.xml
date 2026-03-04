@@ -1,0 +1,140 @@
+<!--
+
+    Copyright © 2026 VenaNocta (venanocta@gmail.com)
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>net.runeduniverse.lib.repo</groupId>
+		<artifactId>maven-repo-project</artifactId>
+		<version>0.1.0</version>
+	</parent>
+
+	<groupId>net.runeduniverse.lib.repo.example</groupId>
+	<artifactId>maven-repo-examples</artifactId>
+	<packaging>pom</packaging>
+
+	<name>Maven Repository Project Examples</name>
+	<description>Maven Repository Project Examples</description>
+	<url>https://github.com/RunedUniverse/maven-repo-project</url>
+	<inceptionYear>2026</inceptionYear>
+
+	<modules>
+		<module>proxy</module>
+	</modules>
+
+	<licenses>
+		<license>
+			<name>Apache License, Version 2</name>
+			<url>https://www.apache.org/licenses/LICENSE-2.0</url>
+		</license>
+	</licenses>
+
+	<organization>
+		<name>RunedUniverse</name>
+		<url>https://www.runeduniverse.net</url>
+	</organization>
+
+	<developers>
+		<developer>
+			<id>venanocta</id>
+			<name>VenaNocta</name>
+			<email>venanocta@gmail.com</email>
+			<organization>RunedUniverse</organization>
+			<organizationUrl>https://www.runeduniverse.net</organizationUrl>
+			<timezone>Europe/Vienna</timezone>
+			<roles>
+				<role>Maintainer</role>
+				<role>Developer</role>
+			</roles>
+		</developer>
+	</developers>
+
+	<scm>
+		<url>https://github.com/RunedUniverse/maven-repo-project</url>
+		<connection>
+			scm:git:git://github.com/RunedUniverse/maven-repo-project.git
+		</connection>
+		<developerConnection>
+			scm:git:git@github.com:RunedUniverse/maven-repo-project.git
+		</developerConnection>
+	</scm>
+	<issueManagement>
+		<system>GitHub Issues</system>
+		<url>https://github.com/RunedUniverse/maven-repo-project/issues</url>
+	</issueManagement>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<root-dir>..</root-dir>
+		<!-- ARTIFACT VERSIONS -->
+		<maven-repo-project-bom-version>0.1.0</maven-repo-project-bom-version>
+		<maven-repo-project-sbom-version>0.1.0</maven-repo-project-sbom-version>
+		<runeduniverse-utils-bom-version>2.0.0</runeduniverse-utils-bom-version>
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>net.runeduniverse.lib.repo</groupId>
+				<artifactId>maven-repo-project-bom</artifactId>
+				<version>${maven-repo-project-bom-version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>net.runeduniverse.lib.repo</groupId>
+				<artifactId>maven-repo-project-sbom</artifactId>
+				<version>${maven-repo-project-sbom-version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>net.runeduniverse.lib.utils</groupId>
+				<artifactId>utils-bom</artifactId>
+				<version>${runeduniverse-utils-bom-version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<sourceDirectory>src/main/java</sourceDirectory>
+		<testSourceDirectory>src/test/java</testSourceDirectory>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+</project>

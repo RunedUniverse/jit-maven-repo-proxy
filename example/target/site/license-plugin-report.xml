@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<licensePluginReport goal="FORMAT" timestamp="1772659615556">
+    <module artifactId="maven-repo-examples" groupId="net.runeduniverse.lib.repo.example" version="0.1.0"/>
+    <files>
+        <file path="pem.xml" result="NOOP"/>
+        <file path="pom.xml" result="NOOP"/>
+    </files>
+</licensePluginReport>
