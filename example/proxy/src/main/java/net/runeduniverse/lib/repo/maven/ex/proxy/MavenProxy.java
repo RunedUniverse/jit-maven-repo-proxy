@@ -24,8 +24,13 @@ import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
 import io.netty.channel.Channel;
+import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
+import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.client.http.HttpSource;
+import net.runeduniverse.lib.repo.maven.error.ArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.ProxyServer;
+import net.runeduniverse.lib.repo.maven.proxy.api.LookupArtifactListener;
+import net.runeduniverse.lib.repo.maven.proxy.api.LookupMetadataListener;
 import net.runeduniverse.lib.repo.maven.proxy.builder.ProxyServerBuilder;
 import net.runeduniverse.lib.repo.maven.server.http.HttpRepoServerInitializer;
 
@@ -50,7 +55,19 @@ public class MavenProxy {
 		ProxyServerBuilder builder = new ProxyServerBuilder();
 		builder.setServerChannelInitializer(HttpRepoServerInitializer::new);
 		builder.instance("maven-central", instance -> {
-			instance.putSource(new HttpSource("repo1", URI.create("https://repo1.maven.org/maven2/"), repoPath, 3, 10));
+			instance.putSource(new HttpSource("repo1", URI.create("https://repo1.maven.org/maven2/"), repoPath, 3, 10))
+					.addListener(new LookupMetadataListener() {
+						@Override
+						public void preLookup(ArtifactCoordinates coords) throws ArtifactException {
+							System.out.println("lookup-metadata: " + ArtifactCoordinates.key(coords));
+						}
+					})
+					.addListener(new LookupArtifactListener() {
+						@Override
+						public void preLookup(ArtifactDataCoordinates coords) throws ArtifactException {
+							System.out.println("lookup-artifact: " + ArtifactDataCoordinates.key(coords));
+						}
+					});
 		});
 
 		proxy = builder.build();
@@ -79,5 +96,4 @@ public class MavenProxy {
 		}
 		System.out.println("  done!");
 	}
-
 }

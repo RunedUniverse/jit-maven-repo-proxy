@@ -26,15 +26,15 @@ public interface ArtifactCoordinates {
 	}
 
 	public static ArtifactCoordinates request(final String groupId, final String artifactId) {
-		return new Request(groupId, artifactId);
+		return new Data(groupId, artifactId);
 	}
 
-	public static class Request implements ArtifactCoordinates {
+	public static class Data implements ArtifactCoordinates {
 
 		protected String groupId;
 		protected String artifactId;
 
-		public Request(final String groupId, final String artifactId) {
+		public Data(final String groupId, final String artifactId) {
 			this.groupId = groupId;
 			this.artifactId = artifactId;
 		}

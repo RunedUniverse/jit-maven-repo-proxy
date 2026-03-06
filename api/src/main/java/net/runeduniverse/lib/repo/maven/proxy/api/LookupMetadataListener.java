@@ -15,27 +15,17 @@
  */
 package net.runeduniverse.lib.repo.maven.proxy.api;
 
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
-import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
-import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
-import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
 
-public interface MavenRepositoryProxyInstance extends MavenRepositoryInstance {
+public interface LookupMetadataListener {
 
-	public Cache cache();
+	public default void preLookup(ArtifactCoordinates coords) {
+	}
 
-	public Map<String, RepositorySource> sources();
-
-	public CompletableFuture<ArtifactMetadata> lookupMetadata(ArtifactCoordinates coords);
-
-	public CompletableFuture<SourceArtifactData> lookupArtifact(String sourceKey, ArtifactDataCoordinates coords);
-
-	public MavenRepositoryProxyInstance addListener(LookupMetadataListener listener);
-
-	public MavenRepositoryProxyInstance addListener(LookupArtifactListener listener);
+	public default void postLookup(Future<ArtifactMetadata> future) {
+	}
 
 }

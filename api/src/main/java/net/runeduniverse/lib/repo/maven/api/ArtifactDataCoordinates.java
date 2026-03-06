@@ -30,16 +30,16 @@ public interface ArtifactDataCoordinates extends ArtifactCoordinates {
 
 	public static ArtifactDataCoordinates request(final String groupId, final String artifactId, final String version,
 			final String classifier, final String extension) {
-		return new Request(groupId, artifactId, version, classifier, extension);
+		return new Data(groupId, artifactId, version, classifier, extension);
 	}
 
-	public static class Request extends ArtifactCoordinates.Request implements ArtifactDataCoordinates {
+	public static class Data extends ArtifactCoordinates.Data implements ArtifactDataCoordinates {
 
 		protected String classifier;
 		protected String extension;
 		protected String version;
 
-		public Request(final String groupId, final String artifactId, final String version, final String classifier,
+		public Data(final String groupId, final String artifactId, final String version, final String classifier,
 				final String extension) {
 			super(groupId, artifactId);
 			this.version = version;
