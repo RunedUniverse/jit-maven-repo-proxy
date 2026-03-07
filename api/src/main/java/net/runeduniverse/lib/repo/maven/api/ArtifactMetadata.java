@@ -27,4 +27,9 @@ public interface ArtifactMetadata extends ArtifactCoordinates {
 
 	public String getLastUpdated();
 
+	public void removeVersion(String version);
+
+	public default boolean isRelease(final String version) {
+		return version == null ? false : !version.endsWith("-SNAPSHOT");
+	}
 }

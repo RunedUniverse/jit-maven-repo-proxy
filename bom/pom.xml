@@ -87,6 +87,7 @@
 		<server-http-version>0.1.0</server-http-version>
 		<proxy-core-version>0.1.0</proxy-core-version>
 		<cache-caffeine-version>0.1.0</cache-caffeine-version>
+		<validation-pgp-version>0.1.0</validation-pgp-version>
 	</properties>
 
 	<dependencyManagement>
@@ -142,6 +143,11 @@
 				<groupId>net.runeduniverse.lib.repo</groupId>
 				<artifactId>maven-repo-cache-caffeine</artifactId>
 				<version>${cache-caffeine-version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.runeduniverse.lib.repo</groupId>
+				<artifactId>maven-repo-validation-pgp</artifactId>
+				<version>${validation-pgp-version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

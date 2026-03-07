@@ -15,31 +15,25 @@
  */
 package net.runeduniverse.lib.repo.maven.client.http;
 
-import java.io.StringReader;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import org.w3c.dom.DOMException;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
 import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.api.MetadataValidator;
+import net.runeduniverse.lib.repo.maven.client.XmlArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.data.AArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.data.TextProcessor;
-import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
+import net.runeduniverse.lib.repo.maven.error.InvalidArtifactException;
+import net.runeduniverse.lib.repo.maven.error.UnvalidatableArtifactException;
 
-public class HttpArtifactMetadata extends AArtifactMetadata {
+public class HttpArtifactMetadata extends XmlArtifactMetadata {
 
 	protected final URI repoUri;
 	protected final int maxRedirects;
+
+	protected MetadataValidator validator = null;
 
 	// even when overridden - only access via Getter
 	private HttpDataRequest metadataRequest = null;
@@ -58,6 +52,10 @@ public class HttpArtifactMetadata extends AArtifactMetadata {
 
 		this.repoUri = repoUri;
 		this.maxRedirects = maxRedirects;
+	}
+
+	public void setValidator(final MetadataValidator validator) {
+		this.validator = validator;
 	}
 
 	public List<HttpDataRequest> getDataRequests() {
@@ -96,71 +94,11 @@ public class HttpArtifactMetadata extends AArtifactMetadata {
 		return this.metadataRequest = metadataRequest;
 	}
 
-	protected String parseXmlText(final String text) {
-		if (text == null)
-			return null;
-
-		try {
-			final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-			final DocumentBuilder builder = factory.newDocumentBuilder();
-
-			final Document document = builder.parse(new InputSource(new StringReader(text)));
-			final Element docElement = document.getDocumentElement();
-			final Element versioningElement = findElement(docElement, "versioning");
-
-			if (versioningElement == null)
-				return text;
-
-			final Element latestElement = findElement(versioningElement, "latest");
-			forTextContent(latestElement, this::setLatest);
-
-			final Element releaseElement = findElement(versioningElement, "release");
-			forTextContent(releaseElement, this::setRelease);
-
-			final Element lastUpdatedElement = findElement(versioningElement, "lastUpdated");
-			forTextContent(lastUpdatedElement, this::setLastUpdated);
-
-			final Element versionsElement = findElement(versioningElement, "versions");
-			forEachChildTextContent(versionsElement, "version", this::addVersion);
-
-		} catch (Exception e) {
-			throw new NotFoundArtifactException("unexpected exception while parsing in maven-metadata.xml", e);
-		}
-
-		return text;
-	}
-
-	protected Element findElement(final Element parentElement, final String tagName) {
-		final NodeList list = parentElement.getChildNodes();
-		for (int i = 0; i < list.getLength(); i++) {
-			final Node node = list.item(i);
-			if (!(node instanceof Element) || !tagName.equals(node.getNodeName()))
-				continue;
-			return (Element) node;
-		}
-		return null;
-	}
-
-	protected void forTextContent(final Element element, final Consumer<String> consumer) {
-		if (element == null)
+	protected void validateArtifact() throws InvalidArtifactException {
+		// if no validator is provided, all artifacts are deemed valid!
+		if (this.validator == null)
 			return;
-		String content;
-		try {
-			content = element.getTextContent();
-		} catch (DOMException ignored) {
-			content = null;
-		}
-		consumer.accept(content);
-	}
-
-	protected void forEachChildTextContent(final Element element, final String tagName,
-			final Consumer<String> consumer) {
-		final NodeList list = element.getChildNodes();
-		for (int i = 0; i < list.getLength(); i++) {
-			final Node node = list.item(i);
-			if (!(node instanceof Element) || !tagName.equals(node.getNodeName()))
-				continue;
-			forTextContent((Element) node, consumer);
-		}
+		if (!this.validator.validate(this))
+			throw new UnvalidatableArtifactException(UnvalidatableArtifactException.MSG_VALIDATOR_MISSMATCH);
 	}
 }

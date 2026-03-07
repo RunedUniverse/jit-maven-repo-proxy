@@ -16,11 +16,17 @@
 package net.runeduniverse.lib.repo.maven.proxy.api;
 
 import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
+import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
+import net.runeduniverse.lib.repo.maven.api.MetadataValidator;
 
 public interface RepositorySourceClient extends ArtifactProvider {
 
 	public RepositorySource getSource();
 
 	public void shutdownGracefully();
+
+	public RepositorySourceClient setValidator(MetadataValidator validator);
+
+	public RepositorySourceClient setValidator(ArtifactValidator validator);
 
 }

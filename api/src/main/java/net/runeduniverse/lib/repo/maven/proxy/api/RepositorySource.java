@@ -18,14 +18,25 @@ package net.runeduniverse.lib.repo.maven.proxy.api;
 import java.net.URI;
 import java.nio.file.Path;
 
+import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
+import net.runeduniverse.lib.repo.maven.api.MetadataValidator;
+
 public interface RepositorySource {
 
 	public String key();
+
+	public RepositorySourceClient client();
 
 	public URI getRepoUri();
 
 	public Path getLocalRepoPath();
 
-	public RepositorySourceClient client();
+	public RepositorySource addFirstValidator(MetadataValidator validator);
+
+	public RepositorySource addFirstValidator(ArtifactValidator validator);
+
+	public RepositorySource addLastValidator(MetadataValidator validator);
+
+	public RepositorySource addLastValidator(ArtifactValidator validator);
 
 }

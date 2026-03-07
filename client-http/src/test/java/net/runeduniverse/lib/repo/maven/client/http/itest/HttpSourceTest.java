@@ -34,6 +34,7 @@ import net.runeduniverse.lib.repo.maven.client.http.HttpSource;
 import net.runeduniverse.lib.repo.maven.client.itest.ASourceTest;
 import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
+import net.runeduniverse.lib.repo.maven.proxy.validation.pgp.PGPArtifactSignatureValidator;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -45,7 +46,7 @@ public class HttpSourceTest extends ASourceTest {
 		// but of course it was tested against maven-central before moving to the
 		// mirror!
 		return new HttpSource("maven-central", URI.create("https://nexus.runeduniverse.net/repository/maven-central/"),
-				repoPath(), 3, 5);
+				repoPath(), 3, 5).addFirstValidator(new PGPArtifactSignatureValidator());
 	}
 
 	@Test

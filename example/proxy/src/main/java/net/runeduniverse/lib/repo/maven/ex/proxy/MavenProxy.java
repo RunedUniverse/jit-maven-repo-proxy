@@ -32,6 +32,7 @@ import net.runeduniverse.lib.repo.maven.proxy.ProxyServer;
 import net.runeduniverse.lib.repo.maven.proxy.api.LookupArtifactListener;
 import net.runeduniverse.lib.repo.maven.proxy.api.LookupMetadataListener;
 import net.runeduniverse.lib.repo.maven.proxy.builder.ProxyServerBuilder;
+import net.runeduniverse.lib.repo.maven.proxy.validation.pgp.PGPArtifactSignatureValidator;
 import net.runeduniverse.lib.repo.maven.server.http.HttpRepoServerInitializer;
 
 public class MavenProxy {
@@ -55,7 +56,8 @@ public class MavenProxy {
 		ProxyServerBuilder builder = new ProxyServerBuilder();
 		builder.setServerChannelInitializer(HttpRepoServerInitializer::new);
 		builder.instance("maven-central", instance -> {
-			instance.putSource(new HttpSource("repo1", URI.create("https://repo1.maven.org/maven2/"), repoPath, 3, 10))
+			instance.putSource(new HttpSource("repo1", URI.create("https://repo1.maven.org/maven2/"), repoPath, 3, 10)
+					.addLastValidator(new PGPArtifactSignatureValidator()))
 					.addListener(new LookupMetadataListener() {
 						@Override
 						public void preLookup(ArtifactCoordinates coords) throws ArtifactException {

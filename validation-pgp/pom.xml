@@ -21,15 +21,16 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>net.runeduniverse.lib.repo.example</groupId>
-		<artifactId>maven-repo-examples</artifactId>
+		<groupId>net.runeduniverse.lib.repo</groupId>
+		<artifactId>maven-repo-project</artifactId>
 		<version>0.1.0</version>
 	</parent>
 
-	<artifactId>repo-proxy</artifactId>
+	<artifactId>maven-repo-validation-pgp</artifactId>
+	<version>0.1.0</version>
 	<packaging>jar</packaging>
 
-	<name>Maven Repository Project [example:proxy]</name>
+	<name>Maven Repository Project [validation:pgp]</name>
 	<url>https://github.com/RunedUniverse/maven-repo-project</url>
 	<inceptionYear>2026</inceptionYear>
 
@@ -60,35 +61,38 @@
 		</developer>
 	</developers>
 
+	<scm>
+		<url>https://github.com/RunedUniverse/maven-repo-project</url>
+		<connection>
+			scm:git:git://github.com/RunedUniverse/maven-repo-project.git
+		</connection>
+		<developerConnection>
+			scm:git:git@github.com:RunedUniverse/maven-repo-project.git
+		</developerConnection>
+	</scm>
+	<issueManagement>
+		<system>GitHub Issues</system>
+		<url>https://github.com/RunedUniverse/maven-repo-project/issues</url>
+	</issueManagement>
+
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<root-dir>../..</root-dir>
+		<root-dir>..</root-dir>
 		<!-- ACTIVITIONS -->
+		<license-enforce>true</license-enforce>
 		<!-- VERSIONS -->
 		<java-source-version>1.8</java-source-version>
 		<!-- ARTIFACT VERSIONS -->
+		<maven-repo-project-bom-version>0.1.0</maven-repo-project-bom-version>
+		<maven-repo-project-sbom-version>0.1.0</maven-repo-project-sbom-version>
+		<runeduniverse-utils-bom-version>2.0.0</runeduniverse-utils-bom-version>
+		<caffeine-version>3.2.3</caffeine-version>
 	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>net.runeduniverse.lib.repo</groupId>
-			<artifactId>maven-repo-proxy-core</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>net.runeduniverse.lib.repo</groupId>
-			<artifactId>maven-repo-client-http</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>net.runeduniverse.lib.repo</groupId>
-			<artifactId>maven-repo-server-http</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>net.runeduniverse.lib.repo</groupId>
-			<artifactId>maven-repo-validation-pgp</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.netty</groupId>
-			<artifactId>netty-transport-native-unix-common</artifactId>
+			<artifactId>maven-repo-project-api</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
@@ -101,6 +105,32 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>net.runeduniverse.lib.repo</groupId>
+				<artifactId>maven-repo-project-bom</artifactId>
+				<version>${maven-repo-project-bom-version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>net.runeduniverse.lib.repo</groupId>
+				<artifactId>maven-repo-project-sbom</artifactId>
+				<version>${maven-repo-project-sbom-version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>net.runeduniverse.lib.utils</groupId>
+				<artifactId>utils-bom</artifactId>
+				<version>${runeduniverse-utils-bom-version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<build>
 		<sourceDirectory>src/main/java</sourceDirectory>
@@ -121,30 +151,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-dependency-plugin</artifactId>
-				<configuration>
-					<outputDirectory>
-						${project.build.directory}/lib
-					</outputDirectory>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<configuration>
-					<archive>
-						<manifest>
-							<addClasspath>true</addClasspath>
-							<classpathPrefix>lib/</classpathPrefix>
-							<mainClass>
-								net.runeduniverse.lib.repo.maven.ex.proxy.MavenProxy
-							</mainClass>
-						</manifest>
-					</archive>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>

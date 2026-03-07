@@ -31,18 +31,23 @@ import org.apache.commons.codec.binary.Hex;
 
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
+import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.api.ChecksumType;
 import net.runeduniverse.lib.repo.maven.data.AArtifactData;
 import net.runeduniverse.lib.repo.maven.data.AContentProcessor;
 import net.runeduniverse.lib.repo.maven.data.FileProcessor;
 import net.runeduniverse.lib.repo.maven.data.TextProcessor;
+import net.runeduniverse.lib.repo.maven.error.InvalidArtifactException;
 import net.runeduniverse.lib.repo.maven.error.InvalidChecksumArtifactException;
+import net.runeduniverse.lib.repo.maven.error.UnvalidatableArtifactException;
 
 public class HttpArtifactData extends AArtifactData {
 
 	protected final Path repoPath;
 	protected final URI repoUri;
 	protected final int maxRedirects;
+
+	protected ArtifactValidator validator = null;
 
 	// even when overridden - only access via Getter
 	private String gavPath = null;
@@ -112,6 +117,10 @@ public class HttpArtifactData extends AArtifactData {
 		return this.signaturePath;
 	}
 
+	public void setValidator(final ArtifactValidator validator) {
+		this.validator = validator;
+	}
+
 	public List<HttpDataRequest> getDataRequests() {
 		final List<HttpDataRequest> dataRequests = new LinkedList<>();
 		dataRequests.add(getArtifactRequest(this.repoUri, this.maxRedirects));
@@ -175,7 +184,7 @@ public class HttpArtifactData extends AArtifactData {
 				repoUri.resolve(getGAVPath() + '/' + getArtifactName()), fileProcessor, () -> {
 					return CompletableFuture.allOf(//
 							futures.toArray(new CompletableFuture<?>[futures.size()]))
-							.thenApply(v -> {
+							.thenAccept(v -> {
 								// --- Verify Artifact - Data
 								// verify checksums / update if missing
 								for (Entry<String, MessageDigest> entry : localChecksums.entrySet()) {
@@ -194,13 +203,20 @@ public class HttpArtifactData extends AArtifactData {
 										throw new InvalidChecksumArtifactException(ext, localChecksum, refChecksum);
 									}
 								}
-								// verify signature
-								// TODO validate PGP Signature
-								return null;
+								// --- Validate Artifact - Data
+								HttpArtifactData.this.validateArtifact();
 							});
 				}, maxRedirects);
 		artifactRequest.subProcessorMap()
 				.putAll(subProcessorMap);
 		return this.artifactRequest = artifactRequest;
+	}
+
+	protected void validateArtifact() throws InvalidArtifactException {
+		// if no validator is provided, all artifacts are deemed valid!
+		if (this.validator == null)
+			return;
+		if (!this.validator.validate(this))
+			throw new UnvalidatableArtifactException(UnvalidatableArtifactException.MSG_VALIDATOR_MISSMATCH);
 	}
 }

@@ -103,12 +103,13 @@ node( label: 'linux' ) {
 			addModule( id: 'sbom',            path: 'sbom',            name: 'SBOM',                         tags: [ 'bom' ])
 			addModule( id: 'api',             path: 'api',             name: 'Maven Repo [api]',             tags: [ 'build1', 'pack-jar', 'jdk-1.8.0' ])
 			addModule( id: 'core',            path: 'core',            name: 'Maven Repo [core]',            tags: [ 'build2', 'pack-jar', 'jdk-1.8.0' ])
-			addModule( id: 'client-core',     path: 'client-core',     name: 'Maven Repo [client-core]',     tags: [ 'build3', 'pack-jar', 'jdk-1.8.0' ])
-			addModule( id: 'client-http',     path: 'client-http',     name: 'Maven Repo [client-http]',     tags: [ 'build4', 'pack-jar', 'jdk-1.8.0', 'test-live' ])
-			addModule( id: 'server-core',     path: 'server-core',     name: 'Maven Repo [server-core]',     tags: [ 'build3', 'pack-jar', 'jdk-1.8.0' ])
-			addModule( id: 'server-http',     path: 'server-http',     name: 'Maven Repo [server-http]',     tags: [ 'build5', 'pack-jar', 'jdk-1.8.0', 'test-live' ])
-			addModule( id: 'proxy-core',      path: 'proxy-core',      name: 'Maven Repo [proxy-core]',      tags: [ 'build6', 'pack-jar', 'jdk-1.8.0', 'test-smoke', 'test-live' ])
+			addModule( id: 'client-core',     path: 'client-core',     name: 'Maven Repo [client-core]',     tags: [ 'build4', 'pack-jar', 'jdk-1.8.0' ])
+			addModule( id: 'client-http',     path: 'client-http',     name: 'Maven Repo [client-http]',     tags: [ 'build5', 'pack-jar', 'jdk-1.8.0', 'test-live' ])
+			addModule( id: 'server-core',     path: 'server-core',     name: 'Maven Repo [server-core]',     tags: [ 'build4', 'pack-jar', 'jdk-1.8.0' ])
+			addModule( id: 'server-http',     path: 'server-http',     name: 'Maven Repo [server-http]',     tags: [ 'build6', 'pack-jar', 'jdk-1.8.0', 'test-live' ])
+			addModule( id: 'proxy-core',      path: 'proxy-core',      name: 'Maven Repo [proxy-core]',      tags: [ 'build7', 'pack-jar', 'jdk-1.8.0', 'test-smoke', 'test-live' ])
 			addModule( id: 'cache-caffeine',  path: 'cache-caffeine',  name: 'Maven Repo [cache:caffeine]',  tags: [ 'build3', 'pack-jar', 'jdk-11'   , 'test-smoke' ])
+			addModule( id: 'validation-pgp',  path: 'validation-pgp',  name: 'Maven Repo [validation:pgp]',  tags: [ 'build3', 'pack-jar', 'jdk-1.8.0', 'test-smoke' ])
 		}
 		def parentMod = getModule(id: 'project')
 
@@ -167,8 +168,8 @@ node( label: 'linux' ) {
 			}
 
 			stage('Build') {
-				// note: for-loop must not use a tag that does not exit - yes it's a bug!
-				for(int i = 1; i<=6; i++) {
+				// note: for-loop must not use a tag that does not exist - yes it's a bug!
+				for(int i = 1; i<=7; i++) {
 					perModule(withTagIn: [ "build${ i }" ]) {
 						installArtifact( getModule(), parentMod )
 					}

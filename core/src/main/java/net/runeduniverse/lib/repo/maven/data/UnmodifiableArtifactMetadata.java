@@ -62,4 +62,9 @@ public class UnmodifiableArtifactMetadata extends ArtifactCoordinates.Data imple
 				Collections.unmodifiableSet(metadata.getVersions()), metadata.getReleaseVersion(),
 				metadata.getLatestVersion(), metadata.getLastUpdated());
 	}
+
+	@Override
+	public void removeVersion(final String version) {
+		throw new UnsupportedOperationException();
+	}
 }

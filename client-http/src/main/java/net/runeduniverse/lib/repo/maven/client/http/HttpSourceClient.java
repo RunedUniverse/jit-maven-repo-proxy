@@ -29,6 +29,8 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
+import net.runeduniverse.lib.repo.maven.api.MetadataValidator;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySourceClient;
 
@@ -38,6 +40,9 @@ public class HttpSourceClient implements RepositorySourceClient {
 	protected final EventLoopGroup loopGroup;
 	protected final int maxRedirects;
 	protected final int maxRetries;
+
+	protected MetadataValidator metadataValidator;
+	protected ArtifactValidator artifactValidator;
 
 	protected Bootstrap bootstrap = null;
 
@@ -56,6 +61,18 @@ public class HttpSourceClient implements RepositorySourceClient {
 	@Override
 	public RepositorySource getSource() {
 		return this.source;
+	}
+
+	@Override
+	public HttpSourceClient setValidator(final MetadataValidator validator) {
+		this.metadataValidator = validator;
+		return this;
+	}
+
+	@Override
+	public HttpSourceClient setValidator(final ArtifactValidator validator) {
+		this.artifactValidator = validator;
+		return this;
 	}
 
 	protected synchronized Bootstrap bootstrap() {
@@ -92,6 +109,7 @@ public class HttpSourceClient implements RepositorySourceClient {
 	public CompletableFuture<ArtifactData> getArtifact(final ArtifactDataCoordinates coords) {
 		final HttpArtifactData artifactData = new HttpArtifactData(this.source.getLocalRepoPath(),
 				this.source.getRepoUri(), this.maxRedirects, coords);
+		artifactData.setValidator(this.artifactValidator);
 
 		for (HttpDataRequest dataRequest : artifactData.getDataRequests()) {
 			execRequest(dataRequest);
@@ -121,7 +139,7 @@ public class HttpSourceClient implements RepositorySourceClient {
 	}
 
 	protected void execRequest(final HttpDataRequest dataRequest) {
-		Bootstrap bootstrap = bootstrap().clone();
+		final Bootstrap bootstrap = bootstrap().clone();
 		bootstrap.attr(HttpClientUtils.ATTKEY_HTTP_DATA_REQUEST, dataRequest);
 
 		bootstrap.connect(dataRequest.getHost(), dataRequest.getPort())

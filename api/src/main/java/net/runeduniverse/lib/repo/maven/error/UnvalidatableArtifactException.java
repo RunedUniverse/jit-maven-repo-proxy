@@ -13,14 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.proxy.api;
+package net.runeduniverse.lib.repo.maven.error;
 
-import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+public class UnvalidatableArtifactException extends ForbiddenArtifactException {
 
-public interface AggregateArtifactMetadata extends ArtifactMetadata {
+	public static final String MSG_VALIDATOR_MISSMATCH = "Validator was unable to validate the ArtifactData";
 
-	public void updateLastUpdated(String lastUpdated);
+	private static final long serialVersionUID = 1L;
 
-	public void add(ArtifactMetadata metadata);
+	public UnvalidatableArtifactException() {
+		super();
+	}
 
+	public UnvalidatableArtifactException(final String message) {
+		super(message);
+	}
 }

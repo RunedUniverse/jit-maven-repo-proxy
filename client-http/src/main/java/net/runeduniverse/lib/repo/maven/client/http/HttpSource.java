@@ -17,45 +17,35 @@ package net.runeduniverse.lib.repo.maven.client.http;
 
 import java.net.URI;
 import java.nio.file.Path;
-
+import java.util.Deque;
+import java.util.LinkedList;
+import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
+import net.runeduniverse.lib.repo.maven.api.MetadataValidator;
+import net.runeduniverse.lib.repo.maven.client.ARepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySourceClient;
 
-public class HttpSource implements RepositorySource {
+public class HttpSource extends ARepositorySource implements RepositorySource {
 
-	protected final String key;
-	protected final URI uri;
-	protected final Path repoPath;
-	protected final int maxRedirects;
-	protected final int maxRetries;
+	private RepositorySourceClient client = null;
 
 	public HttpSource(final String key, final URI uri, final Path repoPath, final int maxRedirects,
 			final int maxRetries) {
-		this.key = key;
-		this.uri = uri;
-		this.repoPath = repoPath;
-		this.maxRedirects = maxRedirects;
-		this.maxRetries = maxRetries;
+		super(key, uri, repoPath, maxRedirects, maxRetries, new LinkedList<>(), new LinkedList<>());
+	}
+
+	public HttpSource(final String key, final URI uri, final Path repoPath, final int maxRedirects,
+			final int maxRetries, final Deque<MetadataValidator> metadataValidators,
+			final Deque<ArtifactValidator> artifactValidators) {
+		super(key, uri, repoPath, maxRedirects, maxRetries, metadataValidators, artifactValidators);
 	}
 
 	@Override
-	public String key() {
-		return this.key;
+	public synchronized RepositorySourceClient client() {
+		if (this.client != null)
+			return this.client;
+		return this.client = new HttpSourceClient(this, this.maxRedirects, this.maxRetries)
+				.setValidator(getMetadataValidator())
+				.setValidator(getArtifactValidator());
 	}
-
-	@Override
-	public URI getRepoUri() {
-		return this.uri;
-	}
-
-	@Override
-	public Path getLocalRepoPath() {
-		return this.repoPath;
-	}
-
-	@Override
-	public RepositorySourceClient client() {
-		return new HttpSourceClient(this, this.maxRedirects, this.maxRetries);
-	}
-
 }

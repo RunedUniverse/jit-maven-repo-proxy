@@ -33,7 +33,6 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.data.UnmodifiableArtifactData;
 import net.runeduniverse.lib.repo.maven.data.UnmodifiableArtifactMetadata;
-import net.runeduniverse.lib.repo.maven.error.ArtifactException;
 import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.api.LookupArtifactListener;
 import net.runeduniverse.lib.repo.maven.proxy.api.LookupMetadataListener;

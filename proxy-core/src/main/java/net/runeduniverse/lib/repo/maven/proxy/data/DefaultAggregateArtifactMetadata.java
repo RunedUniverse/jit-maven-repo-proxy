@@ -35,8 +35,6 @@ public class DefaultAggregateArtifactMetadata extends AArtifactMetadata implemen
 
 	protected final Set<CompletableFuture<Void>> trackedFutures = ConcurrentHashMap.newKeySet();
 
-	protected final ReadWriteLock releaseLock = new ReentrantReadWriteLock();
-	protected final ReadWriteLock latestLock = new ReentrantReadWriteLock();
 	protected final ReadWriteLock lastUpdatedLock = new ReentrantReadWriteLock();
 
 	public DefaultAggregateArtifactMetadata(final ArtifactCoordinates coords) {
@@ -48,30 +46,6 @@ public class DefaultAggregateArtifactMetadata extends AArtifactMetadata implemen
 	}
 
 	@Override
-	public ComparableVersion getReleaseVersion2() {
-		this.releaseLock.readLock()
-				.lock();
-		try {
-			return this.release;
-		} finally {
-			this.releaseLock.readLock()
-					.unlock();
-		}
-	}
-
-	@Override
-	public ComparableVersion getLatestVersion2() {
-		this.latestLock.readLock()
-				.lock();
-		try {
-			return this.latest;
-		} finally {
-			this.latestLock.readLock()
-					.unlock();
-		}
-	}
-
-	@Override
 	public String getLastUpdated() {
 		this.lastUpdatedLock.readLock()
 				.lock();
@@ -79,44 +53,6 @@ public class DefaultAggregateArtifactMetadata extends AArtifactMetadata implemen
 			return this.lastUpdated;
 		} finally {
 			this.lastUpdatedLock.readLock()
-					.unlock();
-		}
-	}
-
-	@Override
-	public void updateRelease(String release) {
-		if ((release = StringUtils.trimToNull(release)) == null)
-			return;
-		updateRelease(new ComparableVersion(release));
-	}
-
-	@Override
-	public void updateLatest(String latest) {
-		if ((latest = StringUtils.trimToNull(latest)) == null)
-			return;
-		updateLatest(new ComparableVersion(latest));
-	}
-
-	public void updateRelease(final ComparableVersion release) {
-		this.releaseLock.writeLock()
-				.lock();
-		try {
-			if (release != null && (this.release == null || 0 < this.release.compareTo(release)))
-				this.release = release;
-		} finally {
-			this.releaseLock.writeLock()
-					.unlock();
-		}
-	}
-
-	public void updateLatest(final ComparableVersion latest) {
-		this.latestLock.writeLock()
-				.lock();
-		try {
-			if (latest != null && (this.latest == null || 0 < this.latest.compareTo(latest)))
-				this.latest = latest;
-		} finally {
-			this.latestLock.writeLock()
 					.unlock();
 		}
 	}
@@ -150,8 +86,6 @@ public class DefaultAggregateArtifactMetadata extends AArtifactMetadata implemen
 			addVersion(version);
 		}
 		// update headlines
-		updateRelease(metadata.getReleaseVersion());
-		updateLatest(metadata.getLatestVersion());
 		updateLastUpdated(metadata.getLastUpdated());
 	}
 
@@ -161,11 +95,9 @@ public class DefaultAggregateArtifactMetadata extends AArtifactMetadata implemen
 			return;
 		// track all versions
 		for (ComparableVersion version : metadata.getVersions2()) {
-			addVersion(version);
+			addVersion2(version);
 		}
 		// update headlines
-		updateRelease(metadata.getReleaseVersion2());
-		updateLatest(metadata.getLatestVersion2());
 		updateLastUpdated(metadata.getLastUpdated());
 	}
 

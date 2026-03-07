@@ -41,6 +41,7 @@
 		<module>server-http</module>
 		<module>proxy-core</module>
 		<module>cache-caffeine</module>
+		<module>validation-pgp</module>
 		<module>example</module>
 	</modules>
 
