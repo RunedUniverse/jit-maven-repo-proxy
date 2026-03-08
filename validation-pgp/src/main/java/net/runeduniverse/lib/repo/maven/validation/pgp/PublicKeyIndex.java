@@ -36,6 +36,7 @@ import javax.net.ssl.SSLException;
 
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.bcpg.ArmoredInputStream;
+import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.bouncycastle.openpgp.PGPPublicKeyRingCollection;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
@@ -81,6 +82,16 @@ public class PublicKeyIndex {
 		Objects.requireNonNull(uri);
 		Objects.requireNonNull(type);
 		this.keyservers.put(uri, type);
+		return this;
+	}
+
+	public PublicKeyIndex addKeyRing(final PGPPublicKeyRing keyRing) {
+		if (keyRing == null)
+			return this;
+		final PGPPublicKey key = keyRing.getPublicKey();
+		if (key == null)
+			return this;
+		this.pkMap.put(key.getKeyID(), CompletableFuture.completedFuture(keyRing));
 		return this;
 	}
 
