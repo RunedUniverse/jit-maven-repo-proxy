@@ -31,11 +31,14 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.client.http.HttpSource;
 import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.builder.ProxyServerBuilder;
 import net.runeduniverse.lib.repo.maven.server.http.HttpRepoServerInitializer;
+import net.runeduniverse.lib.repo.maven.validation.pgp.PGPArtifactSignatureValidator;
+import net.runeduniverse.lib.repo.maven.validation.pgp.PublicKeyIndex;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -43,13 +46,16 @@ public class HttpProxyTest extends AProxyTest {
 
 	@Override
 	protected ProxyServerBuilder configureProxy(ProxyServerBuilder builder) {
+		final ArtifactValidator pgpValidator = new PGPArtifactSignatureValidator(
+				PublicKeyIndex.createDefaultKeyIndex());
 		// NOTE: we obviously test against our mirror and not maven-central
 		// but of course it was tested against maven-central before moving to the
 		// mirror!
 		return builder.setServerChannelInitializer(HttpRepoServerInitializer::new)
 				.instance("maven-central-proxy", instance -> {
 					instance.putSource(new HttpSource("maven-central",
-							URI.create("https://nexus.runeduniverse.net/repository/maven-central/"), repoPath(), 3, 5));
+							URI.create("https://nexus.runeduniverse.net/repository/maven-central/"), repoPath(), 3, 5)
+									.addFirstValidator(pgpValidator));
 				});
 	}
 

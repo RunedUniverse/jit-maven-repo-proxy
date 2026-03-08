@@ -134,6 +134,11 @@
 			<artifactId>maven-repo-server-http</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>net.runeduniverse.lib.repo</groupId>
+			<artifactId>maven-repo-validation-pgp</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<dependencyManagement>

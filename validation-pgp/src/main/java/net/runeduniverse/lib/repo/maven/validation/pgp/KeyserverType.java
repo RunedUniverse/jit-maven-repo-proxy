@@ -13,17 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.runeduniverse.lib.repo.maven.proxy.validation.pgp;
+package net.runeduniverse.lib.repo.maven.validation.pgp;
 
-import net.runeduniverse.lib.repo.maven.api.ArtifactData;
-import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
-import net.runeduniverse.lib.repo.maven.error.InvalidArtifactException;
-
-public class PGPArtifactSignatureValidator implements ArtifactValidator {
-
-	@Override
-	public boolean validate(final ArtifactData data) throws InvalidArtifactException {
-		// TODO implement
-		return true;
-	}
+public enum KeyserverType {
+	VKS, HKP;
 }

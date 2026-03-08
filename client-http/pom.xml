@@ -98,12 +98,6 @@
 			<artifactId>maven-repo-client-core</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>net.runeduniverse.lib.repo</groupId>
-			<artifactId>maven-repo-client-core</artifactId>
-			<classifier>tests</classifier>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-transport</artifactId>
 		</dependency>
@@ -131,6 +125,12 @@
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-api</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>net.runeduniverse.lib.repo</groupId>
+			<artifactId>maven-repo-client-core</artifactId>
+			<classifier>tests</classifier>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
