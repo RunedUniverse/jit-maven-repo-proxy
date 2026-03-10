@@ -153,10 +153,6 @@ node( label: 'linux' ) {
 			}
 		}
 
-		stage('Code Validation') {
-			sh "mvn-dev -P ${ REPOS },ci-validate,license-apache2-approve,license-epl-v10-approve --fail-at-end -T1C"
-		}
-
 		bundleContext {
 			stage('Install Maven Parent') {
 				installArtifact( parentMod );
@@ -174,6 +170,11 @@ node( label: 'linux' ) {
 						installArtifact( getModule(), parentMod )
 					}
 				}
+			}
+
+			stage('Code Validation') {
+				// note: bugged maven artifact resolve requires all modules to be locally installed before license verification
+				sh "mvn-dev -P ${ REPOS },ci-validate,license-apache2-approve,license-epl-v10-approve --fail-at-end -T1C"
 			}
 
 			stage('Smoke Test') {
