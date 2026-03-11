@@ -126,7 +126,6 @@ public class PublicKeyIndex {
 
 		for (Entry<URI, KeyserverType> entry : this.keyservers.entrySet()) {
 			final URI uri = entry.getKey();
-			System.out.println("Build Request for Keyserver: " + uri.toString());
 			// extract path & query from uri
 			final StringBuffer pathBuffer = new StringBuffer();
 			final StringBuffer queryBuffer = new StringBuffer();
@@ -200,8 +199,6 @@ public class PublicKeyIndex {
 		final TextProcessor processor = new TextProcessor();
 		final KeyDataRequest dataRequest = new KeyDataRequest(uri, processor, this.maxRedirects);
 
-		System.out.println("FETCH: " + uri.toString());
-
 		execRequest(dataRequest);
 
 		return processor.future()
@@ -257,7 +254,7 @@ public class PublicKeyIndex {
 
 	public static void addKeyserverOpenPGP(final PublicKeyIndex index) {
 		try {
-			index.addKeyserver(new URI("http://keys.openpgp.org"), KeyserverType.VKS);
+			index.addKeyserver(new URI("https://keys.openpgp.org"), KeyserverType.VKS);
 		} catch (URISyntaxException e) {
 			// impossible!
 		}

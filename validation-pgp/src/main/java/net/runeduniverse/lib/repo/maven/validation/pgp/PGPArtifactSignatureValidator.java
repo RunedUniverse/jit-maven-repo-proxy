@@ -115,8 +115,6 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 				System.err.println("No Public-Key found for " + ArtifactDataCoordinates.key(data) + " ID: "
 						+ Long.toHexString(signature.getKeyID())
 								.toUpperCase());
-				System.err.println("No Public-Key found for " + ArtifactDataCoordinates.key(data) + " ID: "
-						+ signature.getKeyID());
 				return false;
 			}
 			pubKey = pubKeyRing.getPublicKey();
