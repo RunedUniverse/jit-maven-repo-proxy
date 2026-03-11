@@ -33,6 +33,7 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.data.UnmodifiableArtifactData;
 import net.runeduniverse.lib.repo.maven.data.UnmodifiableArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.error.InvalidArtifactException;
 import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.api.LookupArtifactListener;
 import net.runeduniverse.lib.repo.maven.proxy.api.LookupMetadataListener;
@@ -219,6 +220,9 @@ public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInsta
 		if (throwable != null) {
 			// exactly that source was requested -> errors are deserved
 			if (exact)
+				throw throwable;
+			// rethrow validation errors!
+			if (throwable instanceof InvalidArtifactException)
 				throw throwable;
 			// bury it! -> if 1 fails all do!
 			throwable.printStackTrace(System.err);

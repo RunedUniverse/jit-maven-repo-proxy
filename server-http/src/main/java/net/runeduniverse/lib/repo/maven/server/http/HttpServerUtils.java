@@ -40,6 +40,7 @@ public class HttpServerUtils {
 
 	public static void sendError(final ChannelHandlerContext ctx, final FullHttpRequest request,
 			final HttpResponseStatus status) {
+		System.out.println("SERVER | " + status.code() + " » " + request.uri());
 		final FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, status,
 				Unpooled.copiedBuffer("Failure: " + status + "\r\n", CharsetUtil.UTF_8));
 		response.headers()

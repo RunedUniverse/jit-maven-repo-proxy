@@ -88,7 +88,7 @@ public class MavenProxy {
 				socketAddress.getPort()));
 
 		// use it!
-		for (int i = 10; 0 < i; i--) {
+		for (int i = 30; 0 < i; i--) {
 			System.out.println(String.format("Server will stop in %d min ...", i));
 			TimeUnit.MINUTES.sleep(1);
 		}

@@ -119,8 +119,8 @@ public class PublicKeyIndex {
 	}
 
 	protected CompletableFuture<PGPPublicKeyRing> fetchKeyRing(final long keyID) {
-		final String keyString = Long.toHexString(keyID)
-				.toUpperCase();
+		// ensure <keyString> is 16 hex chars long
+		final String keyString = String.format("%016X", keyID);
 		final CompletableFuture<PGPPublicKeyRing> future = new CompletableFuture<>();
 		final List<CompletableFuture<PGPPublicKeyRing>> futures = new LinkedList<>();
 
@@ -159,7 +159,7 @@ public class PublicKeyIndex {
 				pathBuffer.append("/pks/lookup");
 				if (0 < queryBuffer.length())
 					queryBuffer.append('&');
-				queryBuffer.append("op=get&options=mr&search=")
+				queryBuffer.append("op=get&options=mr&search=0x")
 						.append(keyString);
 				break;
 			default:
@@ -170,9 +170,16 @@ public class PublicKeyIndex {
 				futures.add(fetchKeyRing(new URI(uri.getScheme(), uri.getAuthority(), pathBuffer.toString(),
 						StringUtils.trimToNull(queryBuffer.toString()), uri.getFragment()))
 								.whenComplete((keyRing, throwable) -> {
-									if (keyRing != null)
+									if (keyRing != null) {
+										// keyRing successful acquired!
 										future.complete(keyRing);
+										// already found -> stop annoying the remaining servers
+										// TODO cancel other processor futures!
+									}
+									if (throwable != null)
+										System.err.println("IDX-ERR: " + throwable.getMessage());
 									// TODO log error!
+									System.err.println("done: " + keyString);
 								}));
 			} catch (URISyntaxException unexpected) {
 				unexpected.printStackTrace(System.err);
@@ -189,6 +196,7 @@ public class PublicKeyIndex {
 		// -> required if all fetch tries failed!
 		CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[futures.size()]))
 				.thenAccept(v -> {
+					System.err.println("finalize: " + keyString);
 					future.complete(null);
 				});
 
@@ -250,13 +258,28 @@ public class PublicKeyIndex {
 
 	public static void addDefaultKeyservers(final PublicKeyIndex index) {
 		addKeyserverOpenPGP(index);
+		addKeyserverUbuntu(index);
+		addKeyserverMIT(index);
 	}
 
 	public static void addKeyserverOpenPGP(final PublicKeyIndex index) {
 		try {
 			index.addKeyserver(new URI("https://keys.openpgp.org"), KeyserverType.VKS);
-		} catch (URISyntaxException e) {
-			// impossible!
+		} catch (URISyntaxException impossible) {
+		}
+	}
+
+	public static void addKeyserverUbuntu(final PublicKeyIndex index) {
+		try {
+			index.addKeyserver(new URI("https://keyserver.ubuntu.com"), KeyserverType.HKP);
+		} catch (URISyntaxException impossible) {
+		}
+	}
+
+	public static void addKeyserverMIT(final PublicKeyIndex index) {
+		try {
+			index.addKeyserver(new URI("https://pgp.mit.edu"), KeyserverType.HKP);
+		} catch (URISyntaxException impossible) {
 		}
 	}
 

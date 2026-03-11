@@ -73,13 +73,14 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 
 	private final static Logger logger = Logger.getLogger(HttpRepoServerHandler.class.getCanonicalName());
 
-	protected static final Pattern PATTERN_GROUP_ID = Pattern.compile("^[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+)*$");
+	protected static final Pattern PATTERN_GROUP_ID = Pattern
+			.compile("^[A-Za-z0-9]+([_-][A-Za-z0-9]+)*(\\.[A-Za-z0-9]+([_-][A-Za-z0-9]+)*)*$");
 
-	protected static final Pattern PATTERN_ARTIFACT_ID = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9_.-]*$");
+	protected static final Pattern PATTERN_ARTIFACT_ID = Pattern.compile("^[A-Za-z0-9]+([._-][A-Za-z0-9]+)*$");
 
-	protected static final Pattern PATTERN_VERSION = Pattern.compile("^[0-9A-Za-z-]+([._-][0-9A-Za-z-]+)*$");
+	protected static final Pattern PATTERN_VERSION = Pattern.compile("^[A-Za-z0-9]+([._-][A-Za-z0-9]+)*$");
 
-	protected static final Pattern PATTERN_CLASSIFIER = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9_-]*$");
+	protected static final Pattern PATTERN_CLASSIFIER = Pattern.compile("^[A-Za-z0-9]+([-][A-Za-z0-9]+)*$");
 
 	protected FileTypeIndex typeIndex;
 	protected ArtifactProvider artifactProvider;
@@ -160,6 +161,8 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 				.matches()
 				|| !PATTERN_GROUP_ID.matcher(groupId)
 						.matches()) {
+			System.err.println(String.format("SERVER | Invalid Coordinates Requested!\ngroupId: %s\nartifactId:    %s", //
+					groupId, artifactId));
 			sendError(ctx, request, BAD_REQUEST);
 			return;
 		}
@@ -178,7 +181,6 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 				return;
 			}
 			splitExt.removeFirst();
-			// this.fTypeMap.getOrDefault(splitExt.getLast(), FileContentType.DATA)
 			if (FileContentType.CHECKSUM == this.typeIndex.getByExtension(splitExt.getLast())
 					.contentType()) {
 				isChecksum = true;
@@ -262,12 +264,15 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 		final String extension;
 
 		// validate
-		if (!PATTERN_ARTIFACT_ID.matcher(artifactId)
+		if (!PATTERN_GROUP_ID.matcher(groupId)
 				.matches()
-				|| !PATTERN_GROUP_ID.matcher(groupId)
+				|| !PATTERN_ARTIFACT_ID.matcher(artifactId)
 						.matches()
 				|| !PATTERN_VERSION.matcher(version)
 						.matches()) {
+			System.err.println(String.format(
+					"SERVER | Invalid Coordinates Requested!\ngroupId:    %s\nartifactId: %s\nversion:    %s", //
+					groupId, artifactId, version));
 			sendError(ctx, request, BAD_REQUEST);
 			return;
 		}
