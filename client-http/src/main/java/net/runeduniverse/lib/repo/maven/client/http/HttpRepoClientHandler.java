@@ -45,6 +45,9 @@ public class HttpRepoClientHandler extends SimpleChannelInboundHandler<HttpObjec
 				.get();
 		final AContentProcessor<?> processor = dataRequest.processor();
 
+		if (!ctx.channel()
+				.isActive())
+			return;
 		if (processor.isDone()) {
 			// already done or canceled
 			ctx.close();

@@ -34,6 +34,9 @@ public class PKClientHandler extends SimpleChannelInboundHandler<HttpObject> {
 				.get();
 		final AContentProcessor<?> processor = dataRequest.processor();
 
+		if (!ctx.channel()
+				.isActive())
+			return;
 		if (processor.isDone()) {
 			// already done or canceled
 			ctx.close();

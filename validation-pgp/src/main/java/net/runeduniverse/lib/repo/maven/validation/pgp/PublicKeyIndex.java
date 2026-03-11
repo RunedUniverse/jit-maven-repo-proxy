@@ -126,47 +126,57 @@ public class PublicKeyIndex {
 
 		for (Entry<URI, KeyserverType> entry : this.keyservers.entrySet()) {
 			final URI uri = entry.getKey();
+			System.out.println("Build Request for Keyserver: " + uri.toString());
+			// extract path & query from uri
 			final StringBuffer pathBuffer = new StringBuffer();
 			final StringBuffer queryBuffer = new StringBuffer();
 			{
 				String path = uri.getPath();
 				if ((path = StringUtils.trimToNull(path)) != null) {
-					pathBuffer.append(path);
-					if (!path.endsWith("/"))
-						pathBuffer.append('/');
+					// rebuild path
+					for (String part : path.split("/")) {
+						if (part.length() == 0)
+							continue;
+						pathBuffer.append('/')
+								.append(path);
+					}
 				}
 				String query = uri.getQuery();
 				if ((query = StringUtils.trimToNull(query)) != null) {
 					queryBuffer.append(query);
 				}
 			}
+			// apply the request protocol
+			switch (entry.getValue()) {
+			case VKS:
+				// -- Verifying Keyserver --
+				// /vks/v1/by-keyid/<KEY-ID>
+				pathBuffer.append("/vks/v1/by-keyid/")
+						.append(keyString);
+				break;
+			case HKP:
+				// -- HTTP Keyserver Protocol --
+				// /pks/lookup?op=get&options=mr&search=<QUERY>
+				pathBuffer.append("/pks/lookup");
+				if (0 < queryBuffer.length())
+					queryBuffer.append('&');
+				queryBuffer.append("op=get&options=mr&search=")
+						.append(keyString);
+				break;
+			default:
+				continue;
+			}
+			// request the KeyRing
 			try {
-				switch (entry.getValue()) {
-				case VKS:
-					// -- Verifying Keyserver --
-					// /vks/v1/by-keyid/<KEY-ID>
-					pathBuffer.append("vks/v1/by-keyid/")
-							.append(keyString);
-					break;
-				case HKP:
-					// -- HTTP Keyserver Protocol --
-					// /pks/lookup?op=get&options=mr&search=<QUERY>
-					pathBuffer.append("/pks/lookup");
-					if (0 < queryBuffer.length())
-						queryBuffer.append('&');
-					queryBuffer.append("op=get&options=mr&search=")
-							.append(keyString);
-					break;
-				default:
-					continue;
-				}
 				futures.add(fetchKeyRing(new URI(uri.getScheme(), uri.getAuthority(), pathBuffer.toString(),
-						queryBuffer.toString(), uri.getFragment())).whenComplete((keyRing, throwable) -> {
-							if (keyRing != null)
-								future.complete(keyRing);
-							// TODO log error!
-						}));
-			} catch (URISyntaxException e) {
+						StringUtils.trimToNull(queryBuffer.toString()), uri.getFragment()))
+								.whenComplete((keyRing, throwable) -> {
+									if (keyRing != null)
+										future.complete(keyRing);
+									// TODO log error!
+								}));
+			} catch (URISyntaxException unexpected) {
+				unexpected.printStackTrace(System.err);
 				continue;
 			}
 		}
@@ -189,6 +199,8 @@ public class PublicKeyIndex {
 	protected CompletableFuture<PGPPublicKeyRing> fetchKeyRing(final URI uri) {
 		final TextProcessor processor = new TextProcessor();
 		final KeyDataRequest dataRequest = new KeyDataRequest(uri, processor, this.maxRedirects);
+
+		System.out.println("FETCH: " + uri.toString());
 
 		execRequest(dataRequest);
 
