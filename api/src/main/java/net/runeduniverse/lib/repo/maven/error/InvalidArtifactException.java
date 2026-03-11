@@ -26,4 +26,8 @@ public class InvalidArtifactException extends ForbiddenArtifactException {
 	public InvalidArtifactException(final String message) {
 		super(message);
 	}
+
+	public InvalidArtifactException(final String message, final Throwable cause) {
+		super(message, cause);
+	}
 }

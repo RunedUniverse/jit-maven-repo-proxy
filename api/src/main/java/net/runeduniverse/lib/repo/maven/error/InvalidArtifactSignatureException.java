@@ -15,19 +15,19 @@
  */
 package net.runeduniverse.lib.repo.maven.error;
 
-public class ForbiddenArtifactException extends ArtifactException {
+public class InvalidArtifactSignatureException extends InvalidArtifactException {
 
 	private static final long serialVersionUID = 1L;
 
-	public ForbiddenArtifactException() {
+	public InvalidArtifactSignatureException() {
 		super();
 	}
 
-	public ForbiddenArtifactException(final String message) {
+	public InvalidArtifactSignatureException(final String message) {
 		super(message);
 	}
 
-	public ForbiddenArtifactException(final String message, final Throwable cause) {
+	public InvalidArtifactSignatureException(final String message, final Throwable cause) {
 		super(message, cause);
 	}
 }
