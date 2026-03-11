@@ -88,6 +88,10 @@ public class PKClientHandler extends SimpleChannelInboundHandler<HttpObject> {
 			ctx.close();
 			return;
 		}
+		// done when -> no error or externally handled
+		if (statusCode < 400 || dataRequest.handleHttpError(ctx, response))
+			return;
+
 		if (500 <= statusCode) {
 			ctx.close();
 			// -> retry -> it eventually throws RedirectException

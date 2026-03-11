@@ -24,15 +24,18 @@ import java.util.function.Supplier;
 
 import org.apache.commons.lang3.StringUtils;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.util.AttributeKey;
 import net.runeduniverse.lib.repo.maven.data.AContentProcessor;
+import net.runeduniverse.lib.repo.maven.validation.pgp.PublicKeyIndex.Keyserver;
 import net.runeduniverse.lib.repo.maven.validation.pgp.error.RedirectException;
 
 public class KeyDataRequest {
@@ -42,18 +45,21 @@ public class KeyDataRequest {
 
 	protected final List<String> redirects = new LinkedList<>();
 
+	protected final Keyserver keyserver;
 	protected final CompletableFuture<?> future;
 	protected final AContentProcessor<?> processor;
 	protected final int maxRedirects;
 
 	protected URI uri;
 
-	public KeyDataRequest(final URI uri, final AContentProcessor<?> processor, final int maxRedirects) {
-		this(uri, processor, processor::future, maxRedirects);
+	public KeyDataRequest(final Keyserver keyserver, final URI uri, final AContentProcessor<?> processor,
+			final int maxRedirects) {
+		this(keyserver, uri, processor, processor::future, maxRedirects);
 	}
 
-	public KeyDataRequest(final URI uri, final AContentProcessor<?> processor,
+	public KeyDataRequest(final Keyserver keyserver, final URI uri, final AContentProcessor<?> processor,
 			final Supplier<CompletableFuture<?>> supplier, final int maxRedirects) {
+		this.keyserver = keyserver;
 		this.uri = uri;
 		this.processor = processor;
 		this.future = supplier.get();
@@ -133,5 +139,9 @@ public class KeyDataRequest {
 		headers.set(HttpHeaderNames.HOST, getHost());
 		headers.set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
 		return request;
+	}
+
+	public boolean handleHttpError(final ChannelHandlerContext ctx, final HttpResponse response) {
+		return this.keyserver.handleHttpError(ctx, response, this);
 	}
 }

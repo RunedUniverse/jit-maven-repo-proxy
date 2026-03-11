@@ -20,16 +20,20 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLException;
@@ -42,17 +46,19 @@ import org.bouncycastle.openpgp.PGPPublicKeyRingCollection;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import net.runeduniverse.lib.repo.maven.data.TextProcessor;
 
 public class PublicKeyIndex {
 
-	protected final Map<URI, KeyserverType> keyservers;
+	protected final NavigableMap<Integer, Set<Keyserver>> keyservers;
 	protected final Map<Long, CompletableFuture<PGPPublicKeyRing>> pkMap;
 	protected final EventLoopGroup loopGroup;
 	protected final int maxRedirects;
@@ -65,10 +71,10 @@ public class PublicKeyIndex {
 	}
 
 	public PublicKeyIndex(final EventLoopGroup loopGroup, final int maxRedirects, final int maxRetries) {
-		this(new LinkedHashMap<>(), new ConcurrentHashMap<>(), loopGroup, maxRedirects, maxRetries);
+		this(new TreeMap<>(), new ConcurrentHashMap<>(), loopGroup, maxRedirects, maxRetries);
 	}
 
-	protected PublicKeyIndex(final Map<URI, KeyserverType> keyservers,
+	protected PublicKeyIndex(final NavigableMap<Integer, Set<Keyserver>> keyservers,
 			final Map<Long, CompletableFuture<PGPPublicKeyRing>> pkMap, final EventLoopGroup loopGroup,
 			final int maxRedirects, final int maxRetries) {
 		this.keyservers = keyservers;
@@ -78,10 +84,10 @@ public class PublicKeyIndex {
 		this.maxRetries = maxRetries;
 	}
 
-	public PublicKeyIndex addKeyserver(final URI uri, final KeyserverType type) {
-		Objects.requireNonNull(uri);
-		Objects.requireNonNull(type);
-		this.keyservers.put(uri, type);
+	public PublicKeyIndex addKeyserver(final Keyserver keyserver) {
+		Objects.requireNonNull(keyserver);
+		this.keyservers.computeIfAbsent(keyserver.priority(), k -> new HashSet<>())
+				.add(keyserver);
 		return this;
 	}
 
@@ -124,88 +130,114 @@ public class PublicKeyIndex {
 		final CompletableFuture<PGPPublicKeyRing> future = new CompletableFuture<>();
 		final List<CompletableFuture<PGPPublicKeyRing>> futures = new LinkedList<>();
 
-		for (Entry<URI, KeyserverType> entry : this.keyservers.entrySet()) {
-			final URI uri = entry.getKey();
-			// extract path & query from uri
-			final StringBuffer pathBuffer = new StringBuffer();
-			final StringBuffer queryBuffer = new StringBuffer();
-			{
-				String path = uri.getPath();
-				if ((path = StringUtils.trimToNull(path)) != null) {
-					// rebuild path
-					for (String part : path.split("/")) {
-						if (part.length() == 0)
-							continue;
-						pathBuffer.append('/')
-								.append(path);
-					}
-				}
-				String query = uri.getQuery();
-				if ((query = StringUtils.trimToNull(query)) != null) {
-					queryBuffer.append(query);
-				}
-			}
-			// apply the request protocol
-			switch (entry.getValue()) {
-			case VKS:
-				// -- Verifying Keyserver --
-				// /vks/v1/by-keyid/<KEY-ID>
-				pathBuffer.append("/vks/v1/by-keyid/")
-						.append(keyString);
-				break;
-			case HKP:
-				// -- HTTP Keyserver Protocol --
-				// /pks/lookup?op=get&options=mr&search=<QUERY>
-				pathBuffer.append("/pks/lookup");
-				if (0 < queryBuffer.length())
-					queryBuffer.append('&');
-				queryBuffer.append("op=get&options=mr&search=0x")
-						.append(keyString);
-				break;
-			default:
-				continue;
-			}
-			// request the KeyRing
-			try {
-				futures.add(fetchKeyRing(new URI(uri.getScheme(), uri.getAuthority(), pathBuffer.toString(),
-						StringUtils.trimToNull(queryBuffer.toString()), uri.getFragment()))
-								.whenComplete((keyRing, throwable) -> {
-									if (keyRing != null) {
-										// keyRing successful acquired!
-										future.complete(keyRing);
-										// already found -> stop annoying the remaining servers
-										// TODO cancel other processor futures!
-									}
-									if (throwable != null)
-										System.err.println("IDX-ERR: " + throwable.getMessage());
-									// TODO log error!
-									System.err.println("done: " + keyString);
-								}));
-			} catch (URISyntaxException unexpected) {
-				unexpected.printStackTrace(System.err);
-				continue;
-			}
-		}
+		CompletableFuture<?> blocker = CompletableFuture.completedFuture(null);
 
-		// short-circurt if there are no active requests!
-		if (futures.isEmpty())
-			return CompletableFuture.completedFuture(null);
+		for (Entry<Integer, Set<Keyserver>> entry : this.keyservers.entrySet()) {
+			// schedule the requests for this set of Keyservers
+			final Set<Keyserver> set = entry.getValue();
+			if (set.isEmpty())
+				continue;
+
+			for (Keyserver keyserver : set) {
+				final URI uri = buildURI(keyString, keyserver.uri(), keyserver.type());
+				if (uri == null)
+					continue;
+
+				// request the KeyRing
+				// -> request awaits blocker ref
+				// -> again tracked in list
+				// -> next blocker is based on list
+				futures.add(blocker.thenApply(v -> {
+					// short-circurt if the data was already found!
+					if (future.isDone())
+						return null;
+
+					fetchKeyRing(keyserver, uri)//
+							.whenComplete((keyRing, throwable) -> {
+								if (keyRing != null) {
+									// keyRing successful acquired!
+									future.complete(keyRing);
+								}
+								if (throwable != null)
+									System.err.println("IDX-ERR: " + throwable.getMessage());
+								// TODO log error!
+								System.err.println("done: " + keyString);
+							})
+							.join();
+					return null;
+				}));
+			}
+			// could happen if all built uri's were null
+			if (futures.isEmpty())
+				continue;
+			// build new blocker
+			blocker = CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[futures.size()]));
+			futures.clear();
+		}
 
 		// after all futures are completed
 		// -> supply default result
 		// -> required if all fetch tries failed!
-		CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[futures.size()]))
-				.thenAccept(v -> {
-					System.err.println("finalize: " + keyString);
-					future.complete(null);
-				});
+		blocker.thenAccept(v -> {
+			System.err.println("finalize: " + keyString);
+			future.complete(null);
+		});
 
 		return future;
 	}
 
-	protected CompletableFuture<PGPPublicKeyRing> fetchKeyRing(final URI uri) {
+	protected URI buildURI(final String keyString, final URI uri, final KeyserverType type) {
+		// extract path & query from uri
+		final StringBuffer pathBuffer = new StringBuffer();
+		final StringBuffer queryBuffer = new StringBuffer();
+		{
+			String path = uri.getPath();
+			if ((path = StringUtils.trimToNull(path)) != null) {
+				// rebuild path
+				for (String part : path.split("/")) {
+					if (part.length() == 0)
+						continue;
+					pathBuffer.append('/')
+							.append(path);
+				}
+			}
+			String query = uri.getQuery();
+			if ((query = StringUtils.trimToNull(query)) != null) {
+				queryBuffer.append(query);
+			}
+		}
+		// apply the request protocol
+		switch (type) {
+		case VKS:
+			// -- Verifying Keyserver --
+			// /vks/v1/by-keyid/<KEY-ID>
+			pathBuffer.append("/vks/v1/by-keyid/")
+					.append(keyString);
+			break;
+		case HKP:
+			// -- HTTP Keyserver Protocol --
+			// /pks/lookup?op=get&options=mr&search=<QUERY>
+			pathBuffer.append("/pks/lookup");
+			if (0 < queryBuffer.length())
+				queryBuffer.append('&');
+			queryBuffer.append("op=get&options=mr&search=0x")
+					.append(keyString);
+			break;
+		default:
+			return null;
+		}
+		try {
+			return new URI(uri.getScheme(), uri.getAuthority(), pathBuffer.toString(),
+					StringUtils.trimToNull(queryBuffer.toString()), uri.getFragment());
+		} catch (URISyntaxException unexpected) {
+			unexpected.printStackTrace(System.err);
+			return null;
+		}
+	}
+
+	protected CompletableFuture<PGPPublicKeyRing> fetchKeyRing(final Keyserver keyserver, final URI uri) {
 		final TextProcessor processor = new TextProcessor();
-		final KeyDataRequest dataRequest = new KeyDataRequest(uri, processor, this.maxRedirects);
+		final KeyDataRequest dataRequest = new KeyDataRequest(keyserver, uri, processor, this.maxRedirects);
 
 		execRequest(dataRequest);
 
@@ -263,22 +295,20 @@ public class PublicKeyIndex {
 	}
 
 	public static void addKeyserverOpenPGP(final PublicKeyIndex index) {
-		try {
-			index.addKeyserver(new URI("https://keys.openpgp.org"), KeyserverType.VKS);
-		} catch (URISyntaxException impossible) {
-		}
+		index.addKeyserver(new KeyserverOpenPGP(0, KeyserverType.VKS));
 	}
 
 	public static void addKeyserverUbuntu(final PublicKeyIndex index) {
 		try {
-			index.addKeyserver(new URI("https://keyserver.ubuntu.com"), KeyserverType.HKP);
+			index.addKeyserver(new Keyserver(0, new URI("https://keyserver.ubuntu.com"), KeyserverType.HKP));
 		} catch (URISyntaxException impossible) {
 		}
 	}
 
 	public static void addKeyserverMIT(final PublicKeyIndex index) {
 		try {
-			index.addKeyserver(new URI("https://pgp.mit.edu"), KeyserverType.HKP);
+			// lower priority starts first -> MIT is extremely slow
+			index.addKeyserver(new Keyserver(100, new URI("https://pgp.mit.edu"), KeyserverType.HKP));
 		} catch (URISyntaxException impossible) {
 		}
 	}
@@ -287,5 +317,69 @@ public class PublicKeyIndex {
 		final PublicKeyIndex index = new PublicKeyIndex(3, 5);
 		addDefaultKeyservers(index);
 		return index;
+	}
+
+	public static class Keyserver {
+		protected final int priority;
+		protected final URI uri;
+		protected final KeyserverType type;
+
+		public Keyserver(final int priority, final URI uri, final KeyserverType type) {
+			this.priority = priority;
+			this.uri = uri;
+			this.type = type;
+		}
+
+		public int priority() {
+			return this.priority;
+		}
+
+		public URI uri() {
+			return this.uri;
+		}
+
+		public KeyserverType type() {
+			return this.type;
+		}
+
+		public boolean handleHttpError(final ChannelHandlerContext ctx, final HttpResponse response,
+				final KeyDataRequest dataRequest) {
+			return false;
+		}
+	}
+
+	public static class KeyserverOpenPGP extends Keyserver {
+
+		public static final URI URI_OPENPGP;
+		static {
+			URI uri;
+			try {
+				uri = new URI("https://keys.openpgp.org");
+			} catch (URISyntaxException impossible) {
+				uri = null;
+			}
+			URI_OPENPGP = uri;
+		}
+
+		public KeyserverOpenPGP(final int priority, final KeyserverType type) {
+			super(priority, URI_OPENPGP, type);
+		}
+
+		@Override
+		public boolean handleHttpError(final ChannelHandlerContext ctx, final HttpResponse response,
+				final KeyDataRequest dataRequest) {
+			final int statusCode = response.status()
+					.code();
+			if (statusCode == 429) {
+				// Rate Limited
+				ctx.close();
+				try {
+					TimeUnit.SECONDS.sleep(1l);
+				} catch (InterruptedException ignored) {
+				}
+				return true;
+			}
+			return false;
+		}
 	}
 }
