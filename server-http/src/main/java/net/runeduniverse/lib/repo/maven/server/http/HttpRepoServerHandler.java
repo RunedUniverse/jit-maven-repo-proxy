@@ -80,7 +80,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 
 	protected static final Pattern PATTERN_VERSION = Pattern.compile("^[A-Za-z0-9]+([._-][A-Za-z0-9]+)*$");
 
-	protected static final Pattern PATTERN_CLASSIFIER = Pattern.compile("^[A-Za-z0-9]+([-][A-Za-z0-9]+)*$");
+	protected static final Pattern PATTERN_CLASSIFIER = Pattern.compile("^[A-Za-z0-9]+([_-][A-Za-z0-9]+)*$");
 
 	protected FileTypeIndex typeIndex;
 	protected ArtifactProvider artifactProvider;

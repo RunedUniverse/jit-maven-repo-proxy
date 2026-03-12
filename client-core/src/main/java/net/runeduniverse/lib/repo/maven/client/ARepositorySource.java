@@ -65,25 +65,29 @@ public abstract class ARepositorySource implements RepositorySource {
 
 	@Override
 	public RepositorySource addFirstValidator(final MetadataValidator validator) {
-		this.metadataValidators.addFirst(validator);
+		if (validator != null)
+			this.metadataValidators.addFirst(validator);
 		return this;
 	}
 
 	@Override
 	public RepositorySource addFirstValidator(final ArtifactValidator validator) {
-		this.artifactValidators.addFirst(validator);
+		if (validator != null)
+			this.artifactValidators.addFirst(validator);
 		return this;
 	}
 
 	@Override
 	public ARepositorySource addLastValidator(final MetadataValidator validator) {
-		this.metadataValidators.addLast(validator);
+		if (validator != null)
+			this.metadataValidators.addLast(validator);
 		return this;
 	}
 
 	@Override
 	public ARepositorySource addLastValidator(final ArtifactValidator validator) {
-		this.artifactValidators.addLast(validator);
+		if (validator != null)
+			this.artifactValidators.addLast(validator);
 		return this;
 	}
 

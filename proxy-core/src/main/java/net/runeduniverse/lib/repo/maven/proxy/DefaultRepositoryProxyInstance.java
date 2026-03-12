@@ -244,7 +244,8 @@ public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInsta
 			if (throwable instanceof InvalidArtifactException || throwable instanceof UnvalidatableArtifactException)
 				throw throwable;
 			// bury it! -> if 1 fails all do!
-			throwable.printStackTrace(System.err);
+			if (!(throwable instanceof ArtifactException))
+				throwable.printStackTrace(System.err);
 			return data;
 		}
 
