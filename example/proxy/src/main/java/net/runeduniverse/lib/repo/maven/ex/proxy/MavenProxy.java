@@ -21,10 +21,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import io.netty.channel.Channel;
 import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
+import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.client.http.HttpSource;
@@ -72,6 +74,21 @@ public class MavenProxy {
 						@Override
 						public void preLookup(ArtifactDataCoordinates coords) throws ArtifactException {
 							System.out.println("lookup-artifact: " + ArtifactDataCoordinates.key(coords));
+						}
+
+						@Override
+						public void postLookup(Future<ArtifactData> future) {
+							Object data = null;
+							Throwable throwable = null;
+
+							try {
+								data = future.get(1, TimeUnit.MINUTES);
+							} catch (Throwable t) {
+								throwable = t;
+							}
+
+							System.out.println("DATA: " + data);
+							System.out.println("ERROR: " + throwable);
 						}
 					});
 		});

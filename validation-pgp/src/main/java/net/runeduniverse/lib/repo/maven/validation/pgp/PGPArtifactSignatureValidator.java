@@ -26,6 +26,8 @@ import java.util.Iterator;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.bouncycastle.bcpg.ArmoredInputStream;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -50,7 +52,7 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 	public static final Provider BOUNCY_CASTLE_PROVIDER = new BouncyCastleProvider();
 
 	static {
-		Security.addProvider(BOUNCY_CASTLE_PROVIDER);
+		Security.insertProviderAt(BOUNCY_CASTLE_PROVIDER, 1);
 	}
 
 	protected final PublicKeyIndex index;
@@ -104,41 +106,62 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 			return false;
 		}
 
-		final CompletableFuture<PGPPublicKeyRing> pubKeyRingFuture = this.index
-				.fetchKeyRingIfAbsent(signature.getKeyID());
+		final long sigKeyID = signature.getKeyID();
+		final CompletableFuture<PGPPublicKeyRing> pubKeyRingFuture = this.index.fetchKeyRingIfAbsent(sigKeyID);
 		final PGPPublicKey pubKey;
 
 		try {
-			final PGPPublicKeyRing pubKeyRing = pubKeyRingFuture.get();
+			final PGPPublicKeyRing pubKeyRing = pubKeyRingFuture.get(5, TimeUnit.MINUTES);
 			if (pubKeyRing == null) {
 				System.err.println("----------------- HERE » 1 --------------");
 				System.err.println("No Public-Key found for " + ArtifactDataCoordinates.key(data) + " ID: "
-						+ Long.toHexString(signature.getKeyID())
+						+ Long.toHexString(sigKeyID)
 								.toUpperCase());
 				return false;
 			}
-			pubKey = pubKeyRing.getPublicKey();
+
+			PGPPublicKey selectedKey = null;
+			for (Iterator<PGPPublicKey> i = pubKeyRing.getPublicKeys(); i.hasNext();) {
+				selectedKey = i.next();
+				if (selectedKey.getKeyID() == sigKeyID)
+					break;
+			}
+			if (selectedKey == null) {
+				System.err.println("----------------- HERE » 1.2 --------------");
+				System.err.println("No matching Public-Key found for " + ArtifactDataCoordinates.key(data) + " ID: "
+						+ Long.toHexString(sigKeyID)
+								.toUpperCase());
+				return false;
+			}
+			pubKey = selectedKey;
 		} catch (InterruptedException | CancellationException e) {
 			System.err.println("----------------- HERE » 2 --------------");
 			System.err.println("No Public-Key found for " + ArtifactDataCoordinates.key(data) + " ID: "
-					+ Long.toHexString(signature.getKeyID())
+					+ Long.toHexString(sigKeyID)
 							.toUpperCase());
 			e.printStackTrace(System.err);
 			return false;
 		} catch (ExecutionException e) {
 			System.err.println("----------------- HERE » 3 --------------");
 			System.err.println("No Public-Key found for " + ArtifactDataCoordinates.key(data) + " ID: "
-					+ Long.toHexString(signature.getKeyID())
+					+ Long.toHexString(sigKeyID)
 							.toUpperCase());
 			e.getCause()
 					.printStackTrace(System.err);
+			return false;
+		} catch (TimeoutException e) {
+			System.err.println("----------------- HERE » 4 --------------");
+			System.err.println("Timeout reached when loading Public-Key for " + ArtifactDataCoordinates.key(data)
+					+ " ID: " + Long.toHexString(sigKeyID)
+							.toUpperCase());
 			return false;
 		}
 
 		try {
 			signature.init(new JcaPGPContentVerifierBuilderProvider().setProvider(BOUNCY_CASTLE_PROVIDER), pubKey);
 		} catch (PGPException e) {
-			System.err.println("Invalid Public-Key for the Signature provided by" + ArtifactDataCoordinates.key(data));
+			System.err.println("Invalid Public-Key for the Signature provided by " + ArtifactDataCoordinates.key(data));
+			System.out.println("Pub-Key Algorithm: " + pubKey.getAlgorithm());
 			e.getCause()
 					.printStackTrace(System.err);
 			return false;

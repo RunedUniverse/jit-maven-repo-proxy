@@ -18,7 +18,6 @@ package net.runeduniverse.lib.repo.maven.client;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Deque;
-
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
@@ -109,8 +108,9 @@ public abstract class ARepositorySource implements RepositorySource {
 			@Override
 			public boolean validate(ArtifactData data) throws InvalidArtifactException {
 				boolean processed = false;
-				for (ArtifactValidator validator : ARepositorySource.this.artifactValidators)
+				for (ArtifactValidator validator : ARepositorySource.this.artifactValidators) {
 					processed = processed || validator.validate(data);
+				}
 				return processed;
 			}
 		};

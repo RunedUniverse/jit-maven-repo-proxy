@@ -18,16 +18,29 @@ package net.runeduniverse.lib.repo.maven.error;
 public class NotFoundArtifactException extends ArtifactException {
 
 	private static final long serialVersionUID = 1L;
+	private static final int PRIORITY = 50;
 
 	public NotFoundArtifactException() {
-		super();
+		super(PRIORITY);
+	}
+
+	public NotFoundArtifactException(final int priority) {
+		super(priority);
 	}
 
 	public NotFoundArtifactException(final String message) {
-		super(message);
+		super(PRIORITY, message);
+	}
+
+	public NotFoundArtifactException(final int priority, final String message) {
+		super(priority, message);
 	}
 
 	public NotFoundArtifactException(final String message, final Throwable cause) {
-		super(message, cause);
+		super(PRIORITY, message, cause);
+	}
+
+	public NotFoundArtifactException(final int priority, final String message, final Throwable cause) {
+		super(priority, message, cause);
 	}
 }

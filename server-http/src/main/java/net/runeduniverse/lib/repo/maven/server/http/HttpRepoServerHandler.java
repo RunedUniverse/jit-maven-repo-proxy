@@ -342,9 +342,12 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 				// handle errors
 				if (throwable instanceof NotFoundArtifactException)
 					sendError(ctx, request, NOT_FOUND);
-				else if (throwable instanceof ForbiddenArtifactException)
+				else if (throwable instanceof ForbiddenArtifactException) {
 					sendError(ctx, request, FORBIDDEN);
-				else if (throwable instanceof UnauthorizedArtifactException)
+					logger.log(Level.WARNING,
+							String.format("\033[1martifact resolution forbidden!\033[0m\n%s: %s", throwable.getClass()
+									.getCanonicalName(), throwable.getMessage()));
+				} else if (throwable instanceof UnauthorizedArtifactException)
 					sendError(ctx, request, UNAUTHORIZED);
 				else {
 					sendError(ctx, request, INTERNAL_SERVER_ERROR);

@@ -18,16 +18,29 @@ package net.runeduniverse.lib.repo.maven.error;
 public class InvalidArtifactSignatureException extends InvalidArtifactException {
 
 	private static final long serialVersionUID = 1L;
+	private static final int PRIORITY = -30;
 
 	public InvalidArtifactSignatureException() {
-		super();
+		super(PRIORITY);
+	}
+
+	public InvalidArtifactSignatureException(final int priority) {
+		super(priority);
 	}
 
 	public InvalidArtifactSignatureException(final String message) {
-		super(message);
+		super(PRIORITY, message);
+	}
+
+	public InvalidArtifactSignatureException(final int priority, final String message) {
+		super(priority, message);
 	}
 
 	public InvalidArtifactSignatureException(final String message, final Throwable cause) {
-		super(message, cause);
+		super(PRIORITY, message, cause);
+	}
+
+	public InvalidArtifactSignatureException(final int priority, final String message, final Throwable cause) {
+		super(priority, message, cause);
 	}
 }

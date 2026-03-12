@@ -20,6 +20,7 @@ public class InvalidChecksumArtifactException extends InvalidArtifactException {
 	public static final String MSG_MISSMATCH = "Checksum missmatch detected upon Artifact download!";
 
 	private static final long serialVersionUID = 1L;
+	private static final int PRIORITY = -25;
 
 	protected final String checksumExt;
 	protected final String localChecksum;
@@ -27,12 +28,22 @@ public class InvalidChecksumArtifactException extends InvalidArtifactException {
 
 	public InvalidChecksumArtifactException(final String checksumExt, final String localChecksum,
 			final String remoteChecksum) {
-		this(MSG_MISSMATCH, checksumExt, localChecksum, remoteChecksum);
+		this(PRIORITY, MSG_MISSMATCH, checksumExt, localChecksum, remoteChecksum);
+	}
+
+	public InvalidChecksumArtifactException(final int priority, final String checksumExt, final String localChecksum,
+			final String remoteChecksum) {
+		this(priority, MSG_MISSMATCH, checksumExt, localChecksum, remoteChecksum);
 	}
 
 	public InvalidChecksumArtifactException(final String reason, final String checksumExt, final String localChecksum,
 			final String remoteChecksum) {
-		super(reason);
+		this(PRIORITY, reason, checksumExt, localChecksum, remoteChecksum);
+	}
+
+	public InvalidChecksumArtifactException(final int priority, final String reason, final String checksumExt,
+			final String localChecksum, final String remoteChecksum) {
+		super(priority, reason);
 		this.checksumExt = checksumExt;
 		this.localChecksum = localChecksum;
 		this.remoteChecksum = remoteChecksum;

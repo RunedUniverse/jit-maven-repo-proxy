@@ -18,16 +18,38 @@ package net.runeduniverse.lib.repo.maven.error;
 public class ArtifactException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;
+	private static final int PRIORITY = 0;
+
+	protected final int priority;
 
 	public ArtifactException() {
+		this(PRIORITY);
+	}
+
+	public ArtifactException(final int priority) {
 		super();
+		this.priority = priority;
 	}
 
 	public ArtifactException(final String message) {
+		this(PRIORITY, message);
+	}
+
+	public ArtifactException(final int priority, final String message) {
 		super(message);
+		this.priority = priority;
 	}
 
 	public ArtifactException(final String message, final Throwable cause) {
+		this(PRIORITY, message, cause);
+	}
+
+	public ArtifactException(final int priority, final String message, final Throwable cause) {
 		super(message, cause);
+		this.priority = priority;
+	}
+
+	public int priority() {
+		return this.priority;
 	}
 }

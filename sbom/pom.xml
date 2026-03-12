@@ -82,6 +82,7 @@
 		<netty-version>4.2.10.Final</netty-version>
 		<apache-commons-codec-version>1.21.0</apache-commons-codec-version>
 		<apache-commons-lang3-version>3.20.0</apache-commons-lang3-version>
+		<bouncycastle-prov-version>1.83</bouncycastle-prov-version>
 		<bouncycastle-pgp-version>1.83</bouncycastle-pgp-version>
 	</properties>
 
@@ -111,6 +112,11 @@
 				<groupId>org.apache.commons</groupId>
 				<artifactId>commons-lang3</artifactId>
 				<version>${apache-commons-lang3-version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcprov-jdk18on</artifactId>
+				<version>${bouncycastle-prov-version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.bouncycastle</groupId>

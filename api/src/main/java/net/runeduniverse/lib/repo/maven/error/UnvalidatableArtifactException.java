@@ -20,12 +20,29 @@ public class UnvalidatableArtifactException extends ForbiddenArtifactException {
 	public static final String MSG_VALIDATOR_MISSMATCH = "Validator was unable to validate the ArtifactData";
 
 	private static final long serialVersionUID = 1L;
+	private static final int PRIORITY = -10;
 
 	public UnvalidatableArtifactException() {
-		super();
+		super(PRIORITY);
+	}
+
+	public UnvalidatableArtifactException(final int priority) {
+		super(priority);
 	}
 
 	public UnvalidatableArtifactException(final String message) {
-		super(message);
+		super(PRIORITY, message);
+	}
+
+	public UnvalidatableArtifactException(final int priority, final String message) {
+		super(priority, message);
+	}
+
+	public UnvalidatableArtifactException(final String message, final Throwable cause) {
+		super(PRIORITY, message, cause);
+	}
+
+	public UnvalidatableArtifactException(final int priority, final String message, final Throwable cause) {
+		super(priority, message, cause);
 	}
 }

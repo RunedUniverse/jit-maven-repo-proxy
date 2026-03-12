@@ -184,7 +184,7 @@ public class HttpArtifactData extends AArtifactData {
 				repoUri.resolve(getGAVPath() + '/' + getArtifactName()), fileProcessor, () -> {
 					return CompletableFuture.allOf(//
 							futures.toArray(new CompletableFuture<?>[futures.size()]))
-							.thenAccept(v -> {
+							.thenApply(v -> {
 								// --- Verify Artifact - Data
 								// verify checksums / update if missing
 								for (Entry<String, MessageDigest> entry : localChecksums.entrySet()) {
@@ -205,6 +205,7 @@ public class HttpArtifactData extends AArtifactData {
 								}
 								// --- Validate Artifact - Data
 								HttpArtifactData.this.validateArtifact();
+								return null;
 							});
 				}, maxRedirects);
 		artifactRequest.subProcessorMap()

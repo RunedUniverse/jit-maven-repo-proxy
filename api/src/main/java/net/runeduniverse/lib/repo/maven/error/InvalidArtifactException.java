@@ -18,16 +18,29 @@ package net.runeduniverse.lib.repo.maven.error;
 public class InvalidArtifactException extends ForbiddenArtifactException {
 
 	private static final long serialVersionUID = 1L;
+	private static final int PRIORITY = -20;
 
 	public InvalidArtifactException() {
-		super();
+		super(PRIORITY);
+	}
+
+	public InvalidArtifactException(final int priority) {
+		super(priority);
 	}
 
 	public InvalidArtifactException(final String message) {
-		super(message);
+		super(PRIORITY, message);
+	}
+
+	public InvalidArtifactException(final int priority, final String message) {
+		super(priority, message);
 	}
 
 	public InvalidArtifactException(final String message, final Throwable cause) {
-		super(message, cause);
+		super(PRIORITY, message, cause);
+	}
+
+	public InvalidArtifactException(final int priority, final String message, final Throwable cause) {
+		super(priority, message, cause);
 	}
 }

@@ -18,11 +18,14 @@ package net.runeduniverse.lib.repo.maven.proxy;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Future;
 import java.util.function.Function;
@@ -33,8 +36,10 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.data.UnmodifiableArtifactData;
 import net.runeduniverse.lib.repo.maven.data.UnmodifiableArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.error.ArtifactException;
 import net.runeduniverse.lib.repo.maven.error.InvalidArtifactException;
 import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
+import net.runeduniverse.lib.repo.maven.error.UnvalidatableArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.api.LookupArtifactListener;
 import net.runeduniverse.lib.repo.maven.proxy.api.LookupMetadataListener;
 import net.runeduniverse.lib.repo.maven.proxy.api.MavenRepositoryProxyInstance;
@@ -175,19 +180,32 @@ public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInsta
 
 		future = new CompletableFuture<>();
 		final List<CompletableFuture<Void>> upstream = new LinkedList<>();
+		final Map<Integer, Queue<ArtifactException>> issues = new ConcurrentHashMap<>();
 
 		for (RepositorySource source : this.sources.values()) {
 			if ((client = source.client()) == null)
 				continue;
-			upstream.add(attachToArtifactLookup(client, coords, false, client.getArtifact(coords)).thenAccept(data -> {
-				if (data == null)
-					return;
-				future.complete(SourceArtifactData.wrap(source.key(), data));
-			}));
+			upstream.add(attachToArtifactLookup(client, coords, false, client.getArtifact(coords))
+					.handle((data, throwable) -> {
+						if (data != null)
+							future.complete(SourceArtifactData.wrap(source.key(), data));
+						if (throwable instanceof ArtifactException) {
+							final ArtifactException ex = (ArtifactException) throwable;
+							issues.computeIfAbsent(ex.priority(), p -> new ConcurrentLinkedQueue<>())
+									.add(ex);
+						}
+						return null;
+					}));
 		}
 		// cleanup pass -> result usually ignored
 		CompletableFuture.allOf(upstream.toArray(new CompletableFuture<?>[0]))
-				.thenRun(() -> future.complete(null));
+				.thenRun(() -> {
+					ArtifactException ex = DefaultRepositoryProxyInstance.this.processArtifactLookupErrors(issues);
+					if (ex == null)
+						future.complete(null);
+					else
+						future.completeExceptionally(ex);
+				});
 
 		future.whenComplete(this::postArtifactLookup);
 		return future;
@@ -215,6 +233,7 @@ public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInsta
 	protected ArtifactData interceptArtifactLookup(final RepositorySourceClient client,
 			final ArtifactCoordinates coords, final boolean exact, final ArtifactData data, Throwable throwable)
 			throws Throwable {
+
 		if (throwable instanceof CompletionException)
 			throwable = throwable.getCause();
 		if (throwable != null) {
@@ -222,7 +241,7 @@ public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInsta
 			if (exact)
 				throw throwable;
 			// rethrow validation errors!
-			if (throwable instanceof InvalidArtifactException)
+			if (throwable instanceof InvalidArtifactException || throwable instanceof UnvalidatableArtifactException)
 				throw throwable;
 			// bury it! -> if 1 fails all do!
 			throwable.printStackTrace(System.err);
@@ -231,6 +250,26 @@ public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInsta
 
 		// TODO do something with it!
 		return data;
+	}
+
+	/**
+	 * Selects the ArtifactException that get's thrown from the recorded map.
+	 *
+	 * @param issues
+	 * @return the ArtifactException to be rethrown or null for an empty result
+	 */
+	protected ArtifactException processArtifactLookupErrors(final Map<Integer, Queue<ArtifactException>> issues) {
+		for (Entry<Integer, Queue<ArtifactException>> entry : issues.entrySet()) {
+			final Queue<ArtifactException> queue = entry.getValue();
+			if (queue == null || queue.isEmpty())
+				continue;
+			for (ArtifactException ex : queue) {
+				if (ex == null)
+					continue;
+				return ex;
+			}
+		}
+		return null;
 	}
 
 	protected void postArtifactLookup(final ArtifactData data, final Throwable throwable) {
