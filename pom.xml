@@ -378,6 +378,41 @@
 				</plugins>
 			</build>
 		</profile>
+		<profile>
+			<id>license-bouncycastle-approve</id>
+			<activation>
+				<property>
+					<name>license-bouncycastle-approve</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.mycila</groupId>
+						<artifactId>license-maven-plugin</artifactId>
+						<configuration>
+							<dependencyPolicies combine.children="append">
+								<dependencyPolicy>
+									<type>LICENSE_URL</type>
+									<rule>APPROVE</rule>
+									<value>
+										http://www.bouncycastle.org/licence.html
+									</value>
+								</dependencyPolicy>
+								<dependencyPolicy>
+									<type>LICENSE_URL</type>
+									<rule>APPROVE</rule>
+									<value>
+										https://www.bouncycastle.org/licence.html
+									</value>
+								</dependencyPolicy>
+							</dependencyPolicies>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
 	</profiles>
 
 	<dependencyManagement>
