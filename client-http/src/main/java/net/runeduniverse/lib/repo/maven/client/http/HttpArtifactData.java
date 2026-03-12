@@ -167,7 +167,7 @@ public class HttpArtifactData extends AArtifactData {
 					.handle((value, ignoredEx) -> {
 						// we don't care about checksum exceptions -> they are basically optional
 						if (value != null)
-							HttpArtifactData.this.checksums.put(ext, value);
+							HttpArtifactData.this.checksums.put(ext, HttpArtifactData.this.normalizeChecksum(value));
 						return value;
 					}));
 			subProcessorMap.put(ext, textProcessor);
@@ -197,8 +197,7 @@ public class HttpArtifactData extends AArtifactData {
 										this.checksums.put(ext, localChecksum);
 										continue;
 									}
-									if (!refChecksum.trim()
-											.equals(localChecksum)) {
+									if (!refChecksum.equals(localChecksum)) {
 										// somthing is wrong !!!
 										throw new InvalidChecksumArtifactException(ext, localChecksum, refChecksum);
 									}
@@ -211,6 +210,21 @@ public class HttpArtifactData extends AArtifactData {
 		artifactRequest.subProcessorMap()
 				.putAll(subProcessorMap);
 		return this.artifactRequest = artifactRequest;
+	}
+
+	protected String normalizeChecksum(String value) {
+		// -> it appears some servers append the artifact's path
+		// to the end of the checksum!
+		if (value == null)
+			return null;
+		final String[] line = value.split(" ");
+		for (int i = 0; i < line.length; i++) {
+			value = line[i].trim();
+			if (value.isEmpty())
+				continue;
+			return value;
+		}
+		return null;
 	}
 
 	protected void validateArtifact() throws InvalidArtifactException {
