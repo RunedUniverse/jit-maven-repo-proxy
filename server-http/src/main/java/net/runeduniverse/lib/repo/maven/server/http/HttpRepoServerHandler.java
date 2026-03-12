@@ -25,6 +25,7 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
@@ -82,8 +83,8 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 
 	protected static final Pattern PATTERN_CLASSIFIER = Pattern.compile("^[A-Za-z0-9]+([_-][A-Za-z0-9]+)*$");
 
-	protected FileTypeIndex typeIndex;
-	protected ArtifactProvider artifactProvider;
+	protected final FileTypeIndex typeIndex;
+	protected final ArtifactProvider artifactProvider;
 
 	public HttpRepoServerHandler(final FileTypeIndex typeIndex) {
 		this(typeIndex, null);
@@ -95,16 +96,21 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 	}
 
 	protected ArtifactProvider getArtifactProvider(final ChannelHandlerContext ctx) {
-		if (this.artifactProvider == null) {
-			this.artifactProvider = ctx.channel()
-					.attr(HttpServerUtils.ATTKEY_ARTIFACT_PROVIDER)
-					.get();
-			if (this.artifactProvider instanceof FileTypeIndex) {
-				// if applicable override
-				this.typeIndex = (FileTypeIndex) this.artifactProvider;
-			}
-		}
+		final ArtifactProvider artifactProvider = ctx.channel()
+				.attr(HttpServerUtils.ATTKEY_ARTIFACT_PROVIDER)
+				.get();
+		if (artifactProvider != null)
+			return artifactProvider;
 		return this.artifactProvider;
+	}
+
+	protected FileTypeIndex getTypeIndex(final ChannelHandlerContext ctx) {
+		final ArtifactProvider artifactProvider = getArtifactProvider(ctx);
+		if (artifactProvider instanceof FileTypeIndex) {
+			// if applicable override
+			return (FileTypeIndex) this.artifactProvider;
+		}
+		return this.typeIndex;
 	}
 
 	@Override
@@ -114,7 +120,8 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 				.config()
 				.setAutoRead(false);
 
-		if (!GET.equals(request.method())) {
+		final HttpMethod httpMethod = request.method();
+		if (!(GET.equals(httpMethod) || HEAD.equals(httpMethod))) {
 			sendError(ctx, request, METHOD_NOT_ALLOWED);
 			return;
 		}
@@ -181,7 +188,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 				return;
 			}
 			splitExt.removeFirst();
-			if (FileContentType.CHECKSUM == this.typeIndex.getByExtension(splitExt.getLast())
+			if (FileContentType.CHECKSUM == getTypeIndex(ctx).getByExtension(splitExt.getLast())
 					.contentType()) {
 				isChecksum = true;
 				fileType = splitExt.pollLast();
@@ -311,7 +318,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 			} else
 				classifier = null;
 			// identify fileType
-			contentType = this.typeIndex.getByExtension(splitExt.getLast())
+			contentType = getTypeIndex(ctx).getByExtension(splitExt.getLast())
 					.contentType();
 			switch (contentType) {
 			case SIGNATURE:
@@ -393,7 +400,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 		}
 
 		final HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-		setContentHeaders(response, fileLength, fileName, fileType);
+		setContentHeaders(ctx, response, fileLength, fileName, fileType);
 		// setChecksumHeaders(response, checksums);
 		setCommonHeaders(request, response);
 
@@ -401,13 +408,16 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 		ctx.write(response);
 
 		// Write the content
-		final ChannelFuture sendFileFuture = ctx.write(new DefaultFileRegion(fileChannel, 0, fileLength));
-		sendFileFuture.addListener(f -> {
-			try {
-				fileChannel.close();
-			} catch (IOException ignored) {
-			}
-		});
+		if (GET.equals(request.method())) {
+			// if HEAD -> omit content
+			final ChannelFuture sendFileFuture = ctx.write(new DefaultFileRegion(fileChannel, 0, fileLength));
+			sendFileFuture.addListener(f -> {
+				try {
+					fileChannel.close();
+				} catch (IOException ignored) {
+				}
+			});
+		}
 		sendEnd(ctx, request);
 	}
 
@@ -417,26 +427,29 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 		final byte[] utf8Data = textData.getBytes(StandardCharsets.UTF_8);
 
 		final HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-		setContentHeaders(response, utf8Data.length, fileName, fileType);
+		setContentHeaders(ctx, response, utf8Data.length, fileName, fileType);
 		setCommonHeaders(request, response);
 
 		// Write the initial line and the header
 		ctx.write(response);
 
 		// Write the content
-		ctx.write(Unpooled.wrappedBuffer(utf8Data));
+		if (GET.equals(request.method())) {
+			// if HEAD -> omit content
+			ctx.write(Unpooled.wrappedBuffer(utf8Data));
+		}
 		sendEnd(ctx, request);
 	}
 
-	protected void setContentHeaders(final HttpResponse response, final long length, final String fileName,
-			final String fileType) {
+	protected void setContentHeaders(final ChannelHandlerContext ctx, final HttpResponse response, final long length,
+			final String fileName, final String fileType) {
 		final HttpHeaders headers = response.headers();
 
 		headers.set(HttpHeaderNames.CONTENT_LENGTH, length);
 
 		headers.set(HttpHeaderNames.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"");
 
-		headers.set(HttpHeaderNames.CONTENT_TYPE, this.typeIndex.getByExtension(fileType)
+		headers.set(HttpHeaderNames.CONTENT_TYPE, getTypeIndex(ctx).getByExtension(fileType)
 				.getMetadata(String.class, FileType.META_HTTP_CONTENT_TYPE_HEADER, "application/octet-stream"));
 		headers.set("X-Content-Type-Options", "nosniff");
 	}

@@ -37,7 +37,7 @@ public class ProxyServerBuilder {
 	protected final Map<String, RepoInstanceBuilder> instanceMap = new LinkedHashMap<>();
 
 	protected Function<String, RepoInstanceBuilder> repoBuilderFactory = RepoInstanceBuilder::new;
-	protected Function<MavenRepositoryProxyInstance, Cache> cacheFactory = DefaultCache::new;
+	protected Function<MavenRepositoryProxyInstance, Cache> cacheFactory = null;
 	protected BiFunction<Function<String, MavenRepositoryInstance>, FileTypeIndex, ChannelInitializer<SocketChannel>> serverChannelInitializer = null;
 	protected FileTypeIndex fileTypeIndex = null;
 
@@ -59,7 +59,7 @@ public class ProxyServerBuilder {
 	}
 
 	public ProxyServerBuilder setCacheFactory(final Function<MavenRepositoryProxyInstance, Cache> factory) {
-		this.cacheFactory = factory == null ? DefaultCache::new : factory;
+		this.cacheFactory = factory;
 		return this;
 	}
 
@@ -79,9 +79,12 @@ public class ProxyServerBuilder {
 				this.fileTypeIndex == null ? new DefaultFileTypeIndex() : this.fileTypeIndex,
 				this.serverChannelInitializer);
 
+		final Function<MavenRepositoryProxyInstance, Cache> cacheFactory = //
+				this.cacheFactory == null ? DefaultCache::new : this.cacheFactory;
+
 		for (Entry<String, RepoInstanceBuilder> entry : this.instanceMap.entrySet()) {
 			server.addInstance(entry.getValue()
-					.build(this.cacheFactory));
+					.build(cacheFactory));
 		}
 
 		return server;
