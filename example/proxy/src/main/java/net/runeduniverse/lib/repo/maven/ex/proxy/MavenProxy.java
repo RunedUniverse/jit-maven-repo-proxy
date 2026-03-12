@@ -21,6 +21,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -48,16 +50,20 @@ public class MavenProxy {
 	protected static ProxyServer proxy;
 	protected static Channel channel;
 
-	public static void main(String[] args) throws InterruptedException, URISyntaxException {
+	public static void main(String[] argsArr) throws InterruptedException, URISyntaxException {
+		LinkedList<String> args = new LinkedList<>(Arrays.asList(argsArr));
+
 		System.out.println("--- MavenProxy ---");
 		workspacePath = Paths.get(MavenProxy.class.getProtectionDomain()
 				.getCodeSource()
 				.getLocation()
 				.toURI())
 				.getParent();
+		repoPath = workspacePath.resolve("repo");
 
-		ArtifactValidator pgpValidator = null;
-		// new PGPArtifactSignatureValidator(PublicKeyIndex.createDefaultKeyIndex());
+		ArtifactValidator pgpValidator = args.contains("--verify-sig")
+				? new PGPArtifactSignatureValidator(PublicKeyIndex.createDefaultKeyIndex())
+				: null;
 		LookupMetadataListener lookupMetadataListener = new LookupMetadataListener() {
 			@Override
 			public void preLookup(ArtifactCoordinates coords) throws ArtifactException {
@@ -90,21 +96,23 @@ public class MavenProxy {
 		builder.setServerChannelInitializer(HttpRepoServerInitializer::new);
 		builder.instance("maven-central", instance -> {
 			instance.putSource(new HttpSource("repo1", URI.create("https://repo1.maven.org/maven2/"),
-					workspacePath.resolve("repo1"), 3, 10).addFirstValidator(pgpValidator))
+					repoPath.resolve("repo1"), 3, 10).addFirstValidator(pgpValidator))
 					.addListener(lookupMetadataListener)
 					.addListener(lookupArtifactListener);
-			/*
-			 * instance.putSource(new HttpSource("rnet-releases",
-			 * URI.create("https://nexus.runeduniverse.net/repository/maven-releases/"),
-			 * workspacePath.resolve("rnet-releases"), 3,
-			 * 10).addFirstValidator(pgpValidator)) .addListener(lookupMetadataListener)
-			 * .addListener(lookupArtifactListener); instance.putSource(new
-			 * HttpSource("rnet-development",
-			 * URI.create("https://nexus.runeduniverse.net/repository/maven-development/"),
-			 * workspacePath.resolve("rnet-development"), 3,
-			 * 10).addFirstValidator(pgpValidator)) .addListener(lookupMetadataListener)
-			 * .addListener(lookupArtifactListener);
-			 */
+		});
+		builder.instance("rnet-releases", instance -> {
+			instance.putSource(new HttpSource("rnet-releases",
+					URI.create("https://nexus.runeduniverse.net/repository/maven-releases/"),
+					repoPath.resolve("rnet-releases"), 3, 10).addFirstValidator(pgpValidator))
+					.addListener(lookupMetadataListener)
+					.addListener(lookupArtifactListener);
+		});
+		builder.instance("rnet-development", instance -> {
+			instance.putSource(new HttpSource("rnet-development",
+					URI.create("https://nexus.runeduniverse.net/repository/maven-development/"),
+					repoPath.resolve("rnet-development"), 3, 10).addFirstValidator(pgpValidator))
+					.addListener(lookupMetadataListener)
+					.addListener(lookupArtifactListener);
 		});
 
 		proxy = builder.build();
