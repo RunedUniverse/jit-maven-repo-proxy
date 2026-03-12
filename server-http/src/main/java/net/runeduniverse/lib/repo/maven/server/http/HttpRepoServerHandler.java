@@ -394,7 +394,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 
 		final HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
 		setContentHeaders(response, fileLength, fileName, fileType);
-		setChecksumHeaders(response, checksums);
+		// setChecksumHeaders(response, checksums);
 		setCommonHeaders(request, response);
 
 		// Write the initial line and the header
@@ -441,6 +441,14 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 		headers.set("X-Content-Type-Options", "nosniff");
 	}
 
+	/**
+	 * Set Checksum headers: x-checksum-*
+	 *
+	 * @param headers
+	 * @param checksums
+	 * @deprecated Netty currently has a bug that sends the internal map of
+	 *             HttpHeaders into an endless spin-loop!
+	 */
 	protected void setChecksumHeaders(final HttpResponse response, final Map<String, String> checksums) {
 		final HttpHeaders headers = response.headers();
 
