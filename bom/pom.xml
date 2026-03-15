@@ -88,6 +88,7 @@
 		<proxy-core-version>0.1.0</proxy-core-version>
 		<cache-caffeine-version>0.1.0</cache-caffeine-version>
 		<validation-pgp-version>0.1.0</validation-pgp-version>
+		<validation-cyclonedx-version>0.1.0</validation-cyclonedx-version>
 	</properties>
 
 	<dependencyManagement>
@@ -148,6 +149,11 @@
 				<groupId>net.runeduniverse.lib.repo</groupId>
 				<artifactId>maven-repo-validation-pgp</artifactId>
 				<version>${validation-pgp-version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.runeduniverse.lib.repo</groupId>
+				<artifactId>maven-repo-validation-cyclonedx</artifactId>
+				<version>${validation-cyclonedx-version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

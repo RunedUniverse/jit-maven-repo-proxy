@@ -42,6 +42,7 @@
 		<module>proxy-core</module>
 		<module>cache-caffeine</module>
 		<module>validation-pgp</module>
+		<module>validation-cyclonedx</module>
 		<module>example</module>
 	</modules>
 
@@ -99,12 +100,12 @@
 		<java-test-target-version>${java-test-source-version}</java-test-target-version>
 		<!-- ARTIFACT VERSIONS -->
 		<maven-version-min>3.3.9</maven-version-min>
-		<lombok-version>1.18.12</lombok-version>
+		<lombok-version>1.18.32</lombok-version>
 		<!-- ARTIFACT VERSIONS - COMPILER -->
 		<plugin-maven-clean-version>3.1.0</plugin-maven-clean-version>
 		<plugin-maven-toolchains-version>3.1.0</plugin-maven-toolchains-version>
 		<plugin-maven-resources-version>3.2.0</plugin-maven-resources-version>
-		<plugin-maven-compiler-version>3.8.0</plugin-maven-compiler-version>
+		<plugin-maven-compiler-version>3.12.0</plugin-maven-compiler-version>
 		<plugin-maven-jar-version>3.0.2</plugin-maven-jar-version>
 		<plugin-maven-source-version>3.2.1</plugin-maven-source-version>
 		<plugin-maven-javadoc-version>3.6.3</plugin-maven-javadoc-version>
@@ -136,6 +137,13 @@
 			<properties>
 				<toolchain-jdk-source-version>openjdk-11</toolchain-jdk-source-version>
 				<toolchain-jdk-test-version>openjdk-11</toolchain-jdk-test-version>
+			</properties>
+		</profile>
+		<profile>
+			<id>toolchain-openjdk-17</id>
+			<properties>
+				<toolchain-jdk-source-version>openjdk-17</toolchain-jdk-source-version>
+				<toolchain-jdk-test-version>openjdk-17</toolchain-jdk-test-version>
 			</properties>
 		</profile>
 		<!-- DEV-INSTALL -->
@@ -592,9 +600,7 @@
 						<testSource>${java-test-source-version}</testSource>
 						<testTarget>${java-test-target-version}</testTarget>
 						<!-- use starting with version 3.12.0-->
-						<!--
 						<annotationProcessorPathsUseDepMgmt>true</annotationProcessorPathsUseDepMgmt>
-						-->
 						<annotationProcessorPaths>
 							<path>
 								<groupId>org.projectlombok</groupId>

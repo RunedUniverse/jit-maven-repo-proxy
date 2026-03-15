@@ -6,6 +6,8 @@ def evalValue(expression, path = null) {
 def getToolchainId(mod) {
 	if(mod.hasTag('jdk-11'))
 		return 'toolchain-openjdk-11';
+	if(mod.hasTag('jdk-17'))
+		return 'toolchain-openjdk-17';
 	return 'toolchain-openjdk-1-8-0';
 }
 
@@ -98,18 +100,19 @@ node( label: 'linux' ) {
 			sh "mkdir -p ${ RESULT_PATH }"
 			sh "mkdir -p ${ ARCHIVE_PATH }"
 			
-			addModule( id: 'project',         path: '.',               name: 'Maven Project',                tags: [  ])
-			addModule( id: 'bom',             path: 'bom',             name: 'Bill of Materials',            tags: [ 'bom' ])
-			addModule( id: 'sbom',            path: 'sbom',            name: 'SBOM',                         tags: [ 'bom' ])
-			addModule( id: 'api',             path: 'api',             name: 'Maven Repo [api]',             tags: [ 'build1', 'pack-jar', 'jdk-1.8.0' ])
-			addModule( id: 'core',            path: 'core',            name: 'Maven Repo [core]',            tags: [ 'build2', 'pack-jar', 'jdk-1.8.0' ])
-			addModule( id: 'client-core',     path: 'client-core',     name: 'Maven Repo [client-core]',     tags: [ 'build4', 'pack-jar', 'jdk-1.8.0' ])
-			addModule( id: 'client-http',     path: 'client-http',     name: 'Maven Repo [client-http]',     tags: [ 'build5', 'pack-jar', 'jdk-1.8.0', 'test-live' ])
-			addModule( id: 'server-core',     path: 'server-core',     name: 'Maven Repo [server-core]',     tags: [ 'build4', 'pack-jar', 'jdk-1.8.0' ])
-			addModule( id: 'server-http',     path: 'server-http',     name: 'Maven Repo [server-http]',     tags: [ 'build6', 'pack-jar', 'jdk-1.8.0', 'test-live' ])
-			addModule( id: 'proxy-core',      path: 'proxy-core',      name: 'Maven Repo [proxy-core]',      tags: [ 'build7', 'pack-jar', 'jdk-1.8.0', 'test-smoke', 'test-live' ])
-			addModule( id: 'cache-caffeine',  path: 'cache-caffeine',  name: 'Maven Repo [cache:caffeine]',  tags: [ 'build3', 'pack-jar', 'jdk-11'   , 'test-smoke' ])
-			addModule( id: 'validation-pgp',  path: 'validation-pgp',  name: 'Maven Repo [validation:pgp]',  tags: [ 'build3', 'pack-jar', 'jdk-1.8.0', 'test-smoke' ])
+			addModule( id: 'project',               path: '.',                     name: 'Maven Project',                      tags: [  ])
+			addModule( id: 'bom',                   path: 'bom',                   name: 'Bill of Materials',                  tags: [ 'bom' ])
+			addModule( id: 'sbom',                  path: 'sbom',                  name: 'SBOM',                               tags: [ 'bom' ])
+			addModule( id: 'api',                   path: 'api',                   name: 'Maven Repo [api]',                   tags: [ 'build1', 'pack-jar', 'jdk-1.8.0' ])
+			addModule( id: 'core',                  path: 'core',                  name: 'Maven Repo [core]',                  tags: [ 'build2', 'pack-jar', 'jdk-1.8.0' ])
+			addModule( id: 'client-core',           path: 'client-core',           name: 'Maven Repo [client-core]',           tags: [ 'build4', 'pack-jar', 'jdk-1.8.0' ])
+			addModule( id: 'client-http',           path: 'client-http',           name: 'Maven Repo [client-http]',           tags: [ 'build5', 'pack-jar', 'jdk-1.8.0', 'test-live' ])
+			addModule( id: 'server-core',           path: 'server-core',           name: 'Maven Repo [server-core]',           tags: [ 'build4', 'pack-jar', 'jdk-1.8.0' ])
+			addModule( id: 'server-http',           path: 'server-http',           name: 'Maven Repo [server-http]',           tags: [ 'build6', 'pack-jar', 'jdk-1.8.0', 'test-live' ])
+			addModule( id: 'proxy-core',            path: 'proxy-core',            name: 'Maven Repo [proxy-core]',            tags: [ 'build7', 'pack-jar', 'jdk-1.8.0', 'test-smoke', 'test-live' ])
+			addModule( id: 'cache-caffeine',        path: 'cache-caffeine',        name: 'Maven Repo [cache:caffeine]',        tags: [ 'build3', 'pack-jar', 'jdk-11'   , 'test-smoke' ])
+			addModule( id: 'validation-pgp',        path: 'validation-pgp',        name: 'Maven Repo [validation:pgp]',        tags: [ 'build3', 'pack-jar', 'jdk-1.8.0', 'test-smoke' ])
+			addModule( id: 'validation-cyclonedx',  path: 'validation-cyclonedx',  name: 'Maven Repo [validation:cyclonedx]',  tags: [ 'build3', 'pack-jar', 'jdk-17',    'test-smoke' ])
 		}
 		def parentMod = getModule(id: 'project')
 
@@ -186,6 +189,7 @@ node( label: 'linux' ) {
 
 				testArtifacts(mods, 'jdk-1.8.0', 'toolchain-openjdk-1-8-0', 'test-smoke', parentMod);
 				testArtifacts(mods, 'jdk-11',    'toolchain-openjdk-11',    'test-smoke', parentMod);
+				testArtifacts(mods, 'jdk-17',    'toolchain-openjdk-17',    'test-smoke', parentMod);
 			}
 
 			stage('Live Test') {
@@ -197,6 +201,7 @@ node( label: 'linux' ) {
 
 				testArtifacts(mods, 'jdk-1.8.0', 'toolchain-openjdk-1-8-0', 'test-live', parentMod);
 				testArtifacts(mods, 'jdk-11',    'toolchain-openjdk-11',    'test-live', parentMod);
+				testArtifacts(mods, 'jdk-17',    'toolchain-openjdk-17',    'test-live', parentMod);
 			}
 
 			stage('Package Build Result') {

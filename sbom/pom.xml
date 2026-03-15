@@ -84,6 +84,7 @@
 		<apache-commons-lang3-version>3.20.0</apache-commons-lang3-version>
 		<bouncycastle-prov-version>1.83</bouncycastle-prov-version>
 		<bouncycastle-pgp-version>1.83</bouncycastle-pgp-version>
+		<cyclonedx-version>12.0.1</cyclonedx-version>
 	</properties>
 
 	<dependencyManagement>
@@ -122,6 +123,11 @@
 				<groupId>org.bouncycastle</groupId>
 				<artifactId>bcpg-jdk18on</artifactId>
 				<version>${bouncycastle-pgp-version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.cyclonedx</groupId>
+				<artifactId>cyclonedx-core-java</artifactId>
+				<version>${cyclonedx-version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
