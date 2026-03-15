@@ -61,30 +61,6 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 		this.index = index;
 	}
 
-	protected PGPSignature extractSignature(InputStream sigStream) throws IOException, PGPException {
-		if (!(sigStream instanceof ArmoredInputStream)) {
-			sigStream = new ArmoredInputStream(sigStream);
-		}
-		PGPObjectFactory objFactory = new PGPObjectFactory(sigStream, new JcaKeyFingerprintCalculator());
-
-		Object obj;
-		while ((obj = objFactory.nextObject()) != null) {
-			if (obj instanceof PGPSignatureList) {
-				// try to find a PGPSignature in the list
-				for (Iterator<PGPSignature> i = ((PGPSignatureList) obj).iterator(); i.hasNext();) {
-					final PGPSignature sig = i.next();
-					if (sig != null)
-						return sig;
-				}
-			} else if (obj instanceof PGPCompressedData) {
-				// if the data is compress -> decompress
-				objFactory = new PGPObjectFactory(((PGPCompressedData) obj).getDataStream(),
-						new JcaKeyFingerprintCalculator());
-			}
-		}
-		return null;
-	}
-
 	@Override
 	public boolean validate(final ArtifactData data) throws InvalidArtifactException {
 		final Path sigPath = data.getSignaturePath();
@@ -92,11 +68,8 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 			return false;
 
 		final PGPSignature signature;
-		final InputStream artifactStream;
 		try {
-			final InputStream sigStream = Files.newInputStream(sigPath, StandardOpenOption.READ);
-			signature = extractSignature(sigStream);
-			artifactStream = Files.newInputStream(data.getArtifactPath(), StandardOpenOption.READ);
+			signature = getSignature(sigPath);
 		} catch (IOException | PGPException e) {
 			e.printStackTrace(System.err);
 			return false;
@@ -107,11 +80,10 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 		}
 
 		final long sigKeyID = signature.getKeyID();
-		final CompletableFuture<PGPPublicKeyRing> pubKeyRingFuture = this.index.fetchKeyRingIfAbsent(sigKeyID);
 		final PGPPublicKey pubKey;
 
 		try {
-			final PGPPublicKeyRing pubKeyRing = pubKeyRingFuture.get(5, TimeUnit.MINUTES);
+			final PGPPublicKeyRing pubKeyRing = getPublicKeyRing(sigKeyID);
 			if (pubKeyRing == null) {
 				System.err.println("----------------- HERE » 1 --------------");
 				System.err.println("No Public-Key found for " + ArtifactDataCoordinates.key(data) + " ID: "
@@ -120,20 +92,14 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 				return false;
 			}
 
-			PGPPublicKey selectedKey = null;
-			for (Iterator<PGPPublicKey> i = pubKeyRing.getPublicKeys(); i.hasNext();) {
-				selectedKey = i.next();
-				if (selectedKey.getKeyID() == sigKeyID)
-					break;
-			}
-			if (selectedKey == null) {
+			pubKey = findMatchingPublicKey(pubKeyRing, sigKeyID);
+			if (pubKey == null) {
 				System.err.println("----------------- HERE » 1.2 --------------");
 				System.err.println("No matching Public-Key found for " + ArtifactDataCoordinates.key(data) + " ID: "
 						+ Long.toHexString(sigKeyID)
 								.toUpperCase());
 				return false;
 			}
-			pubKey = selectedKey;
 		} catch (InterruptedException | CancellationException e) {
 			System.err.println("----------------- HERE » 2 --------------");
 			System.err.println("No Public-Key found for " + ArtifactDataCoordinates.key(data) + " ID: "
@@ -157,39 +123,96 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 			return false;
 		}
 
+		Throwable cause = null;
 		try {
-			signature.init(new JcaPGPContentVerifierBuilderProvider().setProvider(BOUNCY_CASTLE_PROVIDER), pubKey);
-		} catch (PGPException e) {
-			System.err.println("Invalid Public-Key for the Signature provided by " + ArtifactDataCoordinates.key(data));
-			System.out.println("Pub-Key Algorithm: " + pubKey.getAlgorithm());
-			e.getCause()
-					.printStackTrace(System.err);
-			return false;
-		}
-
-		byte[] buffer = new byte[8192];
-		int len;
-
-		try {
-			while ((len = artifactStream.read(buffer)) != -1) {
-				signature.update(buffer, 0, len);
-			}
+			if (verifyArtifact(signature, pubKey, data.getArtifactPath()))
+				return true;
 		} catch (IOException e) {
 			System.err.println(
 					"Failed to load Artifact " + ArtifactDataCoordinates.key(data) + " for Signature verification");
 			e.getCause()
 					.printStackTrace(System.err);
 			return false;
-		}
-
-		Throwable cause = null;
-		try {
-			if (signature.verify())
-				return true;
 		} catch (PGPException e) {
 			cause = e;
+			System.err.println("Invalid Public-Key for the Signature provided by " + ArtifactDataCoordinates.key(data));
+			System.out.println("Pub-Key Algorithm: " + pubKey.getAlgorithm());
+			e.getCause()
+					.printStackTrace(System.err);
 		}
 
 		throw new InvalidArtifactSignatureException("Failed to verify Artifact Signature!", cause);
+	}
+
+	public PGPSignature getSignature(final Path signaturePath) throws IOException, PGPException {
+		if (!Files.exists(signaturePath))
+			return null;
+		try (final InputStream sigStream = Files.newInputStream(signaturePath, StandardOpenOption.READ)) {
+			return getSignature(sigStream);
+		}
+	}
+
+	public PGPSignature getSignature(InputStream sigStream) throws IOException, PGPException {
+		if (!(sigStream instanceof ArmoredInputStream)) {
+			sigStream = new ArmoredInputStream(sigStream);
+		}
+		PGPObjectFactory objFactory = new PGPObjectFactory(sigStream, new JcaKeyFingerprintCalculator());
+
+		Object obj;
+		while ((obj = objFactory.nextObject()) != null) {
+			if (obj instanceof PGPSignatureList) {
+				// try to find a PGPSignature in the list
+				for (Iterator<PGPSignature> i = ((PGPSignatureList) obj).iterator(); i.hasNext();) {
+					final PGPSignature sig = i.next();
+					if (sig != null)
+						return sig;
+				}
+			} else if (obj instanceof PGPCompressedData) {
+				// if the data is compress -> decompress
+				objFactory = new PGPObjectFactory(((PGPCompressedData) obj).getDataStream(),
+						new JcaKeyFingerprintCalculator());
+			}
+		}
+		return null;
+	}
+
+	public PGPPublicKeyRing getPublicKeyRing(final long keyID)
+			throws InterruptedException, CancellationException, ExecutionException, TimeoutException {
+		final CompletableFuture<PGPPublicKeyRing> pubKeyRingFuture = getPublicKeyRingFuture(keyID);
+		return pubKeyRingFuture.get(5, TimeUnit.MINUTES);
+	}
+
+	public CompletableFuture<PGPPublicKeyRing> getPublicKeyRingFuture(final long keyID) {
+		return this.index.fetchKeyRingIfAbsent(keyID);
+	}
+
+	public PGPPublicKey findMatchingPublicKey(final PGPPublicKeyRing publicKeyRing, final long keyID) {
+		for (Iterator<PGPPublicKey> i = publicKeyRing.getPublicKeys(); i.hasNext();) {
+			final PGPPublicKey key = i.next();
+			if (key.getKeyID() == keyID)
+				return key;
+		}
+		return null;
+	}
+
+	public boolean verifyArtifact(final PGPSignature signature, final PGPPublicKey publicKey, final Path artifactPath)
+			throws IOException, PGPException {
+		try (final InputStream artifactStream = Files.newInputStream(artifactPath, StandardOpenOption.READ)) {
+			return verifyArtifact(signature, publicKey, artifactStream);
+		}
+	}
+
+	public boolean verifyArtifact(final PGPSignature signature, final PGPPublicKey publicKey,
+			final InputStream artifactStream) throws IOException, PGPException {
+		signature.init(new JcaPGPContentVerifierBuilderProvider().setProvider(BOUNCY_CASTLE_PROVIDER), publicKey);
+
+		byte[] buffer = new byte[8192];
+		int len;
+
+		while ((len = artifactStream.read(buffer)) != -1) {
+			signature.update(buffer, 0, len);
+		}
+
+		return signature.verify();
 	}
 }
