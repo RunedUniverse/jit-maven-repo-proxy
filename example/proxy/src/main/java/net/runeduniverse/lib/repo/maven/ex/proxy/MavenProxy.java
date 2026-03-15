@@ -19,6 +19,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -33,6 +35,7 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.client.http.HttpSource;
 import net.runeduniverse.lib.repo.maven.error.ArtifactException;
+import net.runeduniverse.lib.repo.maven.error.InvalidArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.ProxyServer;
 import net.runeduniverse.lib.repo.maven.proxy.api.LookupArtifactListener;
 import net.runeduniverse.lib.repo.maven.proxy.api.LookupMetadataListener;
@@ -64,6 +67,8 @@ public class MavenProxy {
 		ArtifactValidator pgpValidator = args.contains("--verify-sig")
 				? new PGPArtifactSignatureValidator(PublicKeyIndex.createDefaultKeyIndex())
 				: null;
+		ArtifactValidator ignoreSigValidator = args.contains("--ignore-sig") ? MavenProxy::ignoreSignature : null;
+
 		LookupMetadataListener lookupMetadataListener = new LookupMetadataListener() {
 			@Override
 			public void preLookup(ArtifactCoordinates coords) throws ArtifactException {
@@ -96,21 +101,24 @@ public class MavenProxy {
 		builder.setServerChannelInitializer(HttpRepoServerInitializer::new);
 		builder.instance("maven-central", instance -> {
 			instance.putSource(new HttpSource("repo1", URI.create("https://repo1.maven.org/maven2/"),
-					repoPath.resolve("repo1"), 3, 10).addFirstValidator(pgpValidator))
+					repoPath.resolve("repo1"), 3, 10).addFirstValidator(pgpValidator)
+							.addLastValidator(ignoreSigValidator))
 					.addListener(lookupMetadataListener)
 					.addListener(lookupArtifactListener);
 		});
 		builder.instance("rnet-releases", instance -> {
 			instance.putSource(new HttpSource("rnet-releases",
 					URI.create("https://nexus.runeduniverse.net/repository/maven-releases/"),
-					repoPath.resolve("rnet-releases"), 3, 10).addFirstValidator(pgpValidator))
+					repoPath.resolve("rnet-releases"), 3, 10).addFirstValidator(pgpValidator)
+							.addLastValidator(ignoreSigValidator))
 					.addListener(lookupMetadataListener)
 					.addListener(lookupArtifactListener);
 		});
 		builder.instance("rnet-development", instance -> {
 			instance.putSource(new HttpSource("rnet-development",
 					URI.create("https://nexus.runeduniverse.net/repository/maven-development/"),
-					repoPath.resolve("rnet-development"), 3, 10).addFirstValidator(pgpValidator))
+					repoPath.resolve("rnet-development"), 3, 10).addFirstValidator(pgpValidator)
+							.addLastValidator(ignoreSigValidator))
 					.addListener(lookupMetadataListener)
 					.addListener(lookupArtifactListener);
 		});
@@ -140,5 +148,12 @@ public class MavenProxy {
 			proxy.shutdownGracefully();
 		}
 		System.out.println("  done!");
+	}
+
+	public static boolean ignoreSignature(final ArtifactData data) throws InvalidArtifactException {
+		if (Files.exists(data.getArtifactPath(), LinkOption.NOFOLLOW_LINKS)) {
+			return !Files.exists(data.getSignaturePath(), LinkOption.NOFOLLOW_LINKS);
+		}
+		return false;
 	}
 }
