@@ -22,29 +22,29 @@ public class InvalidChecksumArtifactException extends InvalidArtifactException {
 	private static final long serialVersionUID = 1L;
 	private static final int PRIORITY = -25;
 
-	protected final String checksumExt;
+	protected final String checksumAlgorithm;
 	protected final String localChecksum;
 	protected final String remoteChecksum;
 
-	public InvalidChecksumArtifactException(final String checksumExt, final String localChecksum,
+	public InvalidChecksumArtifactException(final String checksumAlgorithm, final String localChecksum,
 			final String remoteChecksum) {
-		this(PRIORITY, MSG_MISSMATCH, checksumExt, localChecksum, remoteChecksum);
+		this(PRIORITY, MSG_MISSMATCH, checksumAlgorithm, localChecksum, remoteChecksum);
 	}
 
-	public InvalidChecksumArtifactException(final int priority, final String checksumExt, final String localChecksum,
-			final String remoteChecksum) {
-		this(priority, MSG_MISSMATCH, checksumExt, localChecksum, remoteChecksum);
+	public InvalidChecksumArtifactException(final int priority, final String checksumAlgorithm,
+			final String localChecksum, final String remoteChecksum) {
+		this(priority, MSG_MISSMATCH, checksumAlgorithm, localChecksum, remoteChecksum);
 	}
 
-	public InvalidChecksumArtifactException(final String reason, final String checksumExt, final String localChecksum,
-			final String remoteChecksum) {
-		this(PRIORITY, reason, checksumExt, localChecksum, remoteChecksum);
+	public InvalidChecksumArtifactException(final String reason, final String checksumAlgorithm,
+			final String localChecksum, final String remoteChecksum) {
+		this(PRIORITY, reason, checksumAlgorithm, localChecksum, remoteChecksum);
 	}
 
-	public InvalidChecksumArtifactException(final int priority, final String reason, final String checksumExt,
+	public InvalidChecksumArtifactException(final int priority, final String reason, final String checksumAlgorithm,
 			final String localChecksum, final String remoteChecksum) {
 		super(priority, reason);
-		this.checksumExt = checksumExt;
+		this.checksumAlgorithm = checksumAlgorithm;
 		this.localChecksum = localChecksum;
 		this.remoteChecksum = remoteChecksum;
 	}
@@ -53,8 +53,8 @@ public class InvalidChecksumArtifactException extends InvalidArtifactException {
 		return super.getMessage();
 	}
 
-	public String getChecksumExt() {
-		return this.checksumExt;
+	public String getChecksumAlgorithm() {
+		return this.checksumAlgorithm;
 	}
 
 	public String getLocalChecksum() {
@@ -70,7 +70,7 @@ public class InvalidChecksumArtifactException extends InvalidArtifactException {
 		final StringBuffer sb = new StringBuffer();
 		sb.append(getReason());
 		sb.append(" [ ");
-		sb.append(this.checksumExt);
+		sb.append(this.checksumAlgorithm);
 		sb.append(" » ");
 		sb.append(this.localChecksum);
 		sb.append(" / ");

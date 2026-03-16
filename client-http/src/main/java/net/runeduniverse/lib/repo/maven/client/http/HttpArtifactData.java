@@ -26,17 +26,19 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-
+import java.util.function.Function;
 import org.apache.commons.codec.binary.Hex;
 
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
+import net.runeduniverse.lib.repo.maven.api.ArtifactPOM;
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.api.ChecksumType;
 import net.runeduniverse.lib.repo.maven.data.AArtifactData;
 import net.runeduniverse.lib.repo.maven.data.AContentProcessor;
 import net.runeduniverse.lib.repo.maven.data.FileProcessor;
 import net.runeduniverse.lib.repo.maven.data.TextProcessor;
+import net.runeduniverse.lib.repo.maven.error.ArtifactException;
 import net.runeduniverse.lib.repo.maven.error.InvalidArtifactException;
 import net.runeduniverse.lib.repo.maven.error.InvalidChecksumArtifactException;
 import net.runeduniverse.lib.repo.maven.error.UnvalidatableArtifactException;
@@ -46,10 +48,12 @@ public class HttpArtifactData extends AArtifactData {
 	protected final Path repoPath;
 	protected final URI repoUri;
 	protected final int maxRedirects;
+	protected final Function<ArtifactDataCoordinates, CompletableFuture<ArtifactPOM>> pomSupplier;
 
 	protected ArtifactValidator validator = null;
 
 	// even when overridden - only access via Getter
+	private CompletableFuture<ArtifactPOM> pomFuture = null;
 	private String gavPath = null;
 	private String artifactName = null;
 	private Path artifactPath = null;
@@ -57,6 +61,7 @@ public class HttpArtifactData extends AArtifactData {
 	private HttpDataRequest artifactRequest = null;
 
 	public HttpArtifactData(final Path repoPath, final URI repoUri, final int maxRedirects, //
+			final Function<ArtifactDataCoordinates, CompletableFuture<ArtifactPOM>> pomSupplier, //
 			final String groupId, final String artifactId, final String version, //
 			final String classifier, final String extension) {
 		super(groupId, artifactId, version, classifier, extension);
@@ -64,15 +69,29 @@ public class HttpArtifactData extends AArtifactData {
 		this.repoPath = repoPath;
 		this.repoUri = repoUri;
 		this.maxRedirects = maxRedirects;
+		this.pomSupplier = pomSupplier;
 	}
 
-	public HttpArtifactData(final Path repoPath, final URI repoUri, final int maxRedirects,
+	public HttpArtifactData(final Path repoPath, final URI repoUri, final int maxRedirects, //
+			final Function<ArtifactDataCoordinates, CompletableFuture<ArtifactPOM>> pomSupplier, //
 			final ArtifactDataCoordinates coords) {
 		super(coords);
 
 		this.repoPath = repoPath;
 		this.repoUri = repoUri;
 		this.maxRedirects = maxRedirects;
+		this.pomSupplier = pomSupplier;
+	}
+
+	@Override
+	public CompletableFuture<ArtifactPOM> getPOM() {
+		if (this.pomFuture == null) {
+			if (this.pomSupplier == null)
+				this.pomFuture = CompletableFuture.completedFuture(null);
+			else
+				this.pomFuture = this.pomSupplier.apply(this);
+		}
+		return this.pomFuture;
 	}
 
 	public String getGAVPath() {
@@ -127,7 +146,7 @@ public class HttpArtifactData extends AArtifactData {
 		return dataRequests;
 	}
 
-	public CompletableFuture<ArtifactData> asFuture() {
+	public CompletableFuture<? extends ArtifactData> asFuture() {
 		final List<HttpDataRequest> dataRequests = getDataRequests();
 		final CompletableFuture<?>[] futures = new CompletableFuture<?>[dataRequests.size()];
 		for (int i = 0; i < dataRequests.size(); i++) {
@@ -148,7 +167,8 @@ public class HttpArtifactData extends AArtifactData {
 		// --> on error -> cancel subtree!
 		final Map<String, AContentProcessor<?>> subProcessorMap = new HashMap<>();
 		final List<CompletableFuture<?>> futures = new LinkedList<>();
-		final Map<String, MessageDigest> localChecksums = ChecksumType.tryFill(new ConcurrentHashMap<>(), null);
+		final Map<String, MessageDigest> localChecksums = ChecksumType.tryFillWithAlgorithm(new ConcurrentHashMap<>(),
+				null);
 		final FileProcessor fileProcessor = new FileProcessor(getArtifactPath(), localChecksums);
 		final CompletableFuture<?> fileFuture = fileProcessor.future();
 		futures.add(fileFuture.thenApply(AArtifactData::throwNullAsNotFound)
@@ -161,16 +181,16 @@ public class HttpArtifactData extends AArtifactData {
 
 		// --- Build Checksum Requests ---
 		for (ChecksumType type : ChecksumType.allEntries()) {
-			final String ext = type.extension();
 			final TextProcessor textProcessor = new TextProcessor(true);
 			futures.add(textProcessor.future()
 					.handle((value, ignoredEx) -> {
 						// we don't care about checksum exceptions -> they are basically optional
 						if (value != null)
-							HttpArtifactData.this.checksums.put(ext, HttpArtifactData.this.normalizeChecksum(value));
+							HttpArtifactData.this.checksums.put(type.algorithm(),
+									HttpArtifactData.this.normalizeChecksum(value));
 						return value;
 					}));
-			subProcessorMap.put(ext, textProcessor);
+			subProcessorMap.put(type.extension(), textProcessor);
 		}
 
 		// --- Build Signature Request ---
@@ -188,20 +208,23 @@ public class HttpArtifactData extends AArtifactData {
 								// --- Verify Artifact - Data
 								// verify checksums / update if missing
 								for (Entry<String, MessageDigest> entry : localChecksums.entrySet()) {
-									final String ext = entry.getKey();
+									final String algorithm = entry.getKey();
 									final String localChecksum = Hex.encodeHexString(entry.getValue()
 											.digest(), true);
-									final String refChecksum = this.checksums.get(ext);
+									final String refChecksum = this.checksums.get(algorithm);
 
 									if (refChecksum == null) {
-										this.checksums.put(ext, localChecksum);
+										this.checksums.put(algorithm, localChecksum);
 										continue;
 									}
 									if (!refChecksum.equals(localChecksum)) {
 										// somthing is wrong !!!
-										throw new InvalidChecksumArtifactException(ext, localChecksum, refChecksum);
+										throw new InvalidChecksumArtifactException(algorithm, localChecksum,
+												refChecksum);
 									}
 								}
+								// --- Parse Artifact - Data
+								HttpArtifactData.this.parseData();
 								// --- Validate Artifact - Data
 								HttpArtifactData.this.validateArtifact();
 								return null;
@@ -225,6 +248,10 @@ public class HttpArtifactData extends AArtifactData {
 			return value;
 		}
 		return null;
+	}
+
+	protected void parseData() throws ArtifactException {
+		// HttpArtifactData has no data to be parsed
 	}
 
 	protected void validateArtifact() throws InvalidArtifactException {

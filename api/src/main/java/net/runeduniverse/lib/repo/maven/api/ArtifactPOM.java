@@ -17,10 +17,12 @@ package net.runeduniverse.lib.repo.maven.api;
 
 import java.util.concurrent.CompletableFuture;
 
-public interface ArtifactProvider {
+public interface ArtifactPOM extends ArtifactData {
 
-	public CompletableFuture<ArtifactMetadata> getMetadata(ArtifactCoordinates coords);
+	public String getPackagingProcedure();
 
-	public CompletableFuture<? extends ArtifactData> getArtifact(ArtifactDataCoordinates coords);
-
+	@Override
+	public default CompletableFuture<ArtifactPOM> getPOM() {
+		return CompletableFuture.completedFuture(this);
+	}
 }

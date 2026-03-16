@@ -25,7 +25,7 @@ public interface ArtifactCoordinates {
 		return String.format("%s:%s", coords.getGroupId(), coords.getArtifactId());
 	}
 
-	public static ArtifactCoordinates request(final String groupId, final String artifactId) {
+	public static ArtifactCoordinates build(final String groupId, final String artifactId) {
 		return new Data(groupId, artifactId);
 	}
 

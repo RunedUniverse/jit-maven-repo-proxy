@@ -29,22 +29,24 @@ import java.util.function.Function;
 
 public class ChecksumType {
 
-	private static final Map<String, ChecksumType> KNWON_VALUES = new ConcurrentHashMap<>();
+	private static final Map<String, ChecksumType> KNOWN_ALGORITHM = new ConcurrentHashMap<>();
+	private static final Map<String, ChecksumType> KNOWN_EXTENSIONS = new ConcurrentHashMap<>();
 
-	public static final ChecksumType MD5 = new ChecksumType("md5", "MD5");
-	public static final ChecksumType SHA_1 = new ChecksumType("sha1", "SHA-1");
-	public static final ChecksumType SHA_256 = new ChecksumType("sha256", "SHA-256");
-	public static final ChecksumType SHA_512 = new ChecksumType("sha512", "SHA-512");
+	public static final ChecksumType MD5 = new ChecksumType("MD5", "md5");
+	public static final ChecksumType SHA_1 = new ChecksumType("SHA-1", "sha1");
+	public static final ChecksumType SHA_256 = new ChecksumType("SHA-256", "sha256");
+	public static final ChecksumType SHA_512 = new ChecksumType("SHA-512", "sha512");
 
-	protected final String extension;
 	protected final String algorithm;
+	protected final String extension;
 
-	protected ChecksumType(final String extension, final String algorithm) {
-		Objects.requireNonNull(extension, "extension was null");
+	protected ChecksumType(final String algorithm, final String extension) {
 		Objects.requireNonNull(algorithm, "algorithm was null");
-		this.extension = extension;
+		Objects.requireNonNull(extension, "extension was null");
 		this.algorithm = algorithm;
-		ChecksumType.KNWON_VALUES.put(extension, this);
+		this.extension = extension;
+		ChecksumType.KNOWN_ALGORITHM.put(algorithm, this);
+		ChecksumType.KNOWN_EXTENSIONS.put(extension, this);
 	}
 
 	public String extension() {
@@ -70,45 +72,45 @@ public class ChecksumType {
 	}
 
 	public static boolean register(final String extension, final String algorithm) {
-		if (KNWON_VALUES.containsKey(extension))
+		if (KNOWN_EXTENSIONS.containsKey(extension))
 			return false;
 		new ChecksumType(extension, algorithm);
 		return true;
 	}
 
-	public static ChecksumType find(final String extension) {
+	public static ChecksumType findByExtension(final String extension) {
 		Objects.requireNonNull(extension, "extension was null");
-		return KNWON_VALUES.get(extension);
+		return KNOWN_EXTENSIONS.get(extension);
 	}
 
 	public static Set<String> allExtensions() {
-		return Collections.unmodifiableSet(KNWON_VALUES.keySet());
+		return Collections.unmodifiableSet(KNOWN_EXTENSIONS.keySet());
 	}
 
 	public static Collection<ChecksumType> allEntries() {
-		return Collections.unmodifiableCollection(KNWON_VALUES.values());
+		return Collections.unmodifiableCollection(KNOWN_EXTENSIONS.values());
 	}
 
 	public static MessageDigest newMessageDigestFor(final String extension) throws NoSuchAlgorithmException {
-		final ChecksumType type = find(extension);
+		final ChecksumType type = findByExtension(extension);
 		if (type == null)
 			throw new NoSuchAlgorithmException("Checksum extension <" + extension + "> not recognized!");
 		return type.newMessageDigest();
 	}
 
-	public static <T> Map<String, T> fill(final Map<String, T> checksumMap, final Function<ChecksumType, T> function) {
-		for (Entry<String, ChecksumType> entry : KNWON_VALUES.entrySet()) {
+	public static <T> Map<String, T> fillWithExtensions(final Map<String, T> checksumMap,
+			final Function<ChecksumType, T> function) {
+		for (Entry<String, ChecksumType> entry : KNOWN_EXTENSIONS.entrySet()) {
 			checksumMap.put(entry.getKey(), function.apply(entry.getValue()));
 		}
 		return checksumMap;
 	}
 
-	public static Map<String, MessageDigest> tryFill(final Map<String, MessageDigest> checksumMap,
+	public static Map<String, MessageDigest> tryFillWithAlgorithm(final Map<String, MessageDigest> checksumMap,
 			final Consumer<Throwable> handler) {
-		for (Entry<String, ChecksumType> entry : KNWON_VALUES.entrySet()) {
+		for (ChecksumType type : KNOWN_EXTENSIONS.values()) {
 			try {
-				checksumMap.put(entry.getKey(), entry.getValue()
-						.newMessageDigest());
+				checksumMap.put(type.algorithm(), type.newMessageDigest());
 			} catch (NoSuchAlgorithmException ex) {
 				if (handler == null)
 					continue;

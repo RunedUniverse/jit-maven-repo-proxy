@@ -79,7 +79,7 @@ public abstract class AArtifactData implements ArtifactData {
 		return this.checksums;
 	}
 
-	public CompletableFuture<ArtifactData> asFuture() throws Exception {
+	public CompletableFuture<? extends ArtifactData> asFuture() throws Exception {
 		return CompletableFuture.completedFuture(this);
 	}
 

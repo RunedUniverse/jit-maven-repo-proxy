@@ -39,7 +39,7 @@ public class CacheAdapter implements Cache {
 	}
 
 	@Override
-	public CompletableFuture<ArtifactData> getArtifact(ArtifactDataCoordinates coords) {
+	public CompletableFuture<? extends ArtifactData> getArtifact(ArtifactDataCoordinates coords) {
 		// TODO implement cache
 		return this.proxy.getArtifact(coords);
 	}

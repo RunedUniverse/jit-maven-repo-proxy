@@ -29,6 +29,7 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.api.ArtifactPOM;
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.api.MetadataValidator;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
@@ -105,17 +106,41 @@ public class HttpSourceClient implements RepositorySourceClient {
 		return artifactMetadata.asFuture();
 	}
 
-	@Override
-	public CompletableFuture<ArtifactData> getArtifact(final ArtifactDataCoordinates coords) {
-		final HttpArtifactData artifactData = new HttpArtifactData(this.source.getLocalRepoPath(),
-				this.source.getRepoUri(), this.maxRedirects, coords);
-		artifactData.setValidator(this.artifactValidator);
+	public CompletableFuture<ArtifactPOM> getArtifactPOM(final ArtifactDataCoordinates coords) {
+		final HttpArtifactPOM artifactData = new HttpArtifactPOM(this.source.getLocalRepoPath(),
+				this.source.getRepoUri(), this.maxRedirects, coords.toPomCoordinates());
 
+		applyArtifactValidator(artifactData);
+		execRequest(artifactData);
+
+		return artifactData.asFuture();
+	}
+
+	@Override
+	public CompletableFuture<? extends ArtifactData> getArtifact(final ArtifactDataCoordinates coords) {
+		final HttpArtifactData artifactData;
+		if (coords.isPOM()) {
+			artifactData = new HttpArtifactPOM(this.source.getLocalRepoPath(), this.source.getRepoUri(),
+					this.maxRedirects, coords.toPomCoordinates());
+		} else {
+			artifactData = new HttpArtifactData(this.source.getLocalRepoPath(), this.source.getRepoUri(),
+					this.maxRedirects, this::getArtifactPOM, coords);
+		}
+
+		applyArtifactValidator(artifactData);
+		execRequest(artifactData);
+
+		return artifactData.asFuture();
+	}
+
+	protected void applyArtifactValidator(final HttpArtifactData artifactData) {
+		artifactData.setValidator(this.artifactValidator);
+	}
+
+	protected void execRequest(final HttpArtifactData artifactData) {
 		for (HttpDataRequest dataRequest : artifactData.getDataRequests()) {
 			execRequest(dataRequest);
 		}
-
-		return artifactData.asFuture();
 	}
 
 	@Override

@@ -205,7 +205,7 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 		}
 
 		final CompletableFuture<ArtifactMetadata> artifactFuture = //
-				provider.getMetadata(ArtifactCoordinates.request(groupId, artifactId));
+				provider.getMetadata(ArtifactCoordinates.build(groupId, artifactId));
 
 		artifactFuture.whenCompleteAsync((metadata, throwable) -> {
 			if (!ctx.channel()
@@ -332,9 +332,9 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 			}
 		}
 
-		final CompletableFuture<ArtifactData> artifactFuture = //
+		final CompletableFuture<? extends ArtifactData> artifactFuture = //
 				provider.getArtifact(
-						ArtifactDataCoordinates.request(groupId, artifactId, version, classifier, extension));
+						ArtifactDataCoordinates.build(groupId, artifactId, version, classifier, extension));
 
 		artifactFuture.whenCompleteAsync((data, throwable) -> {
 			if (!ctx.channel()
@@ -376,8 +376,10 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 				sendFileData(ctx, request, data.getSignaturePath(), fileName, fileType, data.getChecksums());
 			} else {
 				// checksums
-				final String textData = data.getChecksums()
-						.get(fileType);
+				final ChecksumType checksumType = ChecksumType.findByExtension(fileType);
+				final String textData = checksumType == null ? null
+						: data.getChecksums()
+								.get(checksumType.algorithm());
 				if (textData == null) {
 					sendError(ctx, request, NOT_FOUND);
 					return;

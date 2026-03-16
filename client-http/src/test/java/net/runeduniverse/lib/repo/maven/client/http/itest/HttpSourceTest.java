@@ -54,7 +54,7 @@ public class HttpSourceTest extends ASourceTest {
 	@Test
 	@Tag("live")
 	public void downloadMetadata() throws Exception {
-		final ArtifactCoordinates coords = ArtifactCoordinates.request(//
+		final ArtifactCoordinates coords = ArtifactCoordinates.build(//
 				"net.runeduniverse.tools.maven.r4m", "r4m-maven-extension");
 
 		final CompletableFuture<ArtifactMetadata> future = client().getMetadata(coords);
@@ -80,7 +80,7 @@ public class HttpSourceTest extends ASourceTest {
 	@Test
 	@Tag("live")
 	public void downloadMetaNotFound() throws Exception {
-		final ArtifactCoordinates coords = ArtifactCoordinates.request(//
+		final ArtifactCoordinates coords = ArtifactCoordinates.build(//
 				"net.runeduniverse.tools.maven.r4m", "r4m-maven-extensionX");
 
 		final CompletableFuture<ArtifactMetadata> future = client().getMetadata(coords);
@@ -92,16 +92,22 @@ public class HttpSourceTest extends ASourceTest {
 			t = e.getCause();
 		}
 
-		assertInstanceOf(NotFoundArtifactException.class, t, "missing metadata should throw NotFoundArtifactException");
+		try {
+			assertInstanceOf(NotFoundArtifactException.class, t,
+					"missing metadata should throw NotFoundArtifactException");
+		} catch (Throwable x) {
+			print("[ERR] " + x.getMessage());
+			throw x;
+		}
 	}
 
 	@Test
 	@Tag("live")
 	public void downloadPom() throws Exception {
-		final ArtifactDataCoordinates coords = ArtifactDataCoordinates.request(//
+		final ArtifactDataCoordinates coords = ArtifactDataCoordinates.build(//
 				"net.runeduniverse.tools.maven.r4m", "r4m-maven-extension", "1.1.0", null, "pom");
 
-		final CompletableFuture<ArtifactData> future = client().getArtifact(coords);
+		final CompletableFuture<? extends ArtifactData> future = client().getArtifact(coords);
 
 		final ArtifactData data = future.get(timeout(), TimeUnit.SECONDS);
 
@@ -117,10 +123,10 @@ public class HttpSourceTest extends ASourceTest {
 	@Test
 	@Tag("live")
 	public void downloadWithClassifier() throws Exception {
-		final ArtifactDataCoordinates coords = ArtifactDataCoordinates.request(//
+		final ArtifactDataCoordinates coords = ArtifactDataCoordinates.build(//
 				"net.runeduniverse.tools.maven.r4m", "r4m-maven-extension", "1.1.0", "sources", "jar");
 
-		final CompletableFuture<ArtifactData> future = client().getArtifact(coords);
+		final CompletableFuture<? extends ArtifactData> future = client().getArtifact(coords);
 
 		final ArtifactData data = future.get(timeout(), TimeUnit.SECONDS);
 
@@ -136,10 +142,10 @@ public class HttpSourceTest extends ASourceTest {
 	@Test
 	@Tag("live")
 	public void downloadWithoutClassifier() throws Exception {
-		final ArtifactDataCoordinates coords = ArtifactDataCoordinates.request(//
+		final ArtifactDataCoordinates coords = ArtifactDataCoordinates.build(//
 				"net.runeduniverse.tools.maven.r4m", "r4m-maven-extension", "1.1.0", null, "jar");
 
-		final CompletableFuture<ArtifactData> future = client().getArtifact(coords);
+		final CompletableFuture<? extends ArtifactData> future = client().getArtifact(coords);
 
 		final ArtifactData data = future.get(timeout(), TimeUnit.SECONDS);
 
@@ -155,10 +161,10 @@ public class HttpSourceTest extends ASourceTest {
 	@Test
 	@Tag("live")
 	public void downloadNotFound() throws Exception {
-		final ArtifactDataCoordinates coords = ArtifactDataCoordinates.request(//
+		final ArtifactDataCoordinates coords = ArtifactDataCoordinates.build(//
 				"net.runeduniverse.tools.maven.r4m", "r4m-maven-extension", "1.1.0", null, "pomX");
 
-		final CompletableFuture<ArtifactData> future = client().getArtifact(coords);
+		final CompletableFuture<? extends ArtifactData> future = client().getArtifact(coords);
 
 		Throwable t = null;
 		try {

@@ -54,7 +54,7 @@ public class NotFoundServerTest extends AHttpServerTest {
 	@Test
 	@Tag("live")
 	public void notFoundMetadata() throws InterruptedException, TimeoutException {
-		final ArtifactCoordinates coords = ArtifactCoordinates.request(//
+		final ArtifactCoordinates coords = ArtifactCoordinates.build(//
 				"net.runeduniverse", "missing-artifact");
 
 		final CompletableFuture<ArtifactMetadata> future = client().getMetadata(coords);
@@ -80,10 +80,10 @@ public class NotFoundServerTest extends AHttpServerTest {
 	@Test
 	@Tag("live")
 	public void notFoundArtifact() throws InterruptedException, TimeoutException {
-		final ArtifactDataCoordinates coords = ArtifactDataCoordinates.request(//
+		final ArtifactDataCoordinates coords = ArtifactDataCoordinates.build(//
 				"net.runeduniverse", "missing-artifact", "1", null, "jar");
 
-		final CompletableFuture<ArtifactData> future = client().getArtifact(coords);
+		final CompletableFuture<? extends ArtifactData> future = client().getArtifact(coords);
 
 		Throwable t = null;
 		try {

@@ -21,6 +21,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -118,6 +119,18 @@ public class PublicKeyIndex {
 		} catch (CancellationException | CompletionException e) {
 			return null;
 		}
+	}
+
+	public PGPPublicKey getKey(final long keyID) {
+		final PGPPublicKeyRing keyRing = getKeyRing(keyID);
+		if (keyRing == null)
+			return null;
+		for (Iterator<PGPPublicKey> i = keyRing.getPublicKeys(); i.hasNext();) {
+			final PGPPublicKey key = i.next();
+			if (key.getKeyID() == keyID)
+				return key;
+		}
+		return null;
 	}
 
 	public CompletableFuture<PGPPublicKeyRing> fetchKeyRingIfAbsent(final long keyID) {

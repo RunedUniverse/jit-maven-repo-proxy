@@ -15,6 +15,9 @@
  */
 package net.runeduniverse.lib.repo.maven.api;
 
+import java.util.LinkedList;
+import java.util.List;
+
 public interface ArtifactDataCoordinates extends ArtifactCoordinates {
 
 	public String getVersion();
@@ -23,12 +26,39 @@ public interface ArtifactDataCoordinates extends ArtifactCoordinates {
 
 	public String getExtension();
 
+	public default String getPURL() {
+		final List<String> prop = new LinkedList<>();
+
+		final String classifier = getClassifier();
+		if (classifier == null)
+			prop.add(String.format("classifier=%s", classifier));
+
+		final String type = getExtension();
+		if (type == null)
+			prop.add(String.format("type=%s", type));
+
+		final StringBuffer buffer = new StringBuffer(
+				String.format("pkg:maven/%s/%s@%s", getGroupId(), getArtifactId(), getVersion()));
+		if (!prop.isEmpty())
+			buffer.append('?')
+					.append(String.join("&", prop));
+		return buffer.toString();
+	}
+
+	public default boolean isPOM() {
+		return "pom".equals(getExtension());
+	}
+
+	public default ArtifactDataCoordinates toPomCoordinates() {
+		return new Data(getGroupId(), getArtifactId(), getVersion(), null, "pom");
+	}
+
 	public static String key(final ArtifactDataCoordinates coords) {
 		return String.format("%s:%s:%s:%s:%s", coords.getGroupId(), coords.getArtifactId(), coords.getVersion(),
 				coords.getClassifier(), coords.getExtension());
 	}
 
-	public static ArtifactDataCoordinates request(final String groupId, final String artifactId, final String version,
+	public static ArtifactDataCoordinates build(final String groupId, final String artifactId, final String version,
 			final String classifier, final String extension) {
 		return new Data(groupId, artifactId, version, classifier, extension);
 	}

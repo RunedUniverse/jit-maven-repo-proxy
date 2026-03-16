@@ -18,23 +18,33 @@ package net.runeduniverse.lib.repo.maven.data;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
+import net.runeduniverse.lib.repo.maven.api.ArtifactPOM;
 
 public class UnmodifiableArtifactData extends ArtifactDataCoordinates.Data implements ArtifactData {
 
+	protected final Supplier<CompletableFuture<ArtifactPOM>> pomSupplier;
 	protected final Path artifactPath;
 	protected final Path signaturePath;
 	protected final Map<String, String> checksums;
 
 	public UnmodifiableArtifactData(final String groupId, final String artifactId, final String version,
-			final String classifier, final String extension, final Path artifactPath, final Path signaturePath,
-			final Map<String, String> checksums) {
+			final String classifier, final String extension, final Supplier<CompletableFuture<ArtifactPOM>> pomSupplier,
+			final Path artifactPath, final Path signaturePath, final Map<String, String> checksums) {
 		super(groupId, artifactId, version, classifier, extension);
+		this.pomSupplier = pomSupplier;
 		this.artifactPath = artifactPath;
 		this.signaturePath = signaturePath;
 		this.checksums = checksums;
+	}
+
+	@Override
+	public CompletableFuture<ArtifactPOM> getPOM() {
+		return this.pomSupplier.get();
 	}
 
 	@Override
@@ -54,7 +64,7 @@ public class UnmodifiableArtifactData extends ArtifactDataCoordinates.Data imple
 
 	public static ArtifactData wrap(final ArtifactData data) {
 		return new UnmodifiableArtifactData(data.getGroupId(), data.getArtifactId(), data.getVersion(),
-				data.getClassifier(), data.getExtension(), data.getArtifactPath(), data.getSignaturePath(),
-				Collections.unmodifiableMap(data.getChecksums()));
+				data.getClassifier(), data.getExtension(), data::getPOM, data.getArtifactPath(),
+				data.getSignaturePath(), Collections.unmodifiableMap(data.getChecksums()));
 	}
 }

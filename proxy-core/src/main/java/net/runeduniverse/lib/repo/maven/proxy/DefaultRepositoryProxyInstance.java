@@ -97,7 +97,7 @@ public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInsta
 	}
 
 	@Override
-	public CompletableFuture<ArtifactData> getArtifact(final ArtifactDataCoordinates coords) {
+	public CompletableFuture<? extends ArtifactData> getArtifact(final ArtifactDataCoordinates coords) {
 		return this.cache.getArtifact(coords);
 	}
 
@@ -215,8 +215,9 @@ public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInsta
 		this.lookupArtifactListeners.forEach(listener -> listener.preLookup(coords));
 	}
 
-	protected CompletableFuture<ArtifactData> attachToArtifactLookup(final RepositorySourceClient client,
-			final ArtifactCoordinates coords, final boolean exact, final CompletableFuture<ArtifactData> upstream) {
+	protected CompletableFuture<? extends ArtifactData> attachToArtifactLookup(final RepositorySourceClient client,
+			final ArtifactCoordinates coords, final boolean exact,
+			final CompletableFuture<? extends ArtifactData> upstream) {
 		final CompletableFuture<ArtifactData> future = new CompletableFuture<>();
 		upstream.handle((v, t) -> {
 			try {

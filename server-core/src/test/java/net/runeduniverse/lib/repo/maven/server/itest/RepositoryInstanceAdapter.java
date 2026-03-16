@@ -38,7 +38,7 @@ public class RepositoryInstanceAdapter extends ARepositoryInstance {
 	}
 
 	@Override
-	public CompletableFuture<ArtifactData> getArtifact(final ArtifactDataCoordinates coords) {
+	public CompletableFuture<? extends ArtifactData> getArtifact(final ArtifactDataCoordinates coords) {
 		return this.provider.getArtifact(coords);
 	}
 }
