@@ -53,7 +53,7 @@ public class PublicKeyIndexTest {
 		PGPPublicKey publicKey = null;
 
 		// search cache & keyservers
-		while (i.hasNext()) {
+		searchLoop: while (i.hasNext()) {
 			Future<Collection<PGPPublicKey>> future = i.next();
 
 			Collection<PGPPublicKey> col;
@@ -71,7 +71,7 @@ public class PublicKeyIndexTest {
 			while (j.hasNext()) {
 				publicKey = j.next();
 				if (fingerprint.equals(toHexFingerprint(publicKey.getFingerprint())))
-					break;
+					break searchLoop;
 			}
 		}
 
