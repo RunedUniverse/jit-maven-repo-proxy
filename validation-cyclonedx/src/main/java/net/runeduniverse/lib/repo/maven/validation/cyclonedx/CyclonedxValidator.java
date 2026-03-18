@@ -17,6 +17,7 @@ package net.runeduniverse.lib.repo.maven.validation.cyclonedx;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,11 +38,15 @@ import net.runeduniverse.lib.repo.maven.error.SBomViolationException;
 import net.runeduniverse.lib.repo.maven.validation.pgp.PGPArtifactSignatureValidator;
 import net.runeduniverse.lib.repo.maven.validation.pgp.PublicKeyIndex;
 
+import static net.runeduniverse.lib.repo.maven.validation.pgp.PublicKeyIndex.toHexFingerprint;
+import static net.runeduniverse.lib.repo.maven.validation.pgp.PublicKeyIndex.toHexKeyID;
+
 public class CyclonedxValidator implements ArtifactValidator {
 
 	public static final String MSG_CHECKSUM_MISSMATCH = "SBOM: Artifact Checksum does not match expected value!";
 	public static final String MSG_SIGNATURE_KEYID_MISSMATCH = "SBOM: Artifact PGP-Signature KeyID does not match expected value!";
 	public static final String MSG_SIGNATURE_FINGERPRINT_MISSMATCH = "SBOM: Artifact PGP-Signature Fingerprint does not match expected value!";
+	public static final String MSG_SIGNATURE_FAILED_MISSMATCH = "SBOM: Artifact PGP-Signature could not be verified with a trusted PGP-Public-Key!";
 
 	protected final PublicKeyIndex keyIndex;
 	protected final ComponentIndex componentIndex;
@@ -69,8 +74,6 @@ public class CyclonedxValidator implements ArtifactValidator {
 
 	@Override
 	public boolean validate(final ArtifactData data) throws InvalidArtifactException {
-		final PGPArtifactSignatureValidator pgpValidator = new PGPArtifactSignatureValidator(this.keyIndex);
-
 		final Component comp = this.componentIndex.getComponentByPURL(data.getPURL());
 		if (comp == null) {
 			if (this.skipMissing)
@@ -110,41 +113,74 @@ public class CyclonedxValidator implements ArtifactValidator {
 		}
 
 		// -- verify artifact signature, if available
-		if (pgpValidator.validate(data)) {
-			// if the signature exists
-			// -> fails if -> throws error -> accepted
-			// -> if true, try to check the signature against the SBOM
-			final String pgpKeyID = properties.get("pgp:keyId");
-			final String pgpFingerprint = properties.get("pgp:fingerprint");
+		final PGPArtifactSignatureValidator pgpValidator = new PGPArtifactSignatureValidator(this.keyIndex) {
 
-			if (pgpKeyID != null || pgpFingerprint != null) {
-				// TODO check the signature against the SBOM
+			protected boolean keysEliminated = false;
 
-				try {
-					final PGPSignature pgpSignature = pgpValidator.getSignature(data.getSignaturePath());
-					final long keyID = pgpSignature.getKeyID();
+			@Override
+			public Collection<PGPPublicKey> validatePublicKeys(final ArtifactData data, final PGPSignature signature,
+					final Collection<PGPPublicKey> keys) {
+				// remove all keys that do not match SBOM values!
+				final String pgpKeyID = StringUtils.trimToNull(properties.get("pgp:keyId"));
+				final String pgpFingerprint = StringUtils.trimToNull(properties.get("pgp:fingerprint"));
 
-					if (pgpKeyID != null) {
-						if (!pgpKeyID.trim()
-								.equalsIgnoreCase(Long.toHexString(keyID)))
-							throw new SBomViolationException(MSG_SIGNATURE_KEYID_MISSMATCH);
+				if (pgpKeyID != null || pgpFingerprint != null) {
+
+					for (Iterator<PGPPublicKey> i = keys.iterator(); i.hasNext();) {
+						final PGPPublicKey pubKey = i.next();
+						if (pubKey == null) {
+							i.remove();
+							continue;
+						}
+
+						if (pgpKeyID != null && !pgpKeyID.equalsIgnoreCase(toHexKeyID(pubKey.getKeyID()))) {
+							this.keysEliminated = true;
+							i.remove();
+						}
+
+						if (pgpFingerprint != null
+								&& !pgpFingerprint.equalsIgnoreCase(toHexFingerprint(pubKey.getFingerprint()))) {
+							this.keysEliminated = true;
+							i.remove();
+						}
 					}
+				}
 
-					if (pgpFingerprint != null) {
-						// the key must already be known otherwise pgpValidator.validate(data)
-						// would not be true
-						final PGPPublicKey pubKey = this.keyIndex.getKey(keyID);
+				return keys;
+			}
 
-						if (!pgpFingerprint.trim()
-								.equalsIgnoreCase(Hex.encodeHexString(pubKey.getFingerprint())))
-							throw new SBomViolationException(MSG_SIGNATURE_FINGERPRINT_MISSMATCH);
-					}
-				} catch (IOException | PGPException e) {
-					throw new SBomViolationException("SBOM: Unexpected Exception occurred when loading PGPSignature",
-							e);
+			@Override
+			public void onValidateSuccess(final ArtifactData data, final PGPSignature signature,
+					final PGPPublicKey pubKey) throws InvalidArtifactException {
+				// if the signature had a key-fingerprint attached, a key in violation can
+				// sucessfully verify a signature and reach this point!
+				final String pgpKeyID = StringUtils.trimToNull(properties.get("pgp:keyId"));
+				final String pgpFingerprint = StringUtils.trimToNull(properties.get("pgp:fingerprint"));
+
+				if (pgpKeyID != null && !pgpKeyID.equalsIgnoreCase(toHexKeyID(pubKey.getKeyID()))) {
+					throw new SBomViolationException(MSG_SIGNATURE_KEYID_MISSMATCH);
+				}
+
+				if (pgpFingerprint != null
+						&& !pgpFingerprint.equalsIgnoreCase(toHexFingerprint(pubKey.getFingerprint()))) {
+					throw new SBomViolationException(MSG_SIGNATURE_FINGERPRINT_MISSMATCH);
 				}
 			}
-		}
+
+			@Override
+			public InvalidArtifactException onValidateFailure(final ArtifactData data, final PGPSignature signature,
+					final Throwable cause) {
+				if (cause == null && this.keysEliminated) {
+					// there's a chance we filtered out all public-keys
+					return new SBomViolationException(MSG_SIGNATURE_FAILED_MISSMATCH);
+				}
+				return super.onValidateFailure(data, signature, cause);
+			}
+		};
+
+		// true if the signature exists
+		// -> fails if -> throws error -> accepted
+		pgpValidator.validate(data);
 
 		return true;
 	}
