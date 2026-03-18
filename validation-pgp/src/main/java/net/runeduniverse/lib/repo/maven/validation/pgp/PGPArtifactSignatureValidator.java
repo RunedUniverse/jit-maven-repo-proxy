@@ -18,6 +18,8 @@ package net.runeduniverse.lib.repo.maven.validation.pgp;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -170,6 +172,22 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 		final Iterator<CompletableFuture<Collection<PGPPublicKey>>> locator = this.index.fetchKeysById(sigKeyID);
 		Throwable cause = null;
 
+		// as we search for the correct key by repeatedly verifying signature clones
+		// with different public-keys, the artifact is memory-mapped to increase file
+		// lookup speed
+		final Path artifactPath = data.getArtifactPath();
+		final MappedByteBuffer buffer;
+		try {
+			buffer = FileChannel.open(artifactPath)
+					.map(FileChannel.MapMode.READ_ONLY, 0, Files.size(artifactPath));
+		} catch (IOException e) {
+			System.err.println(
+					"Failed to load Artifact " + ArtifactDataCoordinates.key(data) + " for Signature verification");
+			e.getCause()
+					.printStackTrace(System.err);
+			throw onValidateFailure(data, signature, e);
+		}
+
 		while (locator.hasNext()) {
 			Collection<PGPPublicKey> keys;
 			// get set of public-keys
@@ -201,8 +219,8 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 				continue;
 			// try to verify the artifact using the keys
 			try {
-				final PGPPublicKey pubKey = verifyArtifact(signature, data.getArtifactPath(), keys,
-						(pubKeyEx, pgpEx) -> {
+				final PGPPublicKey pubKey = verifyArtifact(signature,
+						new ByteBufferInputStream(buffer.asReadOnlyBuffer()), keys, (pubKeyEx, pgpEx) -> {
 							PGPArtifactSignatureValidator.this.handleVerifyArtifactError(data, pubKeyEx, pgpEx);
 						});
 				if (pubKey != null) {
