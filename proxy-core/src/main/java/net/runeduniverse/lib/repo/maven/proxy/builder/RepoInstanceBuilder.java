@@ -56,6 +56,10 @@ public class RepoInstanceBuilder {
 		return this.sources;
 	}
 
+	public RepositorySource getSource(final String key) {
+		return this.sources.get(key);
+	}
+
 	public RepoInstanceBuilder putSource(final RepositorySource source) {
 		this.sources.put(source.key(), source);
 		return this;
@@ -71,12 +75,14 @@ public class RepoInstanceBuilder {
 	}
 
 	public RepoInstanceBuilder addListener(final LookupMetadataListener listener) {
-		this.lookupMetadataListeners.add(listener);
+		if (listener != null)
+			this.lookupMetadataListeners.add(listener);
 		return this;
 	}
 
 	public RepoInstanceBuilder addListener(final LookupArtifactListener listener) {
-		this.lookupArtifactListeners.add(listener);
+		if (listener != null)
+			this.lookupArtifactListeners.add(listener);
 		return this;
 	}
 

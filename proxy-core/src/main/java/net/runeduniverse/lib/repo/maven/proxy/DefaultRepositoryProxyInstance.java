@@ -15,6 +15,7 @@
  */
 package net.runeduniverse.lib.repo.maven.proxy;
 
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -52,8 +53,10 @@ import net.runeduniverse.lib.repo.maven.proxy.data.DefaultAggregateArtifactMetad
 public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInstance {
 
 	protected final Map<String, RepositorySource> sources = new ConcurrentHashMap<>();
-	protected final Set<LookupMetadataListener> lookupMetadataListeners = new ConcurrentSkipListSet<>();
-	protected final Set<LookupArtifactListener> lookupArtifactListeners = new ConcurrentSkipListSet<>();
+	protected final Set<LookupMetadataListener> lookupMetadataListeners = new ConcurrentSkipListSet<>(
+			Comparator.comparing(Object::hashCode));
+	protected final Set<LookupArtifactListener> lookupArtifactListeners = new ConcurrentSkipListSet<>(
+			Comparator.comparing(Object::hashCode));
 
 	protected final String path;
 	protected final Cache cache;
