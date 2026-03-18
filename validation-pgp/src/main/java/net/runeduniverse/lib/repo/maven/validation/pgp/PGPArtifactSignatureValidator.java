@@ -162,7 +162,7 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 					.printStackTrace(System.err);
 		}
 
-		throw new InvalidArtifactSignatureException("Failed to verify Artifact Signature!", cause);
+		throw onValidateFailure(data, signature, cause);
 	}
 
 	public boolean validateByKeyID(final ArtifactData data, final PGPSignature signature, final long sigKeyID)
@@ -196,6 +196,9 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 			}
 			// validate the keys
 			keys = validatePublicKeys(data, signature, keys);
+			// if keys were fully eliminated, continue
+			if (keys == null || keys.isEmpty())
+				continue;
 			// try to verify the artifact using the keys
 			try {
 				final PGPPublicKey pubKey = verifyArtifact(signature, data.getArtifactPath(), keys,
@@ -215,7 +218,7 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 			}
 		}
 
-		throw new InvalidArtifactSignatureException("Failed to verify Artifact Signature!", cause);
+		throw onValidateFailure(data, signature, cause);
 	}
 
 	public Collection<PGPPublicKey> validatePublicKeys(final ArtifactData data, final PGPSignature signature,
@@ -224,8 +227,15 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 		return keys;
 	}
 
-	public void onValidateSuccess(final ArtifactData data, final PGPSignature signature, final PGPPublicKey pubKey) {
-		// downstream classes log the success
+	public void onValidateSuccess(final ArtifactData data, final PGPSignature signature, final PGPPublicKey pubKey)
+			throws InvalidArtifactException {
+		// downstream classes may reject the public-key
+	}
+
+	public InvalidArtifactException onValidateFailure(final ArtifactData data, final PGPSignature signature,
+			final Throwable cause) {
+		// downstream classes change the exception
+		return new InvalidArtifactSignatureException("Failed to verify Artifact Signature!", cause);
 	}
 
 	public PGPSignature getSignature(final Path signaturePath) throws IOException, PGPException {
