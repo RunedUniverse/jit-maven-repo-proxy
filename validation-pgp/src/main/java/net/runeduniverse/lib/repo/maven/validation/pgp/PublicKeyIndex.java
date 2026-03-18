@@ -20,8 +20,10 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -35,12 +37,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
+import java.util.function.Supplier;
 import javax.net.ssl.SSLException;
 
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.bcpg.ArmoredInputStream;
+import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.bouncycastle.openpgp.PGPPublicKeyRingCollection;
@@ -60,7 +62,7 @@ import net.runeduniverse.lib.repo.maven.data.TextProcessor;
 public class PublicKeyIndex {
 
 	protected final NavigableMap<Integer, Set<Keyserver>> keyservers;
-	protected final Map<Long, CompletableFuture<PGPPublicKeyRing>> pkMap;
+	protected final Map<String, CompletableFuture<PGPPublicKey>> pubKeyMap;
 	protected final EventLoopGroup loopGroup;
 	protected final int maxRedirects;
 	protected final int maxRetries;
@@ -76,10 +78,10 @@ public class PublicKeyIndex {
 	}
 
 	protected PublicKeyIndex(final NavigableMap<Integer, Set<Keyserver>> keyservers,
-			final Map<Long, CompletableFuture<PGPPublicKeyRing>> pkMap, final EventLoopGroup loopGroup,
+			final Map<String, CompletableFuture<PGPPublicKey>> pubKeyMap, final EventLoopGroup loopGroup,
 			final int maxRedirects, final int maxRetries) {
 		this.keyservers = keyservers;
-		this.pkMap = pkMap;
+		this.pubKeyMap = pubKeyMap;
 		this.loopGroup = loopGroup;
 		this.maxRedirects = maxRedirects;
 		this.maxRetries = maxRetries;
@@ -92,26 +94,15 @@ public class PublicKeyIndex {
 		return this;
 	}
 
-	public PublicKeyIndex addKeyRing(final PGPPublicKeyRing keyRing) {
-		if (keyRing == null)
+	public PublicKeyIndex addKey(final PGPPublicKey pubKey) {
+		if (pubKey == null)
 			return this;
-		final PGPPublicKey key = keyRing.getPublicKey();
-		if (key == null)
-			return this;
-		this.pkMap.put(key.getKeyID(), CompletableFuture.completedFuture(keyRing));
+		this.pubKeyMap.put(toHexFingerprint(pubKey.getFingerprint()), CompletableFuture.completedFuture(pubKey));
 		return this;
 	}
 
-	public PGPPublicKeyRingCollection toKeyRingCollection() {
-		return new PGPPublicKeyRingCollection(this.pkMap.values()
-				.stream()
-				.filter(f -> f.isDone() && !f.isCompletedExceptionally())
-				.map(f -> f.getNow(null))
-				.collect(Collectors.toList()));
-	}
-
-	public PGPPublicKeyRing getKeyRing(final long keyID) {
-		final CompletableFuture<PGPPublicKeyRing> future = this.pkMap.get(keyID);
+	public PGPPublicKey getKey(final byte[] fingerprint) {
+		final CompletableFuture<PGPPublicKey> future = this.pubKeyMap.get(toHexFingerprint(fingerprint));
 		if (future == null)
 			return null;
 		try {
@@ -121,27 +112,97 @@ public class PublicKeyIndex {
 		}
 	}
 
-	public PGPPublicKey getKey(final long keyID) {
-		final PGPPublicKeyRing keyRing = getKeyRing(keyID);
-		if (keyRing == null)
-			return null;
-		for (Iterator<PGPPublicKey> i = keyRing.getPublicKeys(); i.hasNext();) {
-			final PGPPublicKey key = i.next();
-			if (key.getKeyID() == keyID)
-				return key;
+	public CompletableFuture<PGPPublicKey> fetchKeyIfAbsent(final byte[] fingerprint) {
+		return this.pubKeyMap.computeIfAbsent(toHexFingerprint(fingerprint), this::fetchKeyByFingerprint);
+	}
+
+	public Iterator<CompletableFuture<Collection<PGPPublicKey>>> fetchKeysById(final long keyID) {
+		final List<Supplier<CompletableFuture<Collection<PGPPublicKey>>>> lst = new LinkedList<>();
+
+		// 1st, try to find valid candidates in the cache
+		lst.add(() -> {
+			final Set<PGPPublicKey> set = new LinkedHashSet<>();
+
+			for (CompletableFuture<PGPPublicKey> future : PublicKeyIndex.this.pubKeyMap.values()) {
+				final PGPPublicKey pubKey = future.getNow(null);
+				if (pubKey != null && keyID == pubKey.getKeyID())
+					set.add(pubKey);
+			}
+
+			return CompletableFuture.completedFuture(set);
+		});
+
+		// 2nd, search the keyservers by priority (lowest first)
+		for (Entry<Integer, Set<Keyserver>> entry : this.keyservers.entrySet()) {
+			// schedule the requests for this set of Keyservers
+			final Set<Keyserver> keyservers = entry.getValue();
+			if (keyservers.isEmpty())
+				continue;
+
+			for (Keyserver keyserver : keyservers) {
+				// build the KeyRing request
+				lst.add(() -> {
+					return fetchKeyRingCollection(keyserver, keyID).thenApply(keyRingCol -> {
+						final Set<PGPPublicKey> set = new LinkedHashSet<>();
+						if (keyRingCol == null)
+							return set;
+						// NOTE: since keyID collisions are possible we search for all matching keys in
+						// all keyrings!
+						for (Iterator<PGPPublicKeyRing> it = keyRingCol.getKeyRings(); it.hasNext();) {
+							final PGPPublicKeyRing keyRing = it.next();
+							for (Iterator<PGPPublicKey> i = keyRing.getPublicKeys(); i.hasNext();) {
+								final PGPPublicKey key = i.next();
+								if (key.getKeyID() == keyID)
+									set.add(key);
+								// update local cache
+								PublicKeyIndex.this.addKey(key);
+							}
+						}
+						return set;
+					});
+				});
+			}
 		}
-		return null;
+
+		return new FetchPublicKeysIterator(lst.iterator());
 	}
 
-	public CompletableFuture<PGPPublicKeyRing> fetchKeyRingIfAbsent(final long keyID) {
-		return this.pkMap.computeIfAbsent(keyID, this::fetchKeyRing);
+	public static class FetchPublicKeysIterator implements Iterator<CompletableFuture<Collection<PGPPublicKey>>> {
+
+		protected final Iterator<Supplier<CompletableFuture<Collection<PGPPublicKey>>>> iterator;
+
+		public FetchPublicKeysIterator(final Iterator<Supplier<CompletableFuture<Collection<PGPPublicKey>>>> iterator) {
+			this.iterator = iterator;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return this.iterator.hasNext();
+		}
+
+		@Override
+		public CompletableFuture<Collection<PGPPublicKey>> next() {
+			return this.iterator.next()
+					.get();
+		}
 	}
 
-	protected CompletableFuture<PGPPublicKeyRing> fetchKeyRing(final long keyID) {
+	public static String toHexFingerprint(final byte[] fingerprint) {
+		StringBuffer sb = new StringBuffer();
+		for (byte b : fingerprint) {
+			sb.append(String.format("%02X", b));
+		}
+		return sb.toString();
+	}
+
+	public static String toHexKeyID(final long keyID) {
 		// ensure <keyString> is 16 hex chars long
-		final String keyString = String.format("%016X", keyID);
-		final CompletableFuture<PGPPublicKeyRing> future = new CompletableFuture<>();
-		final List<CompletableFuture<PGPPublicKeyRing>> futures = new LinkedList<>();
+		return String.format("%016X", keyID);
+	}
+
+	protected CompletableFuture<PGPPublicKey> fetchKeyByFingerprint(final String fingerprint) {
+		final CompletableFuture<PGPPublicKey> future = new CompletableFuture<>();
+		final List<CompletableFuture<PGPPublicKey>> futures = new LinkedList<>();
 
 		CompletableFuture<?> blocker = CompletableFuture.completedFuture(null);
 
@@ -152,7 +213,7 @@ public class PublicKeyIndex {
 				continue;
 
 			for (Keyserver keyserver : set) {
-				final URI uri = buildURI(keyString, keyserver.uri(), keyserver.type());
+				final URI uri = uriForFingerprint(fingerprint, keyserver.uri(), keyserver.type());
 				if (uri == null)
 					continue;
 
@@ -169,12 +230,17 @@ public class PublicKeyIndex {
 							.whenComplete((keyRing, throwable) -> {
 								if (keyRing != null) {
 									// keyRing successful acquired!
-									future.complete(keyRing);
+									for (Iterator<PGPPublicKey> i = keyRing.getPublicKeys(); i.hasNext();) {
+										final PGPPublicKey pubKey = i.next();
+										if (fingerprint.equals(toHexFingerprint(pubKey.getFingerprint()))) {
+											future.complete(pubKey);
+											return;
+										}
+									}
 								}
 								if (throwable != null)
 									System.err.println("IDX-ERR: " + throwable.getMessage());
 								// TODO log error!
-								System.err.println("done: " + keyString);
 							})
 							.join();
 					return null;
@@ -192,14 +258,14 @@ public class PublicKeyIndex {
 		// -> supply default result
 		// -> required if all fetch tries failed!
 		blocker.thenAccept(v -> {
-			System.err.println("finalize: " + keyString);
+			System.err.println("finalize: " + fingerprint);
 			future.complete(null);
 		});
 
 		return future;
 	}
 
-	protected URI buildURI(final String keyString, final URI uri, final KeyserverType type) {
+	protected URI uriForKeyID(final String keyString, final URI uri, final KeyserverType type) {
 		// extract path & query from uri
 		final StringBuffer pathBuffer = new StringBuffer();
 		final StringBuffer queryBuffer = new StringBuffer();
@@ -248,6 +314,73 @@ public class PublicKeyIndex {
 		}
 	}
 
+	protected URI uriForFingerprint(final String fingerprintString, final URI uri, final KeyserverType type) {
+		// extract path & query from uri
+		final StringBuffer pathBuffer = new StringBuffer();
+		final StringBuffer queryBuffer = new StringBuffer();
+		{
+			String path = uri.getPath();
+			if ((path = StringUtils.trimToNull(path)) != null) {
+				// rebuild path
+				for (String part : path.split("/")) {
+					if (part.length() == 0)
+						continue;
+					pathBuffer.append('/')
+							.append(path);
+				}
+			}
+			String query = uri.getQuery();
+			if ((query = StringUtils.trimToNull(query)) != null) {
+				queryBuffer.append(query);
+			}
+		}
+		// apply the request protocol
+		switch (type) {
+		case VKS:
+			// -- Verifying Keyserver --
+			// /vks/v1/by-fingerprint/<FINGERPRINT>
+			pathBuffer.append("/vks/v1/by-fingerprint/")
+					.append(fingerprintString);
+			break;
+		case HKP:
+			// -- HTTP Keyserver Protocol --
+			// /pks/lookup?op=get&options=mr&search=<QUERY>
+			pathBuffer.append("/pks/lookup");
+			if (0 < queryBuffer.length())
+				queryBuffer.append('&');
+			queryBuffer.append("op=get&options=mr&search=0x")
+					.append(fingerprintString);
+			break;
+		default:
+			return null;
+		}
+		try {
+			return new URI(uri.getScheme(), uri.getAuthority(), pathBuffer.toString(),
+					StringUtils.trimToNull(queryBuffer.toString()), uri.getFragment());
+		} catch (URISyntaxException unexpected) {
+			unexpected.printStackTrace(System.err);
+			return null;
+		}
+	}
+
+	protected CompletableFuture<PGPPublicKeyRingCollection> fetchKeyRingCollection(final Keyserver keyserver,
+			final long keyID) {
+		final String keyString = toHexKeyID(keyID);
+		final URI uri = uriForKeyID(keyString, keyserver.uri(), keyserver.type());
+		if (uri == null)
+			return CompletableFuture.completedFuture(null);
+
+		// TODO check data cache for keyID in Keyserver
+
+		final TextProcessor processor = new TextProcessor();
+		final KeyDataRequest dataRequest = new KeyDataRequest(keyserver, uri, processor, this.maxRedirects);
+
+		execRequest(dataRequest);
+
+		return processor.future()
+				.thenApply(this::parsePublicKeyRingCollection);
+	}
+
 	protected CompletableFuture<PGPPublicKeyRing> fetchKeyRing(final Keyserver keyserver, final URI uri) {
 		final TextProcessor processor = new TextProcessor();
 		final KeyDataRequest dataRequest = new KeyDataRequest(keyserver, uri, processor, this.maxRedirects);
@@ -255,10 +388,23 @@ public class PublicKeyIndex {
 		execRequest(dataRequest);
 
 		return processor.future()
-				.thenApply(this::parsePublicKey);
+				.thenApply(this::parsePublicKeyRing);
 	}
 
-	protected PGPPublicKeyRing parsePublicKey(final String armoredKey) {
+	protected PGPPublicKeyRingCollection parsePublicKeyRingCollection(final String armoredKey) {
+		try {
+			return new PGPPublicKeyRingCollection(//
+					new ArmoredInputStream(//
+							new ByteArrayInputStream(armoredKey.getBytes(StandardCharsets.UTF_8))),
+					new JcaKeyFingerprintCalculator());
+		} catch (IOException | PGPException e) {
+			// TODO add propper logging
+			e.printStackTrace(System.err);
+		}
+		return null;
+	}
+
+	protected PGPPublicKeyRing parsePublicKeyRing(final String armoredKey) {
 		try {
 			return new PGPPublicKeyRing(//
 					new ArmoredInputStream(//

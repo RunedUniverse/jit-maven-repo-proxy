@@ -111,7 +111,7 @@ node( label: 'linux' ) {
 			addModule( id: 'server-http',           path: 'server-http',           name: 'Maven Repo [server-http]',      tags: [ 'build6', 'pack-jar', 'jdk-1.8.0', 'test-live' ])
 			addModule( id: 'proxy-core',            path: 'proxy-core',            name: 'Maven Repo [proxy-core]',       tags: [ 'build7', 'pack-jar', 'jdk-1.8.0', 'test-smoke', 'test-live' ])
 			addModule( id: 'cache-caffeine',        path: 'cache-caffeine',        name: 'Maven Repo [cache:caffeine]',   tags: [ 'build3', 'pack-jar', 'jdk-11'   , 'test-smoke' ])
-			addModule( id: 'validation-pgp',        path: 'validation-pgp',        name: 'Maven Repo [valid:pgp]',        tags: [ 'build3', 'pack-jar', 'jdk-1.8.0', 'test-smoke' ])
+			addModule( id: 'validation-pgp',        path: 'validation-pgp',        name: 'Maven Repo [valid:pgp]',        tags: [ 'build3', 'pack-jar', 'jdk-1.8.0', 'test-live' ])
 			addModule( id: 'validation-cyclonedx',  path: 'validation-cyclonedx',  name: 'Maven Repo [valid:cyclonedx]',  tags: [ 'build4', 'pack-jar', 'jdk-17',    'test-smoke' ])
 		}
 		def parentMod = getModule(id: 'project')

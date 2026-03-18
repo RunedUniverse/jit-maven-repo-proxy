@@ -16,18 +16,23 @@
 package net.runeduniverse.lib.repo.maven.proxy.validation.pgp.test;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.bouncycastle.openpgp.PGPPublicKey;
-import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import net.runeduniverse.lib.repo.maven.validation.pgp.PublicKeyIndex;
+
+import static net.runeduniverse.lib.repo.maven.validation.pgp.PublicKeyIndex.toHexFingerprint;
+import static net.runeduniverse.lib.repo.maven.validation.pgp.PublicKeyIndex.toHexKeyID;
 
 public class PublicKeyIndexTest {
 
@@ -37,24 +42,42 @@ public class PublicKeyIndexTest {
 
 	@Test
 	@Tag("live")
-	public void exec() throws InterruptedException, TimeoutException {
+	public void findByKeyID() throws InterruptedException, TimeoutException {
 		PublicKeyIndex index = PublicKeyIndex.createDefaultKeyIndex();
 
-		Future<PGPPublicKeyRing> keyringFuture = index.fetchKeyRingIfAbsent(-7155602096415788222L);
+		long keyID = -7155602096415788222L;
+		String fingerprint = "78BC87F32F7607FC3411CCB89CB231CE2918B342";
 
-		PGPPublicKeyRing keyring = null;
-		try {
-			keyring = keyringFuture.get(30, TimeUnit.SECONDS);
-		} catch (ExecutionException e) {
-			e.printStackTrace();
+		Iterator<CompletableFuture<Collection<PGPPublicKey>>> i = index.fetchKeysById(keyID);
+
+		PGPPublicKey publicKey = null;
+
+		// search cache & keyservers
+		while (i.hasNext()) {
+			Future<Collection<PGPPublicKey>> future = i.next();
+
+			Collection<PGPPublicKey> col;
+			try {
+				col = future.get(30, TimeUnit.SECONDS);
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+				continue;
+			}
+
+			if (col.isEmpty())
+				continue;
+
+			Iterator<PGPPublicKey> j = col.iterator();
+			while (j.hasNext()) {
+				publicKey = j.next();
+				if (fingerprint.equals(toHexFingerprint(publicKey.getFingerprint())))
+					break;
+			}
 		}
 
-		Assertions.assertNotNull(keyring, "Failed to fetch PublicKeyRing, ID: 9CB231CE2918B342");
-		PGPPublicKey publicKey = keyring.getPublicKey();
-		Assertions.assertNotNull(publicKey, "PublicKey was null, ID: 9CB231CE2918B342");
+		Assertions.assertNotNull(publicKey, "Failed to fetch PublicKey, ID: 9CB231CE2918B342");
 
-		print(String.format("Fetched PublicKey with ID: %s / Fingerprint: %s", Long.toHexString(publicKey.getKeyID())
-				.toUpperCase(), publicKey.getFingerprint()));
+		print(String.format("Fetched PublicKey with ID: %s / Fingerprint: %s",
+				toHexKeyID(publicKey.getKeyID()).toUpperCase(), toHexFingerprint(publicKey.getFingerprint())));
 	}
-
 }
