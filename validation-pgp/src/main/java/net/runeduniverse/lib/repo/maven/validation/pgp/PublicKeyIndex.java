@@ -113,7 +113,11 @@ public class PublicKeyIndex {
 	}
 
 	public CompletableFuture<PGPPublicKey> fetchKeyIfAbsent(final byte[] fingerprint) {
-		return this.pubKeyMap.computeIfAbsent(toHexFingerprint(fingerprint), this::fetchKeyByFingerprint);
+		return fetchKeyIfAbsent(toHexFingerprint(fingerprint));
+	}
+
+	public CompletableFuture<PGPPublicKey> fetchKeyIfAbsent(final String fingerprint) {
+		return this.pubKeyMap.computeIfAbsent(fingerprint, this::fetchKeyByFingerprint);
 	}
 
 	public Iterator<CompletableFuture<Collection<PGPPublicKey>>> fetchKeysById(final long keyID) {
@@ -392,6 +396,8 @@ public class PublicKeyIndex {
 	}
 
 	protected PGPPublicKeyRingCollection parsePublicKeyRingCollection(final String armoredKey) {
+		if (armoredKey == null)
+			return null;
 		try {
 			return new PGPPublicKeyRingCollection(//
 					new ArmoredInputStream(//
@@ -405,6 +411,8 @@ public class PublicKeyIndex {
 	}
 
 	protected PGPPublicKeyRing parsePublicKeyRing(final String armoredKey) {
+		if (armoredKey == null)
+			return null;
 		try {
 			return new PGPPublicKeyRing(//
 					new ArmoredInputStream(//

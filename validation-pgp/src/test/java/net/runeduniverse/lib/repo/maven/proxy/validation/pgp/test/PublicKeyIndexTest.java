@@ -80,4 +80,25 @@ public class PublicKeyIndexTest {
 		print(String.format("Fetched PublicKey with ID: %s / Fingerprint: %s",
 				toHexKeyID(publicKey.getKeyID()).toUpperCase(), toHexFingerprint(publicKey.getFingerprint())));
 	}
+
+	@Test
+	@Tag("live")
+	public void findByFingerprint() throws InterruptedException, TimeoutException {
+		PublicKeyIndex index = PublicKeyIndex.createDefaultKeyIndex();
+
+		String fingerprint = "78BC87F32F7607FC3411CCB89CB231CE2918B342";
+
+		PGPPublicKey publicKey = null;
+		try {
+			CompletableFuture<PGPPublicKey> future = index.fetchKeyIfAbsent(fingerprint);
+			publicKey = future.get(30, TimeUnit.SECONDS);
+		} catch (ExecutionException e) {
+			e.printStackTrace();
+		}
+
+		Assertions.assertNotNull(publicKey, "Failed to fetch PublicKey, ID: 9CB231CE2918B342");
+
+		print(String.format("Fetched PublicKey with ID: %s / Fingerprint: %s",
+				toHexKeyID(publicKey.getKeyID()).toUpperCase(), toHexFingerprint(publicKey.getFingerprint())));
+	}
 }

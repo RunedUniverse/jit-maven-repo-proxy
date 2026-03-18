@@ -84,7 +84,7 @@ public class PKClientHandler extends SimpleChannelInboundHandler<HttpObject> {
 			ctx.close();
 			return;
 		case 404: // [ Not Found ]
-			processor.completeExceptionally(new RuntimeException("HTTP-CODE-404"));
+			processor.complete();
 			ctx.close();
 			return;
 		}
