@@ -17,16 +17,12 @@ package net.runeduniverse.lib.repo.maven.validation.cyclonedx;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPSignature;
 import org.cyclonedx.model.Component;
 import org.cyclonedx.model.Hash;
-import org.cyclonedx.model.Property;
-
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.error.InvalidArtifactException;
@@ -80,18 +76,7 @@ public class CyclonedxValidator implements ArtifactValidator {
 		}
 
 		// -- create Property-Map
-		final Map<String, String> properties = new LinkedHashMap<>();
-		{
-			final List<Property> propList = comp.getProperties();
-			if (propList != null) {
-				for (Property property : propList) {
-					final String key = StringUtils.trimToNull(property.getName());
-					if (key == null)
-						continue;
-					properties.put(key, property.getValue());
-				}
-			}
-		}
+		final Map<String, String> properties = ComponentIndex.getProperties(comp);
 
 		// -- verify checksums, if available
 		final Collection<Hash> hashes = comp.getHashes();

@@ -15,18 +15,24 @@
  */
 package net.runeduniverse.lib.repo.maven.ex.proxy2;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Scanner;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -34,10 +40,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
+import org.cyclonedx.Version;
 import org.cyclonedx.exception.ParseException;
+import org.cyclonedx.generators.BomGeneratorFactory;
 import org.cyclonedx.model.Bom;
+import org.cyclonedx.model.Component;
+import org.cyclonedx.model.Hash;
 import org.cyclonedx.parsers.BomParserFactory;
 import org.cyclonedx.parsers.Parser;
+import org.cyclonedx.util.BomUtils;
 
 import io.netty.channel.Channel;
 import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
@@ -58,6 +69,9 @@ import net.runeduniverse.lib.repo.maven.validation.cyclonedx.CyclonedxMetadataFi
 import net.runeduniverse.lib.repo.maven.validation.cyclonedx.CyclonedxValidator;
 import net.runeduniverse.lib.repo.maven.validation.pgp.PublicKeyIndex;
 
+import static net.runeduniverse.lib.repo.maven.validation.cyclonedx.ComponentIndex.ignoreExcludedDependency;
+import static net.runeduniverse.lib.repo.maven.validation.cyclonedx.ComponentIndex.ignoreTestDependency;
+
 public class MavenProxy {
 
 	protected static Path workspacePath;
@@ -71,6 +85,9 @@ public class MavenProxy {
 	protected final LookupArtifactListener lookupArtifactListener;
 	protected final LookupMetadataListener lookupPluginMetadataListener;
 	protected final LookupArtifactListener lookupPluginArtifactListener;
+
+	protected final ComponentIndex dependencyIndex = new ComponentIndex();
+	protected final ComponentIndex pluginIndex = new ComponentIndex();
 
 	public MavenProxy() {
 		this.lookupMetadataListener = initLookupMetadataListener();
@@ -112,13 +129,30 @@ public class MavenProxy {
 
 			@Override
 			public void postLookup(Future<ArtifactData> future) {
-				Object data = null;
+				ArtifactData data = null;
 				Throwable throwable = null;
 
 				try {
 					data = future.get(1, TimeUnit.MINUTES);
 				} catch (Throwable t) {
 					throwable = t;
+				}
+
+				if (data != null) {
+					final Component component = new Component();
+					final String purl = data.getPURL();
+					component.setBomRef(purl);
+					component.setGroup(data.getGroupId());
+					component.setName(data.getArtifactId());
+					component.setVersion(data.getVersion());
+					component.setPurl(purl);
+					component.setHashes(data.getChecksums()
+							.entrySet()
+							.stream()
+							.map(e -> new Hash(e.getKey(), e.getValue()))
+							.toList());
+
+					MavenProxy.this.dependencyIndex.addComponent(component);
 				}
 
 				System.out.println("DATA: " + data);
@@ -145,13 +179,30 @@ public class MavenProxy {
 
 			@Override
 			public void postLookup(Future<ArtifactData> future) {
-				Object data = null;
+				ArtifactData data = null;
 				Throwable throwable = null;
 
 				try {
 					data = future.get(1, TimeUnit.MINUTES);
 				} catch (Throwable t) {
 					throwable = t;
+				}
+
+				if (data != null) {
+					final Component component = new Component();
+					final String purl = data.getPURL();
+					component.setBomRef(purl);
+					component.setGroup(data.getGroupId());
+					component.setName(data.getArtifactId());
+					component.setVersion(data.getVersion());
+					component.setPurl(purl);
+					component.setHashes(data.getChecksums()
+							.entrySet()
+							.stream()
+							.map(e -> new Hash(e.getKey(), e.getValue()))
+							.toList());
+
+					MavenProxy.this.pluginIndex.addComponent(component);
 				}
 
 				System.out.println("DATA: " + data);
@@ -173,19 +224,44 @@ public class MavenProxy {
 		PublicKeyIndex keyIndex = PublicKeyIndex.createDefaultKeyIndex();
 		ComponentIndex compIndex = new ComponentIndex();
 
-		List<Bom> sbomLst = extractSBomList(args);
 		final MetadataValidator sbomMetadataValidator;
 		final ArtifactValidator sbomValidator;
+		final MetadataValidator sbomPluginMetadataValidator;
+		final ArtifactValidator sbomPluginValidator;
+		{
+			// index sbom - for dependency use
+			List<Bom> sbomLst = extractParamList("sbom", args).stream()
+					.map(MavenProxy::parseSBom)
+					.filter(Objects::nonNull)
+					.toList();
 
-		if (sbomLst.isEmpty()) {
-			sbomMetadataValidator = null;
-			sbomValidator = null;
-		} else {
-			for (Bom sbom : sbomLst)
-				compIndex.addBom(sbom);
+			if (sbomLst.isEmpty()) {
+				sbomMetadataValidator = null;
+				sbomValidator = null;
+			} else {
+				for (Bom sbom : sbomLst)
+					compIndex.addBom(sbom);
 
-			sbomMetadataValidator = new CyclonedxMetadataFilter(compIndex);
-			sbomValidator = new CyclonedxValidator(keyIndex, compIndex);
+				sbomMetadataValidator = new CyclonedxMetadataFilter(compIndex);
+				sbomValidator = new CyclonedxValidator(keyIndex, compIndex);
+			}
+
+			// index sbom - for providing plugins
+			sbomLst = extractParamList("sbom-plugin", args).stream()
+					.map(MavenProxy::parseSBom)
+					.filter(Objects::nonNull)
+					.toList();
+
+			if (sbomLst.isEmpty()) {
+				sbomPluginMetadataValidator = null;
+				sbomPluginValidator = null;
+			} else {
+				for (Bom sbom : sbomLst)
+					compIndex.addBom(sbom, ignoreExcludedDependency().and(ignoreTestDependency()));
+
+				sbomPluginMetadataValidator = new CyclonedxMetadataFilter(compIndex);
+				sbomPluginValidator = new CyclonedxValidator(keyIndex, compIndex);
+			}
 		}
 
 		MavenProxy mvnProxy = new MavenProxy();
@@ -200,8 +276,8 @@ public class MavenProxy {
 		});
 		mvnProxy.initPluginInstance(builder.instance("maven-central-plugins"), instance -> {
 			instance.putSource(createHttpSource("repo1-plugins", URI.create("https://repo1.maven.org/maven2/"))
-					.addFirstValidator(sbomMetadataValidator)
-					.addLastValidator(sbomValidator));
+					.addFirstValidator(sbomPluginMetadataValidator)
+					.addLastValidator(sbomPluginValidator));
 		});
 		// rnet-releases
 		mvnProxy.initInstance(builder.instance("rnet-releases"), instance -> {
@@ -229,9 +305,75 @@ public class MavenProxy {
 				socketAddress.getPort()));
 
 		// use it!
-		for (int i = 30; 0 < i; i--) {
-			System.out.println(String.format("Server will stop in %d min ...", i));
-			TimeUnit.MINUTES.sleep(1);
+
+		try (Scanner scanner = new Scanner(System.in)) {
+			loop: while (true) {
+				System.out.print("> ");
+				String input = scanner.nextLine()
+						.trim();
+				final String cmd;
+				{
+					String[] arr = input.split(" ", 2);
+					cmd = arr.length == 0 ? "" : arr[0].toLowerCase();
+					input = arr.length == 2 ? arr[1] : "";
+				}
+
+				switch (cmd) {
+				case "exit":
+					break loop;
+				case "save":
+					final String[] params = input.split(" ", 2);
+					if (input.length() == 0 || params.length != 2) {
+						System.err.println("  save <dep-sbom / plugin-sbom> <path>\n");
+						continue;
+					}
+					// select index
+					final ComponentIndex index;
+					if (params[0] == "dep-sbom")
+						index = mvnProxy.dependencyIndex;
+					else if (params[0] == "plugin-sbom")
+						index = mvnProxy.pluginIndex;
+					else {
+						System.err.println("  save <dep-sbom / plugin-sbom> <path>\n");
+						continue;
+					}
+					// to SBOM
+					final Bom sbom = new Bom();
+					for (Component component : index.getComponents()) {
+						sbom.addComponent(component);
+					}
+					final String sbomText;
+					if (params[1].endsWith(".xml")) {
+						sbomText = BomGeneratorFactory.createXml(Version.VERSION_16, sbom)
+								.toString();
+					} else if (params[1].endsWith(".json")) {
+						sbomText = BomGeneratorFactory.createJson(Version.VERSION_16, sbom)
+								.toString();
+					} else {
+						System.err.println("  save <dep-sbom / plugin-sbom> <path>");
+						System.err.println("  err: path must end in either .xml or .json\n");
+						continue;
+					}
+					// get Path
+					final Path path = Path.of(params[1]);
+					try {
+						Files.createDirectories(path.getParent());
+					} catch (IOException e) {
+						System.err.println("  save <dep-sbom / plugin-sbom> <path>");
+						System.err.println("  err: " + e.getMessage() + "\n");
+						continue;
+					}
+					// write
+					try {
+						Files.write(path, sbomText.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+					} catch (IOException e) {
+						System.err.println("  save <dep-sbom / plugin-sbom> <path>");
+						System.err.println("  err: " + e.getMessage() + "\n");
+						continue;
+					}
+					System.out.println("  SBOM written to " + path.toString());
+				}
+			}
 		}
 
 		System.out.println("  Stopping Server ...");
@@ -248,31 +390,38 @@ public class MavenProxy {
 		return new HttpSource(key, uri, repoPath.resolve(key), 3, 10);
 	}
 
-	public static List<Bom> extractSBomList(List<String> args) {
-		final List<Bom> col = new LinkedList<>();
+	public static List<String> extractParamList(final String key, final List<String> args) {
+		final List<String> col = new LinkedList<>();
 
 		for (String arg : args) {
-			Bom sbom = parseSBom(arg);
-			if (sbom == null)
+			String param = extractParam(key, arg);
+			if (param == null)
 				continue;
-			col.add(sbom);
+			col.add(param);
 		}
 		return col;
 	}
 
-	public static Bom parseSBom(String arg) {
-		final Pattern pattern = Pattern.compile("--sbom=(.*)");
-
-		// locate sbom-path
-		Path sbomPath = null;
-		Matcher matcher = pattern.matcher(arg);
+	public static String extractParam(final String key, final String arg) {
+		final Pattern pattern = Pattern.compile("--" + key + "=(.*)");
+		final Matcher matcher = pattern.matcher(arg);
 		if (!matcher.matches())
 			return null;
 
-		sbomPath = Path.of(matcher.group(1));
+		return matcher.group(1);
+	}
+
+	public static Bom parseSBom(final String param) {
+		final Path sbomPath;
+		try {
+			sbomPath = Path.of(param);
+		} catch (InvalidPathException e) {
+			e.printStackTrace(System.err);
+			return null;
+		}
 
 		// get parser -> either xml or json
-		Parser parser;
+		final Parser parser;
 		try (final InputStream stream = Files.newInputStream(sbomPath)) {
 			final byte[] bytes = IOUtils.toByteArray(stream, 1);
 			parser = BomParserFactory.createParser(bytes);
