@@ -158,7 +158,7 @@ public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInsta
 	}
 
 	protected void postMetadataLookup(final ArtifactMetadata metadata, final Throwable throwable) {
-		if (!this.lookupMetadataListeners.isEmpty())
+		if (this.lookupMetadataListeners.isEmpty())
 			return;
 		final Future<ArtifactMetadata> future = asUnmodifiableFuture(metadata, throwable);
 		this.lookupMetadataListeners.forEach(listener -> listener.postLookup(future));
@@ -278,7 +278,7 @@ public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInsta
 	}
 
 	protected void postArtifactLookup(final ArtifactData data, final Throwable throwable) {
-		if (!this.lookupArtifactListeners.isEmpty())
+		if (this.lookupArtifactListeners.isEmpty())
 			return;
 		final Future<ArtifactData> future = asUnmodifiableFuture(data, throwable);
 		this.lookupArtifactListeners.forEach(listener -> listener.postLookup(future));

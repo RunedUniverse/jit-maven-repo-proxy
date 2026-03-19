@@ -58,6 +58,7 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.api.MetadataValidator;
 import net.runeduniverse.lib.repo.maven.client.http.HttpSource;
 import net.runeduniverse.lib.repo.maven.error.ArtifactException;
+import net.runeduniverse.lib.repo.maven.error.InvalidArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.ProxyServer;
 import net.runeduniverse.lib.repo.maven.proxy.api.LookupArtifactListener;
 import net.runeduniverse.lib.repo.maven.proxy.api.LookupMetadataListener;
@@ -67,6 +68,7 @@ import net.runeduniverse.lib.repo.maven.server.http.HttpRepoServerInitializer;
 import net.runeduniverse.lib.repo.maven.validation.cyclonedx.ComponentIndex;
 import net.runeduniverse.lib.repo.maven.validation.cyclonedx.CyclonedxMetadataFilter;
 import net.runeduniverse.lib.repo.maven.validation.cyclonedx.CyclonedxValidator;
+import net.runeduniverse.lib.repo.maven.validation.pgp.PGPArtifactSignatureValidator;
 import net.runeduniverse.lib.repo.maven.validation.pgp.PublicKeyIndex;
 
 import static net.runeduniverse.lib.repo.maven.validation.cyclonedx.ComponentIndex.ignoreExcludedDependency;
@@ -130,12 +132,10 @@ public class MavenProxy {
 			@Override
 			public void postLookup(Future<ArtifactData> future) {
 				ArtifactData data = null;
-				Throwable throwable = null;
 
 				try {
 					data = future.get(1, TimeUnit.MINUTES);
-				} catch (Throwable t) {
-					throwable = t;
+				} catch (Throwable ignored) {
 				}
 
 				if (data != null) {
@@ -154,9 +154,6 @@ public class MavenProxy {
 
 					MavenProxy.this.dependencyIndex.addComponent(component);
 				}
-
-				System.out.println("DATA: " + data);
-				System.out.println("ERROR: " + throwable);
 			}
 		};
 	}
@@ -180,12 +177,10 @@ public class MavenProxy {
 			@Override
 			public void postLookup(Future<ArtifactData> future) {
 				ArtifactData data = null;
-				Throwable throwable = null;
 
 				try {
 					data = future.get(1, TimeUnit.MINUTES);
-				} catch (Throwable t) {
-					throwable = t;
+				} catch (Throwable ignored) {
 				}
 
 				if (data != null) {
@@ -204,9 +199,6 @@ public class MavenProxy {
 
 					MavenProxy.this.pluginIndex.addComponent(component);
 				}
-
-				System.out.println("DATA: " + data);
-				System.out.println("ERROR: " + throwable);
 			}
 		};
 	}
@@ -222,7 +214,8 @@ public class MavenProxy {
 				.getParent();
 		repoPath = workspacePath.resolve("repo");
 		PublicKeyIndex keyIndex = PublicKeyIndex.createDefaultKeyIndex();
-		ComponentIndex compIndex = new ComponentIndex();
+		ComponentIndex componentIndex = new ComponentIndex();
+		ComponentIndex pluginIndex = new ComponentIndex();
 
 		final MetadataValidator sbomMetadataValidator;
 		final ArtifactValidator sbomValidator;
@@ -240,10 +233,10 @@ public class MavenProxy {
 				sbomValidator = null;
 			} else {
 				for (Bom sbom : sbomLst)
-					compIndex.addBom(sbom);
+					componentIndex.addBom(sbom);
 
-				sbomMetadataValidator = new CyclonedxMetadataFilter(compIndex);
-				sbomValidator = new CyclonedxValidator(keyIndex, compIndex);
+				sbomMetadataValidator = new CyclonedxMetadataFilter(componentIndex);
+				sbomValidator = new CyclonedxValidator(keyIndex, componentIndex).setIgnorePom(true);
 			}
 
 			// index sbom - for providing plugins
@@ -257,12 +250,19 @@ public class MavenProxy {
 				sbomPluginValidator = null;
 			} else {
 				for (Bom sbom : sbomLst)
-					compIndex.addBom(sbom, ignoreExcludedDependency().and(ignoreTestDependency()));
+					pluginIndex.addBom(sbom, ignoreExcludedDependency().and(ignoreTestDependency()));
 
-				sbomPluginMetadataValidator = new CyclonedxMetadataFilter(compIndex);
-				sbomPluginValidator = new CyclonedxValidator(keyIndex, compIndex);
+				sbomPluginMetadataValidator = new CyclonedxMetadataFilter(pluginIndex);
+				sbomPluginValidator = new CyclonedxValidator(keyIndex, pluginIndex).setIgnorePom(true);
 			}
 		}
+		final ArtifactValidator pomValidator = new PGPArtifactSignatureValidator(keyIndex) {
+			public boolean validate(final ArtifactData data) throws InvalidArtifactException {
+				if (data.isPOM())
+					return super.validate(data);
+				return false;
+			};
+		};
 
 		MavenProxy mvnProxy = new MavenProxy();
 
@@ -272,11 +272,13 @@ public class MavenProxy {
 		mvnProxy.initInstance(builder.instance("maven-central"), instance -> {
 			instance.putSource(createHttpSource("repo1", URI.create("https://repo1.maven.org/maven2/"))
 					.addFirstValidator(sbomMetadataValidator)
+					.addLastValidator(pomValidator)
 					.addLastValidator(sbomValidator));
 		});
 		mvnProxy.initPluginInstance(builder.instance("maven-central-plugins"), instance -> {
 			instance.putSource(createHttpSource("repo1-plugins", URI.create("https://repo1.maven.org/maven2/"))
 					.addFirstValidator(sbomPluginMetadataValidator)
+					.addLastValidator(pomValidator)
 					.addLastValidator(sbomPluginValidator));
 		});
 		// rnet-releases
@@ -284,12 +286,15 @@ public class MavenProxy {
 			instance.putSource(createHttpSource("rnet-releases",
 					URI.create("https://nexus.runeduniverse.net/repository/maven-releases/"))
 							.addFirstValidator(sbomMetadataValidator)
+							.addLastValidator(pomValidator)
 							.addLastValidator(sbomValidator));
 		});
 		// rnet-development
 		mvnProxy.initInstance(builder.instance("rnet-development"), instance -> {
 			instance.putSource(createHttpSource("rnet-development",
 					URI.create("https://nexus.runeduniverse.net/repository/maven-development/"))
+							.addFirstValidator(sbomMetadataValidator)
+							.addLastValidator(pomValidator)
 							.addLastValidator(sbomValidator));
 		});
 
@@ -321,21 +326,32 @@ public class MavenProxy {
 				switch (cmd) {
 				case "exit":
 					break loop;
+				case "info":
+					System.out.println(//
+							"  ---- Info ----\n    dependencies: "//
+									+ mvnProxy.dependencyIndex.getComponents()
+											.size()
+									+ "\n    plugins: "//
+									+ mvnProxy.pluginIndex.getComponents()
+											.size()
+									+ "\n");
+					break;
 				case "save":
 					final String[] params = input.split(" ", 2);
 					if (input.length() == 0 || params.length != 2) {
 						System.err.println("  save <dep-sbom / plugin-sbom> <path>\n");
-						continue;
+						break;
 					}
 					// select index
 					final ComponentIndex index;
-					if (params[0] == "dep-sbom")
+					if ("dep-sbom".equals(params[0]))
 						index = mvnProxy.dependencyIndex;
-					else if (params[0] == "plugin-sbom")
+					else if ("plugin-sbom".equals(params[0]))
 						index = mvnProxy.pluginIndex;
 					else {
-						System.err.println("  save <dep-sbom / plugin-sbom> <path>\n");
-						continue;
+						System.err.println("  save <dep-sbom / plugin-sbom> <path>");
+						System.err.println("  err: unknown section » " + params[0] + "\n");
+						break;
 					}
 					// to SBOM
 					final Bom sbom = new Bom();
@@ -352,7 +368,7 @@ public class MavenProxy {
 					} else {
 						System.err.println("  save <dep-sbom / plugin-sbom> <path>");
 						System.err.println("  err: path must end in either .xml or .json\n");
-						continue;
+						break;
 					}
 					// get Path
 					final Path path = Path.of(params[1]);
@@ -361,7 +377,7 @@ public class MavenProxy {
 					} catch (IOException e) {
 						System.err.println("  save <dep-sbom / plugin-sbom> <path>");
 						System.err.println("  err: " + e.getMessage() + "\n");
-						continue;
+						break;
 					}
 					// write
 					try {
@@ -369,9 +385,10 @@ public class MavenProxy {
 					} catch (IOException e) {
 						System.err.println("  save <dep-sbom / plugin-sbom> <path>");
 						System.err.println("  err: " + e.getMessage() + "\n");
-						continue;
+						break;
 					}
 					System.out.println("  SBOM written to " + path.toString());
+					break;
 				}
 			}
 		}

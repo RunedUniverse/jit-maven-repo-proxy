@@ -45,6 +45,7 @@ public class CyclonedxValidator implements ArtifactValidator {
 	protected final ComponentIndex componentIndex;
 
 	protected boolean skipMissing = false;
+	protected boolean ignorePom = false;
 
 	public CyclonedxValidator(final PublicKeyIndex keyIndex, final ComponentIndex componentIndex) {
 		this.keyIndex = keyIndex;
@@ -60,16 +61,23 @@ public class CyclonedxValidator implements ArtifactValidator {
 	 * @param value {@code true} to disarm the validate() method, prevents throwing
 	 *              of {@link InvalidArtifactException} for missing components, else
 	 *              {@code false}.
+	 * @return this CyclonedxValidator instance, for chaining
 	 */
-	public void setSkipMissing(final boolean value) {
+	public CyclonedxValidator setSkipMissing(final boolean value) {
 		this.skipMissing = value;
+		return this;
+	}
+
+	public CyclonedxValidator setIgnorePom(final boolean value) {
+		this.ignorePom = value;
+		return this;
 	}
 
 	@Override
 	public boolean validate(final ArtifactData data) throws InvalidArtifactException {
 		final Component comp = this.componentIndex.getComponentByPURL(data.getPURL());
 		if (comp == null) {
-			if (this.skipMissing)
+			if (this.skipMissing || this.ignorePom && data.isPOM())
 				return false;
 			else
 				throw new SBomViolationException("SBOM: Artifact not listed in SBOM");

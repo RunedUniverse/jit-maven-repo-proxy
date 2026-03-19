@@ -30,11 +30,11 @@ public interface ArtifactDataCoordinates extends ArtifactCoordinates {
 		final List<String> prop = new LinkedList<>();
 
 		final String classifier = getClassifier();
-		if (classifier == null)
+		if (classifier != null)
 			prop.add(String.format("classifier=%s", classifier));
 
 		final String type = getExtension();
-		if (type == null)
+		if (type != null)
 			prop.add(String.format("type=%s", type));
 
 		final StringBuffer buffer = new StringBuffer(
