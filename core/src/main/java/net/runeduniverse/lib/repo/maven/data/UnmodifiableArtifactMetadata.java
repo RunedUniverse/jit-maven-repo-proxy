@@ -16,6 +16,7 @@
 package net.runeduniverse.lib.repo.maven.data;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Set;
 
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
@@ -53,6 +54,11 @@ public class UnmodifiableArtifactMetadata extends ArtifactCoordinates.Data imple
 	}
 
 	@Override
+	public Iterator<String> getVersionIterator() {
+		return this.versions.iterator();
+	}
+
+	@Override
 	public String getLastUpdated() {
 		return this.lastUpdated;
 	}
@@ -65,6 +71,6 @@ public class UnmodifiableArtifactMetadata extends ArtifactCoordinates.Data imple
 
 	@Override
 	public void removeVersion(final String version) {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("removeVersion");
 	}
 }

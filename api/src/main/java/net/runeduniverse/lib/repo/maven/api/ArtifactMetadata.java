@@ -15,6 +15,7 @@
  */
 package net.runeduniverse.lib.repo.maven.api;
 
+import java.util.Iterator;
 import java.util.Set;
 
 public interface ArtifactMetadata extends ArtifactCoordinates {
@@ -24,6 +25,8 @@ public interface ArtifactMetadata extends ArtifactCoordinates {
 	public String getLatestVersion();
 
 	public Set<String> getVersions();
+
+	public Iterator<String> getVersionIterator();
 
 	public String getLastUpdated();
 

@@ -15,6 +15,7 @@
  */
 package net.runeduniverse.lib.repo.maven.data;
 
+import java.util.Iterator;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
@@ -101,6 +102,29 @@ public abstract class AArtifactMetadata implements ArtifactMetadata {
 
 	public Set<ComparableVersion> getVersions2() {
 		return this.versions;
+	}
+
+	@Override
+	public Iterator<String> getVersionIterator() {
+		final Iterator<ComparableVersion> iterator = this.versions.iterator();
+		return new Iterator<String>() {
+
+			@Override
+			public String next() {
+				return iterator.next()
+						.toString();
+			}
+
+			@Override
+			public boolean hasNext() {
+				return iterator.hasNext();
+			}
+
+			@Override
+			public void remove() {
+				iterator.remove();
+			}
+		};
 	}
 
 	@Override

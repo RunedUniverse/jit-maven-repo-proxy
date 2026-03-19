@@ -44,6 +44,7 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
+import net.runeduniverse.lib.repo.maven.api.MetadataValidator;
 import net.runeduniverse.lib.repo.maven.client.http.HttpSource;
 import net.runeduniverse.lib.repo.maven.error.ArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.ProxyServer;
@@ -53,6 +54,7 @@ import net.runeduniverse.lib.repo.maven.proxy.builder.ProxyServerBuilder;
 import net.runeduniverse.lib.repo.maven.proxy.builder.RepoInstanceBuilder;
 import net.runeduniverse.lib.repo.maven.server.http.HttpRepoServerInitializer;
 import net.runeduniverse.lib.repo.maven.validation.cyclonedx.ComponentIndex;
+import net.runeduniverse.lib.repo.maven.validation.cyclonedx.CyclonedxMetadataFilter;
 import net.runeduniverse.lib.repo.maven.validation.cyclonedx.CyclonedxValidator;
 import net.runeduniverse.lib.repo.maven.validation.pgp.PublicKeyIndex;
 
@@ -172,13 +174,17 @@ public class MavenProxy {
 		ComponentIndex compIndex = new ComponentIndex();
 
 		List<Bom> sbomLst = extractSBomList(args);
+		final MetadataValidator sbomMetadataValidator;
 		final ArtifactValidator sbomValidator;
 
-		if (sbomLst.isEmpty())
+		if (sbomLst.isEmpty()) {
+			sbomMetadataValidator = null;
 			sbomValidator = null;
-		else {
+		} else {
 			for (Bom sbom : sbomLst)
 				compIndex.addBom(sbom);
+
+			sbomMetadataValidator = new CyclonedxMetadataFilter(compIndex);
 			sbomValidator = new CyclonedxValidator(keyIndex, compIndex);
 		}
 
@@ -189,16 +195,19 @@ public class MavenProxy {
 		// maven-central
 		mvnProxy.initInstance(builder.instance("maven-central"), instance -> {
 			instance.putSource(createHttpSource("repo1", URI.create("https://repo1.maven.org/maven2/"))
+					.addFirstValidator(sbomMetadataValidator)
 					.addLastValidator(sbomValidator));
 		});
 		mvnProxy.initPluginInstance(builder.instance("maven-central-plugins"), instance -> {
 			instance.putSource(createHttpSource("repo1-plugins", URI.create("https://repo1.maven.org/maven2/"))
+					.addFirstValidator(sbomMetadataValidator)
 					.addLastValidator(sbomValidator));
 		});
 		// rnet-releases
 		mvnProxy.initInstance(builder.instance("rnet-releases"), instance -> {
 			instance.putSource(createHttpSource("rnet-releases",
 					URI.create("https://nexus.runeduniverse.net/repository/maven-releases/"))
+							.addFirstValidator(sbomMetadataValidator)
 							.addLastValidator(sbomValidator));
 		});
 		// rnet-development
