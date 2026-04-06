@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.Deque;
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.api.MetadataValidator;
 import net.runeduniverse.lib.repo.maven.error.InvalidArtifactException;
@@ -110,10 +111,11 @@ public abstract class ARepositorySource implements RepositorySource {
 			return null;
 		return new ArtifactValidator() {
 			@Override
-			public boolean validate(ArtifactData data) throws InvalidArtifactException {
+			public boolean validate(final ArtifactProvider provider, final ArtifactData data)
+					throws InvalidArtifactException {
 				boolean processed = false;
 				for (ArtifactValidator validator : ARepositorySource.this.artifactValidators) {
-					processed = processed || validator.validate(data);
+					processed = processed || validator.validate(provider, data);
 				}
 				return processed;
 			}

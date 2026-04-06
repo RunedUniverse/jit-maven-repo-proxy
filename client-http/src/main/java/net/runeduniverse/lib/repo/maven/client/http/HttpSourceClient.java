@@ -29,7 +29,7 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
-import net.runeduniverse.lib.repo.maven.api.ArtifactPOM;
+import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.api.MetadataValidator;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
@@ -106,25 +106,21 @@ public class HttpSourceClient implements RepositorySourceClient {
 		return artifactMetadata.asFuture();
 	}
 
-	public CompletableFuture<ArtifactPOM> getArtifactPOM(final ArtifactDataCoordinates coords) {
-		final HttpArtifactPOM artifactData = new HttpArtifactPOM(this.source.getLocalRepoPath(),
-				this.source.getRepoUri(), this.maxRedirects, coords.toPomCoordinates());
-
-		applyArtifactValidator(artifactData);
-		execRequest(artifactData);
-
-		return artifactData.asFuture();
+	@Override
+	public CompletableFuture<? extends ArtifactData> getArtifact(final ArtifactDataCoordinates coords) {
+		return getArtifact(this, coords);
 	}
 
 	@Override
-	public CompletableFuture<? extends ArtifactData> getArtifact(final ArtifactDataCoordinates coords) {
+	public CompletableFuture<? extends ArtifactData> getArtifact(final ArtifactProvider providerProxy,
+			final ArtifactDataCoordinates coords) {
 		final HttpArtifactData artifactData;
 		if (coords.isPOM()) {
 			artifactData = new HttpArtifactPOM(this.source.getLocalRepoPath(), this.source.getRepoUri(),
-					this.maxRedirects, coords.toPomCoordinates());
+					this.maxRedirects, providerProxy, coords.toPomCoordinates());
 		} else {
 			artifactData = new HttpArtifactData(this.source.getLocalRepoPath(), this.source.getRepoUri(),
-					this.maxRedirects, this::getArtifactPOM, coords);
+					this.maxRedirects, providerProxy, coords);
 		}
 
 		applyArtifactValidator(artifactData);

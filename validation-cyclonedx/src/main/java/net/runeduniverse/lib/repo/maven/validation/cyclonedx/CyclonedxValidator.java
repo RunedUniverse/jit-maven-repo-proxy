@@ -24,6 +24,7 @@ import org.bouncycastle.openpgp.PGPSignature;
 import org.cyclonedx.model.Component;
 import org.cyclonedx.model.Hash;
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
+import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.error.InvalidArtifactException;
 import net.runeduniverse.lib.repo.maven.error.InvalidChecksumArtifactException;
@@ -74,7 +75,7 @@ public class CyclonedxValidator implements ArtifactValidator {
 	}
 
 	@Override
-	public boolean validate(final ArtifactData data) throws InvalidArtifactException {
+	public boolean validate(final ArtifactProvider provider, final ArtifactData data) throws InvalidArtifactException {
 		final Component comp = this.componentIndex.getComponentByPURL(data.getPURL());
 		if (comp == null) {
 			if (this.skipMissing || this.ignorePom && data.isPOM())
@@ -170,7 +171,7 @@ public class CyclonedxValidator implements ArtifactValidator {
 
 		// true if the signature exists
 		// -> fails if -> throws error -> accepted
-		pgpValidator.validate(data);
+		pgpValidator.validate(provider, data);
 
 		return true;
 	}

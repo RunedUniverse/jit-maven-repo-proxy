@@ -32,6 +32,7 @@ import io.netty.channel.Channel;
 import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
+import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.client.http.HttpSource;
 import net.runeduniverse.lib.repo.maven.error.ArtifactException;
@@ -150,7 +151,8 @@ public class MavenProxy {
 		System.out.println("  done!");
 	}
 
-	public static boolean ignoreSignature(final ArtifactData data) throws InvalidArtifactException {
+	public static boolean ignoreSignature(final ArtifactProvider provider, final ArtifactData data)
+			throws InvalidArtifactException {
 		if (Files.exists(data.getArtifactPath(), LinkOption.NOFOLLOW_LINKS)) {
 			return !Files.exists(data.getSignaturePath(), LinkOption.NOFOLLOW_LINKS);
 		}

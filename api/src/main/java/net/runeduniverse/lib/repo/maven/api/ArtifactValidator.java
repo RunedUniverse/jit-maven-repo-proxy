@@ -30,9 +30,9 @@ public interface ArtifactValidator {
 	 *         {@code false}
 	 * @throws InvalidArtifactException
 	 */
-	public boolean validate(ArtifactData data) throws InvalidArtifactException;
+	public boolean validate(ArtifactProvider provider, ArtifactData data) throws InvalidArtifactException;
 
 	public default ArtifactValidator andThen(ArtifactValidator after) {
-		return after == null ? this : d -> validate(d) || after.validate(d);
+		return after == null ? this : (p, d) -> validate(p, d) || after.validate(p, d);
 	}
 }

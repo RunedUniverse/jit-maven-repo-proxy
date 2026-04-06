@@ -54,6 +54,7 @@ import io.netty.channel.Channel;
 import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
+import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.api.MetadataValidator;
 import net.runeduniverse.lib.repo.maven.client.http.HttpSource;
@@ -257,9 +258,10 @@ public class MavenProxy {
 			}
 		}
 		final ArtifactValidator pomValidator = new PGPArtifactSignatureValidator(keyIndex) {
-			public boolean validate(final ArtifactData data) throws InvalidArtifactException {
+			public boolean validate(final ArtifactProvider provider, final ArtifactData data)
+					throws InvalidArtifactException {
 				if (data.isPOM())
-					return super.validate(data);
+					return super.validate(provider, data);
 				return false;
 			};
 		};

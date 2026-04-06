@@ -26,12 +26,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import org.apache.commons.codec.binary.Hex;
 
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
-import net.runeduniverse.lib.repo.maven.api.ArtifactPOM;
+import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.api.ChecksumType;
 import net.runeduniverse.lib.repo.maven.data.AArtifactData;
@@ -48,12 +47,11 @@ public class HttpArtifactData extends AArtifactData {
 	protected final Path repoPath;
 	protected final URI repoUri;
 	protected final int maxRedirects;
-	protected final Function<ArtifactDataCoordinates, CompletableFuture<ArtifactPOM>> pomSupplier;
+	protected final ArtifactProvider providerProxy;
 
 	protected ArtifactValidator validator = null;
 
 	// even when overridden - only access via Getter
-	private CompletableFuture<ArtifactPOM> pomFuture = null;
 	private String gavPath = null;
 	private String artifactName = null;
 	private Path artifactPath = null;
@@ -61,7 +59,7 @@ public class HttpArtifactData extends AArtifactData {
 	private HttpDataRequest artifactRequest = null;
 
 	public HttpArtifactData(final Path repoPath, final URI repoUri, final int maxRedirects, //
-			final Function<ArtifactDataCoordinates, CompletableFuture<ArtifactPOM>> pomSupplier, //
+			final ArtifactProvider providerProxy, //
 			final String groupId, final String artifactId, final String version, //
 			final String classifier, final String extension) {
 		super(groupId, artifactId, version, classifier, extension);
@@ -69,29 +67,18 @@ public class HttpArtifactData extends AArtifactData {
 		this.repoPath = repoPath;
 		this.repoUri = repoUri;
 		this.maxRedirects = maxRedirects;
-		this.pomSupplier = pomSupplier;
+		this.providerProxy = providerProxy;
 	}
 
 	public HttpArtifactData(final Path repoPath, final URI repoUri, final int maxRedirects, //
-			final Function<ArtifactDataCoordinates, CompletableFuture<ArtifactPOM>> pomSupplier, //
+			final ArtifactProvider providerProxy, //
 			final ArtifactDataCoordinates coords) {
 		super(coords);
 
 		this.repoPath = repoPath;
 		this.repoUri = repoUri;
 		this.maxRedirects = maxRedirects;
-		this.pomSupplier = pomSupplier;
-	}
-
-	@Override
-	public CompletableFuture<ArtifactPOM> getPOM() {
-		if (this.pomFuture == null) {
-			if (this.pomSupplier == null)
-				this.pomFuture = CompletableFuture.completedFuture(null);
-			else
-				this.pomFuture = this.pomSupplier.apply(this);
-		}
-		return this.pomFuture;
+		this.providerProxy = providerProxy;
 	}
 
 	public String getGAVPath() {
@@ -258,7 +245,7 @@ public class HttpArtifactData extends AArtifactData {
 		// if no validator is provided, all artifacts are deemed valid!
 		if (this.validator == null)
 			return;
-		if (!this.validator.validate(this))
+		if (!this.validator.validate(this.providerProxy, this))
 			throw new UnvalidatableArtifactException(UnvalidatableArtifactException.MSG_VALIDATOR_MISSMATCH);
 	}
 }

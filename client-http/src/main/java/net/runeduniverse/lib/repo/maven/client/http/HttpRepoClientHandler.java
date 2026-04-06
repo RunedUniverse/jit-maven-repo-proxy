@@ -87,6 +87,7 @@ public class HttpRepoClientHandler extends SimpleChannelInboundHandler<HttpObjec
 			ctx.close();
 			return;
 		case 401: // [ Unauthorized ]
+		case 407: // [ Proxy Authentication Required ]
 			processor.completeExceptionally(new UnauthorizedArtifactException());
 			ctx.close();
 			return;

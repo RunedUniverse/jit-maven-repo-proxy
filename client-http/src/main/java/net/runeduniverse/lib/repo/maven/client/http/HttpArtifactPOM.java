@@ -36,6 +36,7 @@ import org.xml.sax.SAXException;
 
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactPOM;
+import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
 import net.runeduniverse.lib.repo.maven.error.ArtifactException;
 import net.runeduniverse.lib.repo.maven.error.InvalidArtifactException;
 
@@ -44,14 +45,16 @@ public class HttpArtifactPOM extends HttpArtifactData implements ArtifactPOM {
 	private String packagingProcedure = null;
 
 	public HttpArtifactPOM(final Path repoPath, final URI repoUri, final int maxRedirects, //
+			final ArtifactProvider providerProxy, //
 			final String groupId, final String artifactId, final String version, //
 			final String classifier, final String extension) {
-		super(repoPath, repoUri, maxRedirects, null, groupId, artifactId, version, classifier, extension);
+		super(repoPath, repoUri, maxRedirects, providerProxy, groupId, artifactId, version, classifier, extension);
 	}
 
-	public HttpArtifactPOM(final Path repoPath, final URI repoUri, final int maxRedirects,
+	public HttpArtifactPOM(final Path repoPath, final URI repoUri, final int maxRedirects, //
+			final ArtifactProvider providerProxy, //
 			final ArtifactDataCoordinates coords) {
-		super(repoPath, repoUri, maxRedirects, null, coords);
+		super(repoPath, repoUri, maxRedirects, providerProxy, coords);
 	}
 
 	@Override
@@ -81,11 +84,6 @@ public class HttpArtifactPOM extends HttpArtifactData implements ArtifactPOM {
 			throw new InvalidArtifactException("unexpected exception while parsing in " + pomPath.getFileName()
 					.toString(), e);
 		}
-	}
-
-	@Override
-	public CompletableFuture<ArtifactPOM> getPOM() {
-		return CompletableFuture.completedFuture(this);
 	}
 
 	@Override

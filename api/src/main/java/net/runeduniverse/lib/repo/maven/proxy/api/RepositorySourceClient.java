@@ -15,6 +15,10 @@
  */
 package net.runeduniverse.lib.repo.maven.proxy.api;
 
+import java.util.concurrent.CompletableFuture;
+
+import net.runeduniverse.lib.repo.maven.api.ArtifactData;
+import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.api.MetadataValidator;
@@ -28,5 +32,8 @@ public interface RepositorySourceClient extends ArtifactProvider {
 	public RepositorySourceClient setValidator(MetadataValidator validator);
 
 	public RepositorySourceClient setValidator(ArtifactValidator validator);
+
+	public CompletableFuture<? extends ArtifactData> getArtifact(ArtifactProvider providerProxy,
+			ArtifactDataCoordinates coords);
 
 }

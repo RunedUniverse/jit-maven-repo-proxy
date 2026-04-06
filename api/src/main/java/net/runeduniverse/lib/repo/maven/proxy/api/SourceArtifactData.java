@@ -17,10 +17,7 @@ package net.runeduniverse.lib.repo.maven.proxy.api;
 
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
-import net.runeduniverse.lib.repo.maven.api.ArtifactPOM;
 
 public interface SourceArtifactData extends ArtifactData {
 
@@ -87,11 +84,6 @@ public interface SourceArtifactData extends ArtifactData {
 		@Override
 		public Map<String, String> getChecksums() {
 			return this.data.getChecksums();
-		}
-
-		@Override
-		public CompletableFuture<ArtifactPOM> getPOM() {
-			return this.data.getPOM();
 		}
 	}
 }

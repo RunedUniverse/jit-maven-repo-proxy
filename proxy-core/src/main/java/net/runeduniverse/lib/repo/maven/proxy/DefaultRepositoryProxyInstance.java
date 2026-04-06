@@ -15,19 +15,15 @@
  */
 package net.runeduniverse.lib.repo.maven.proxy;
 
-import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 
@@ -35,14 +31,10 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
-import net.runeduniverse.lib.repo.maven.data.UnmodifiableArtifactData;
-import net.runeduniverse.lib.repo.maven.data.UnmodifiableArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.error.ArtifactException;
 import net.runeduniverse.lib.repo.maven.error.InvalidArtifactException;
 import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
 import net.runeduniverse.lib.repo.maven.error.UnvalidatableArtifactException;
-import net.runeduniverse.lib.repo.maven.proxy.api.LookupArtifactListener;
-import net.runeduniverse.lib.repo.maven.proxy.api.LookupMetadataListener;
 import net.runeduniverse.lib.repo.maven.proxy.api.MavenRepositoryProxyInstance;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySourceClient;
@@ -50,13 +42,9 @@ import net.runeduniverse.lib.repo.maven.proxy.api.SourceArtifactData;
 import net.runeduniverse.lib.repo.maven.proxy.cache.api.Cache;
 import net.runeduniverse.lib.repo.maven.proxy.data.DefaultAggregateArtifactMetadata;
 
-public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInstance {
+public class DefaultRepositoryProxyInstance extends ARepositoryProxyInstance implements MavenRepositoryProxyInstance {
 
 	protected final Map<String, RepositorySource> sources = new ConcurrentHashMap<>();
-	protected final Set<LookupMetadataListener> lookupMetadataListeners = new ConcurrentSkipListSet<>(
-			Comparator.comparing(Object::hashCode));
-	protected final Set<LookupArtifactListener> lookupArtifactListeners = new ConcurrentSkipListSet<>(
-			Comparator.comparing(Object::hashCode));
 
 	protected final String path;
 	protected final Cache cache;
@@ -80,18 +68,6 @@ public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInsta
 	@Override
 	public Map<String, RepositorySource> sources() {
 		return this.sources;
-	}
-
-	@Override
-	public MavenRepositoryProxyInstance addListener(final LookupMetadataListener listener) {
-		this.lookupMetadataListeners.add(listener);
-		return this;
-	}
-
-	@Override
-	public MavenRepositoryProxyInstance addListener(LookupArtifactListener listener) {
-		this.lookupArtifactListeners.add(listener);
-		return this;
 	}
 
 	@Override
@@ -120,10 +96,6 @@ public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInsta
 		final CompletableFuture<ArtifactMetadata> future = aggMetadata.asFuture();
 		future.whenComplete(this::postMetadataLookup);
 		return future;
-	}
-
-	protected void preMetadataLookup(final ArtifactCoordinates coords) {
-		this.lookupMetadataListeners.forEach(listener -> listener.preLookup(coords));
 	}
 
 	protected CompletableFuture<ArtifactMetadata> attachToMetadataLookup(final RepositorySourceClient client,
@@ -164,6 +136,11 @@ public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInsta
 		this.lookupMetadataListeners.forEach(listener -> listener.postLookup(future));
 	}
 
+	protected SourceRepositoryProxyInstanceProxy sourceRepoProxy(final String sourceKey,
+			final ArtifactDataCoordinates coords) {
+		return new SourceRepositoryProxyInstanceProxy(this).setSourceKeyRef(coords, sourceKey);
+	}
+
 	@Override
 	public CompletableFuture<SourceArtifactData> lookupArtifact(final String sourceKey,
 			final ArtifactDataCoordinates coords) {
@@ -174,7 +151,8 @@ public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInsta
 		RepositorySourceClient client;
 		if (defSource != null && (client = defSource.client()) != null) {
 			future = attachToArtifactLookup(client, coords, true, defSource.client()
-					.getArtifact(coords)).thenApply(data -> SourceArtifactData.wrap(sourceKey, data));
+					.getArtifact(sourceRepoProxy(sourceKey, coords), coords))
+							.thenApply(data -> SourceArtifactData.wrap(sourceKey, data));
 			future.whenComplete(this::postArtifactLookup);
 			return future;
 		}
@@ -188,8 +166,8 @@ public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInsta
 		for (RepositorySource source : this.sources.values()) {
 			if ((client = source.client()) == null)
 				continue;
-			upstream.add(attachToArtifactLookup(client, coords, false, client.getArtifact(coords))
-					.handle((data, throwable) -> {
+			upstream.add(attachToArtifactLookup(client, coords, false,
+					client.getArtifact(sourceRepoProxy(source.key(), coords), coords)).handle((data, throwable) -> {
 						if (data != null)
 							future.complete(SourceArtifactData.wrap(source.key(), data));
 						if (throwable instanceof ArtifactException) {
@@ -212,10 +190,6 @@ public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInsta
 
 		future.whenComplete(this::postArtifactLookup);
 		return future;
-	}
-
-	protected void preArtifactLookup(final ArtifactDataCoordinates coords) {
-		this.lookupArtifactListeners.forEach(listener -> listener.preLookup(coords));
 	}
 
 	protected CompletableFuture<? extends ArtifactData> attachToArtifactLookup(final RepositorySourceClient client,
@@ -275,39 +249,5 @@ public class DefaultRepositoryProxyInstance implements MavenRepositoryProxyInsta
 			}
 		}
 		return null;
-	}
-
-	protected void postArtifactLookup(final ArtifactData data, final Throwable throwable) {
-		if (this.lookupArtifactListeners.isEmpty())
-			return;
-		final Future<ArtifactData> future = asUnmodifiableFuture(data, throwable);
-		this.lookupArtifactListeners.forEach(listener -> listener.postLookup(future));
-	}
-
-	protected Future<ArtifactMetadata> asUnmodifiableFuture(final ArtifactMetadata metadata,
-			final Throwable throwable) {
-		final CompletableFuture<ArtifactMetadata> future = new CompletableFuture<>();
-		if (throwable instanceof CancellationException)
-			future.cancel(true);
-		else if (throwable != null)
-			future.completeExceptionally(throwable);
-		else if (metadata != null)
-			future.complete(UnmodifiableArtifactMetadata.wrap(metadata));
-		else
-			future.complete(null);
-		return future;
-	}
-
-	protected Future<ArtifactData> asUnmodifiableFuture(final ArtifactData data, final Throwable throwable) {
-		final CompletableFuture<ArtifactData> future = new CompletableFuture<>();
-		if (throwable instanceof CancellationException)
-			future.cancel(true);
-		else if (throwable != null)
-			future.completeExceptionally(throwable);
-		else if (data != null)
-			future.complete(UnmodifiableArtifactData.wrap(data));
-		else
-			future.complete(null);
-		return future;
 	}
 }

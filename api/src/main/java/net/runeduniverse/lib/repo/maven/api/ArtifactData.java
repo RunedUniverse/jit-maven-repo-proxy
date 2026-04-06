@@ -17,11 +17,8 @@ package net.runeduniverse.lib.repo.maven.api;
 
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 public interface ArtifactData extends ArtifactDataCoordinates {
-
-	public CompletableFuture<ArtifactPOM> getPOM();
 
 	public Path getArtifactPath();
 
