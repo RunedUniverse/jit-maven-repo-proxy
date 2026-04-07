@@ -97,7 +97,8 @@ public class HttpUtils {
 					if (kvend) {
 						if (word != null) {
 							// defines new section head
-							section = new Section(word.toString());
+							section = new Section(word.toString()
+									.toLowerCase(Locale.ROOT));
 							sections.add(section);
 							word = null;
 							kvend = false;

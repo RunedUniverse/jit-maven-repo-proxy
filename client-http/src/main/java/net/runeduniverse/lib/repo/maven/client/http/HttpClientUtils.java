@@ -16,10 +16,20 @@
 package net.runeduniverse.lib.repo.maven.client.http;
 
 import io.netty.util.AttributeKey;
+import net.runeduniverse.lib.repo.maven.client.http.auth.AuthState;
+import net.runeduniverse.lib.repo.maven.client.http.auth.AuthStateProvider;
 
 public class HttpClientUtils {
 
 	public static final AttributeKey<HttpDataRequest> ATTKEY_HTTP_DATA_REQUEST = AttributeKey
 			.valueOf(HttpDataRequest.class.getCanonicalName());
+	public static final AttributeKey<AuthStateProvider> ATTKEY_HTTP_AUTH_PROVIDER = AttributeKey
+			.valueOf(AuthStateProvider.class.getCanonicalName());
+	public static final AttributeKey<AuthStateProvider> ATTKEY_HTTP_PROXY_AUTH_PROVIDER = AttributeKey
+			.valueOf(AuthStateProvider.class.getCanonicalName() + "»proxy");
+	public static final AttributeKey<AuthState> ATTKEY_HTTP_AUTH_STATE = AttributeKey
+			.valueOf(AuthState.class.getCanonicalName());
+	public static final AttributeKey<AuthState> ATTKEY_HTTP_PROXY_AUTH_STATE = AttributeKey
+			.valueOf(AuthState.class.getCanonicalName() + "»proxy");
 
 }

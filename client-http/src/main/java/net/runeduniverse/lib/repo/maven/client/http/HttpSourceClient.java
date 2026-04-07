@@ -91,7 +91,9 @@ public class HttpSourceClient implements RepositorySourceClient {
 		return this.bootstrap = new Bootstrap()//
 				.group(this.loopGroup)
 				.channel(NioSocketChannel.class)
-				.handler(new HttpRepoClientInitializer(sslCtx));
+				.handler(new HttpRepoClientInitializer(sslCtx))
+				.attr(HttpClientUtils.ATTKEY_HTTP_AUTH_PROVIDER, this.source.getRepoAuthStateProvider())
+				.attr(HttpClientUtils.ATTKEY_HTTP_PROXY_AUTH_PROVIDER, this.source.getProxyAuthStateProvider());
 	}
 
 	@Override

@@ -22,6 +22,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.util.AttributeKey;
 import net.runeduniverse.lib.repo.maven.data.AContentProcessor;
 import net.runeduniverse.lib.repo.maven.error.RepoException;
 
@@ -51,12 +52,12 @@ public class RequestingChannelFutureListener implements ChannelFutureListener {
 
 	@Override
 	public void operationComplete(final ChannelFuture future) throws Exception {
+		final Channel ch = future.channel();
+
 		if (!future.isSuccess()) {
-			retry();
+			retry(ch);
 			return;
 		}
-
-		final Channel ch = future.channel();
 
 		ch.writeAndFlush(this.dataRequest.asHttpRequest());
 
@@ -66,11 +67,12 @@ public class RequestingChannelFutureListener implements ChannelFutureListener {
 						RequestingChannelFutureListener.this.execAfter();
 						return;
 					}
-					RequestingChannelFutureListener.this.retry();
+
+					RequestingChannelFutureListener.this.retry(ch);
 				});
 	}
 
-	protected void retry() {
+	protected void retry(final Channel ch) {
 		// clear the last collected data
 		this.processor.reset();
 		if (this.processor.isDone()) {
@@ -83,9 +85,17 @@ public class RequestingChannelFutureListener implements ChannelFutureListener {
 			execAfter();
 			return;
 		}
+		// copy auth states -> makes them preemptive
+		copyAttrOrNull(ch, HttpClientUtils.ATTKEY_HTTP_AUTH_STATE, !this.dataRequest.hasRepoChanged());
+		copyAttrOrNull(ch, HttpClientUtils.ATTKEY_HTTP_PROXY_AUTH_STATE, true);
 		// retry
 		this.bootstrap.connect(this.dataRequest.getHost(), this.dataRequest.getPort())
 				.addListener(RequestingChannelFutureListener.this);
+	}
+
+	protected <T> void copyAttrOrNull(final Channel ch, final AttributeKey<T> key, final boolean check) {
+		this.bootstrap.attr(key, check ? ch.attr(key)
+				.get() : null);
 	}
 
 	protected void execAfter() {

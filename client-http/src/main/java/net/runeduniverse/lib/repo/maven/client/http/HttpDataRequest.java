@@ -22,6 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -47,6 +48,7 @@ public class HttpDataRequest {
 	protected final AContentProcessor<?> processor;
 	protected final int maxRedirects;
 
+	protected final URI origUri;
 	protected URI uri;
 
 	public HttpDataRequest(final URI uri, final AContentProcessor<?> processor, final int maxRedirects) {
@@ -55,11 +57,26 @@ public class HttpDataRequest {
 
 	public HttpDataRequest(final URI uri, final AContentProcessor<?> processor,
 			final Supplier<CompletableFuture<?>> supplier, final int maxRedirects) {
+		this(uri, uri, processor, supplier, maxRedirects);
+	}
+
+	public HttpDataRequest(final URI origUri, final URI uri, final AContentProcessor<?> processor,
+			final int maxRedirects) {
+		this(origUri, uri, processor, processor::future, maxRedirects);
+	}
+
+	public HttpDataRequest(final URI origUri, final URI uri, final AContentProcessor<?> processor,
+			final Supplier<CompletableFuture<?>> supplier, final int maxRedirects) {
+		this.origUri = origUri;
 		this.uri = uri;
 		this.processor = processor;
 		this.future = supplier.get();
 		this.maxRedirects = maxRedirects;
 		this.redirects.add(this.uri.toString());
+	}
+
+	public URI origUri() {
+		return this.uri;
 	}
 
 	public URI uri() {
@@ -83,14 +100,14 @@ public class HttpDataRequest {
 	}
 
 	public String getScheme() {
-		final String scheme = uri.getScheme();
+		final String scheme = this.uri.getScheme();
 		if (scheme == null)
 			return "http";
 		return scheme;
 	}
 
 	public int getPort() {
-		int port = uri.getPort();
+		int port = this.uri.getPort();
 		if (port != -1)
 			return port;
 		return "https".equalsIgnoreCase(getScheme()) ? 443 : 80;
@@ -98,6 +115,12 @@ public class HttpDataRequest {
 
 	public boolean withSSL() {
 		return "https".equalsIgnoreCase(getScheme());
+	}
+
+	public boolean hasRepoChanged() {
+		return !Objects.equals(this.origUri.getHost(), this.uri.getHost()) //
+				|| this.origUri.getPort() != this.uri.getPort() //
+				|| !Objects.equals(this.origUri.getPath(), this.uri.getPath());
 	}
 
 	public URI redirect(final String location) throws RedirectRepoException {
@@ -116,7 +139,7 @@ public class HttpDataRequest {
 			if (redirected.getPath()
 					.endsWith("501-https-required.html")) {
 				return this.uri = new URI(redirected.getScheme(), this.uri.getUserInfo(), redirected.getHost(),
-						redirected.getPort(), this.uri.getPath(), this.uri.getQuery(), this.uri.getFragment());
+						this.uri.getPort(), this.uri.getPath(), this.uri.getQuery(), this.uri.getFragment());
 			}
 		} catch (URISyntaxException cause) {
 			throw new RedirectRepoException(RedirectRepoException.MSG_INVALID_REDIRECT, this.uri.toString(),
@@ -146,15 +169,25 @@ public class HttpDataRequest {
 			final AContentProcessor<?> processor = entry.getValue();
 			if (processor == null || processor.isDone())
 				continue;
+			final URI origUri;
 			final URI uri;
 			try {
-				uri = new URI(this.uri.getScheme(), this.uri.getAuthority(), this.uri.getPath() + '.' + entry.getKey(),
-						this.uri.getQuery(), this.uri.getFragment());
+				origUri = new URI(this.origUri.getScheme(), this.origUri.getAuthority(),
+						this.origUri.getPath() + '.' + entry.getKey(), this.origUri.getQuery(),
+						this.origUri.getFragment());
+				if (hasRepoChanged()) {
+					// everything changed, like: redirected to S3 bucket
+					uri = origUri;
+				} else {
+					// if only the scheme changed, like: http -> https
+					uri = new URI(this.uri.getScheme(), this.uri.getAuthority(),
+							this.uri.getPath() + '.' + entry.getKey(), this.uri.getQuery(), this.uri.getFragment());
+				}
 			} catch (URISyntaxException e) {
 				processor.completeExceptionally(new ArtifactException("Artifact can not be requested!", e));
 				continue;
 			}
-			requests.add(new HttpDataRequest(uri, processor, this.maxRedirects));
+			requests.add(new HttpDataRequest(origUri, uri, processor, this.maxRedirects));
 		}
 		return requests;
 	}

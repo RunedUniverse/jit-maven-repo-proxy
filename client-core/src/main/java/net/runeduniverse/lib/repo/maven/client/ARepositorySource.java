@@ -23,6 +23,7 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.api.MetadataValidator;
+import net.runeduniverse.lib.repo.maven.api.RepoCredentials;
 import net.runeduniverse.lib.repo.maven.error.InvalidArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 
@@ -35,6 +36,9 @@ public abstract class ARepositorySource implements RepositorySource {
 	protected final Path repoPath;
 	protected final int maxRedirects;
 	protected final int maxRetries;
+
+	protected RepoCredentials repoCredentials = null;
+	protected RepoCredentials proxyCredentials = null;
 
 	public ARepositorySource(//
 			final String key, final URI uri, final Path repoPath, //
@@ -62,6 +66,26 @@ public abstract class ARepositorySource implements RepositorySource {
 	@Override
 	public Path getLocalRepoPath() {
 		return this.repoPath;
+	}
+
+	@Override
+	public RepoCredentials getRepoCredentials() {
+		return this.repoCredentials;
+	}
+
+	@Override
+	public RepoCredentials getProxyCredentials() {
+		return this.proxyCredentials;
+	}
+
+	public ARepositorySource setRepoCredentials(final RepoCredentials credentials) {
+		this.repoCredentials = credentials;
+		return this;
+	}
+
+	public ARepositorySource setProxyCredentials(final RepoCredentials credentials) {
+		this.proxyCredentials = credentials;
+		return this;
 	}
 
 	@Override

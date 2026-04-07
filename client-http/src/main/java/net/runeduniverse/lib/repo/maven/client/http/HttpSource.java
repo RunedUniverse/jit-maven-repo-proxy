@@ -21,13 +21,18 @@ import java.util.Deque;
 import java.util.LinkedList;
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.api.MetadataValidator;
+import net.runeduniverse.lib.repo.maven.api.RepoCredentials;
 import net.runeduniverse.lib.repo.maven.client.ARepositorySource;
+import net.runeduniverse.lib.repo.maven.client.http.auth.AuthStateProvider;
+import net.runeduniverse.lib.repo.maven.client.http.auth.DefaultAuthStateProvider;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySourceClient;
 
 public class HttpSource extends ARepositorySource implements RepositorySource {
 
 	private RepositorySourceClient client = null;
+	private AuthStateProvider repoAuthStateProvider = null;
+	private AuthStateProvider proxyAuthStateProvider = null;
 
 	public HttpSource(final String key, final URI uri, final Path repoPath, final int maxRedirects,
 			final int maxRetries) {
@@ -47,5 +52,29 @@ public class HttpSource extends ARepositorySource implements RepositorySource {
 		return this.client = new HttpSourceClient(this, this.maxRedirects, this.maxRetries)
 				.setValidator(getMetadataValidator())
 				.setValidator(getArtifactValidator());
+	}
+
+	public AuthStateProvider getRepoAuthStateProvider() {
+		if (this.repoAuthStateProvider != null)
+			return this.repoAuthStateProvider;
+		return this.repoAuthStateProvider = new DefaultAuthStateProvider(getRepoCredentials());
+	}
+
+	public AuthStateProvider getProxyAuthStateProvider() {
+		if (this.proxyAuthStateProvider != null)
+			return this.proxyAuthStateProvider;
+		return this.proxyAuthStateProvider = new DefaultAuthStateProvider(getProxyCredentials());
+	}
+
+	@Override
+	public HttpSource setRepoCredentials(final RepoCredentials credentials) {
+		super.setRepoCredentials(credentials);
+		return this;
+	}
+
+	@Override
+	public HttpSource setProxyCredentials(final RepoCredentials credentials) {
+		super.setProxyCredentials(credentials);
+		return this;
 	}
 }

@@ -20,6 +20,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.ssl.SslContext;
+import net.runeduniverse.lib.repo.maven.client.http.auth.AuthHandler;
 import net.runeduniverse.lib.repo.maven.error.RepoException;
 
 public class HttpRepoClientInitializer extends ChannelInitializer<SocketChannel> {
@@ -46,7 +47,7 @@ public class HttpRepoClientInitializer extends ChannelInitializer<SocketChannel>
 			pipeline.addLast(sslContext.newHandler(ch.alloc(), dataRequest.getHost(), dataRequest.getPort()));
 		}
 		pipeline.addLast(new HttpClientCodec());
+		pipeline.addLast(new AuthHandler());
 		pipeline.addLast(new HttpRepoClientHandler());
 	}
-
 }
