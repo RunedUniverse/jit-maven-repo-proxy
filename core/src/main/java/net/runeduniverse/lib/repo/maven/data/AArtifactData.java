@@ -16,6 +16,7 @@
 package net.runeduniverse.lib.repo.maven.data;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -77,6 +78,26 @@ public abstract class AArtifactData implements ArtifactData {
 	@Override
 	public Map<String, String> getChecksums() {
 		return this.checksums;
+	}
+
+	@Override
+	public int hashCode() {
+		return ArtifactDataCoordinates.key(this)
+				.hashCode();
+	}
+
+	@Override
+	public boolean equals(final Object obj) {
+		if (this == obj)
+			return true;
+		if (!(obj instanceof ArtifactData))
+			return false;
+		final ArtifactData other = (ArtifactData) obj;
+		return Objects.equals(this.groupId, other.getGroupId())//
+				&& Objects.equals(this.artifactId, other.getArtifactId())//
+				&& Objects.equals(this.version, other.getVersion())//
+				&& Objects.equals(this.classifier, other.getClassifier())//
+				&& Objects.equals(this.extension, other.getExtension());
 	}
 
 	public CompletableFuture<? extends ArtifactData> asFuture() throws Exception {

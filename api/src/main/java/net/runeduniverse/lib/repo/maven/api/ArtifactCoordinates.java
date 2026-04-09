@@ -15,6 +15,8 @@
  */
 package net.runeduniverse.lib.repo.maven.api;
 
+import java.util.Objects;
+
 public interface ArtifactCoordinates {
 
 	public String getGroupId();
@@ -47,6 +49,22 @@ public interface ArtifactCoordinates {
 		@Override
 		public String getArtifactId() {
 			return this.artifactId;
+		}
+
+		@Override
+		public int hashCode() {
+			return key(this).hashCode();
+		}
+
+		@Override
+		public boolean equals(final Object obj) {
+			if (this == obj)
+				return true;
+			if (!(obj instanceof ArtifactCoordinates))
+				return false;
+			final ArtifactCoordinates other = (ArtifactCoordinates) obj;
+			return Objects.equals(this.groupId, other.getGroupId())//
+					&& Objects.equals(this.artifactId, other.getArtifactId());
 		}
 	}
 }

@@ -17,6 +17,7 @@ package net.runeduniverse.lib.repo.maven.data;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Set;
 
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
@@ -72,5 +73,18 @@ public class UnmodifiableArtifactMetadata extends ArtifactCoordinates.Data imple
 	@Override
 	public void removeVersion(final String version) {
 		throw new UnsupportedOperationException("removeVersion");
+	}
+
+	@Override
+	public boolean equals(final Object obj) {
+		if (this == obj)
+			return true;
+		if (!(obj instanceof ArtifactMetadata && super.equals(obj)))
+			return false;
+		final ArtifactMetadata other = (ArtifactMetadata) obj;
+		return this.versions.equals(other.getVersions())//
+				&& Objects.equals(this.releaseVersion, other.getReleaseVersion())//
+				&& Objects.equals(this.latestVersion, other.getLatestVersion())//
+				&& Objects.equals(this.lastUpdated, other.getLastUpdated());
 	}
 }

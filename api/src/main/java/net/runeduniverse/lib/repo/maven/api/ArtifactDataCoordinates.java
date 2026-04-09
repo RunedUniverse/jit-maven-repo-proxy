@@ -17,6 +17,7 @@ package net.runeduniverse.lib.repo.maven.api;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 public interface ArtifactDataCoordinates extends ArtifactCoordinates {
 
@@ -90,6 +91,23 @@ public interface ArtifactDataCoordinates extends ArtifactCoordinates {
 		@Override
 		public String getExtension() {
 			return this.extension;
+		}
+
+		@Override
+		public int hashCode() {
+			return key(this).hashCode();
+		}
+
+		@Override
+		public boolean equals(final Object obj) {
+			if (this == obj)
+				return true;
+			if (!(obj instanceof ArtifactDataCoordinates && super.equals(obj)))
+				return false;
+			final ArtifactDataCoordinates other = (ArtifactDataCoordinates) obj;
+			return Objects.equals(this.classifier, other.getClassifier())//
+					&& Objects.equals(this.extension, other.getExtension())//
+					&& Objects.equals(this.version, other.getVersion());
 		}
 	}
 }

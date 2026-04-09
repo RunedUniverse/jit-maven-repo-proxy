@@ -85,5 +85,15 @@ public interface SourceArtifactData extends ArtifactData {
 		public Map<String, String> getChecksums() {
 			return this.data.getChecksums();
 		}
+
+		@Override
+		public int hashCode() {
+			return this.data.hashCode();
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			return this.data.equals(obj);
+		}
 	}
 }

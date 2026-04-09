@@ -15,8 +15,11 @@
  */
 package net.runeduniverse.lib.repo.maven.data;
 
+import static net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates.key;
+
 import java.util.Iterator;
 import java.util.NavigableSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
@@ -129,7 +132,7 @@ public abstract class AArtifactMetadata implements ArtifactMetadata {
 
 	@Override
 	public String getLastUpdated() {
-		return this.lastUpdated.toString();
+		return this.lastUpdated;
 	}
 
 	public void setLastUpdated(final String lastUpdated) {
@@ -159,6 +162,25 @@ public abstract class AArtifactMetadata implements ArtifactMetadata {
 		if (version == null)
 			return;
 		this.versions.remove(version);
+	}
+
+	@Override
+	public int hashCode() {
+		return key(this).hashCode();
+	}
+
+	@Override
+	public boolean equals(final Object obj) {
+		if (this == obj)
+			return true;
+		if (!(obj instanceof ArtifactMetadata))
+			return false;
+		final ArtifactMetadata other = (ArtifactMetadata) obj;
+		return Objects.equals(this.getGroupId(), other.getGroupId())//
+				&& Objects.equals(this.getArtifactId(), other.getArtifactId())//
+				&& Objects.equals(this.getLastUpdated(), other.getLastUpdated())//
+				&& this.getVersions()
+						.equals(other.getVersions());
 	}
 
 	public CompletableFuture<ArtifactMetadata> asFuture() {

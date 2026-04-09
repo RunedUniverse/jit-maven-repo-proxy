@@ -18,6 +18,8 @@ package net.runeduniverse.lib.repo.maven.data;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
+
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 
@@ -55,5 +57,17 @@ public class UnmodifiableArtifactData extends ArtifactDataCoordinates.Data imple
 		return new UnmodifiableArtifactData(data.getGroupId(), data.getArtifactId(), data.getVersion(),
 				data.getClassifier(), data.getExtension(), data.getArtifactPath(), data.getSignaturePath(),
 				Collections.unmodifiableMap(data.getChecksums()));
+	}
+
+	@Override
+	public boolean equals(final Object obj) {
+		if (this == obj)
+			return true;
+		if (!(obj instanceof ArtifactData && super.equals(obj)))
+			return false;
+		final ArtifactData other = (ArtifactData) obj;
+		return Objects.equals(this.artifactPath, other.getArtifactPath())//
+				&& Objects.equals(this.signaturePath, other.getSignaturePath())//
+				&& this.checksums.equals(other.getChecksums());
 	}
 }
