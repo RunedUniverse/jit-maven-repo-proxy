@@ -15,7 +15,7 @@
  */
 package net.runeduniverse.lib.repo.maven.api;
 
-public interface TokenRepoCredentials extends RepoCredentials {
+public interface TokenCredentials extends Credentials {
 
 	public String getToken();
 

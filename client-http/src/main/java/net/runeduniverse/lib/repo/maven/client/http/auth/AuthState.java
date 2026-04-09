@@ -15,8 +15,17 @@
  */
 package net.runeduniverse.lib.repo.maven.client.http.auth;
 
+import java.util.List;
+
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.util.AsciiString;
+
 public interface AuthState {
 
-	public abstract String nextAuthorizationHeaderData();
+	public String authType();
+
+	public boolean nextAuthorizationHeader(HttpRequest request, AsciiString header);
+
+	public boolean retryOnRejection(List<AuthHeaderSection> sections);
 
 }

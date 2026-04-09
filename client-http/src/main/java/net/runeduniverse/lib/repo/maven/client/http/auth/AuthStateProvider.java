@@ -24,6 +24,6 @@ public interface AuthStateProvider {
 		return Arrays.asList("bearer", "digest", "basic");
 	}
 
-	public AuthState forHttpAuthenticate(HttpUtils.Section section);
+	public AuthState forHttpAuthenticate(AuthHeaderSection section);
 
 }

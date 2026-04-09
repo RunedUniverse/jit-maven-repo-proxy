@@ -28,7 +28,6 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.util.AsciiString;
 import net.runeduniverse.lib.repo.maven.client.http.HttpClientUtils;
 import net.runeduniverse.lib.repo.maven.client.http.HttpDataRequest;
-import net.runeduniverse.lib.repo.maven.client.http.auth.HttpUtils.Section;
 import net.runeduniverse.lib.repo.maven.error.RepoException;
 import net.runeduniverse.lib.repo.maven.error.UnauthorizedArtifactException;
 
@@ -56,7 +55,9 @@ public class AuthHandler extends ChannelDuplexHandler {
 				.attr(HttpClientUtils.ATTKEY_HTTP_DATA_REQUEST)
 				.get();
 
-		AuthState state = null;
+		AuthState state = ctx.channel()
+				.attr(proxy ? HttpClientUtils.ATTKEY_HTTP_PROXY_AUTH_STATE : HttpClientUtils.ATTKEY_HTTP_AUTH_STATE)
+				.get();
 		// generate a new AuthState when ...
 		// ... proxy requires it
 		// ... the reposerver requires it
@@ -78,22 +79,25 @@ public class AuthHandler extends ChannelDuplexHandler {
 				return;
 			}
 			// parse header sections
-			final List<HttpUtils.Section> sections = new LinkedList<>();
+			final List<AuthHeaderSection> sections = new LinkedList<>();
 			for (String headerData : response.headers()
 					.getAll(authHeader)) {
-				sections.addAll(HttpUtils.parseAuthHeaderData(headerData));
+				sections.addAll(AuthHeaderSection.parseAuthHeaderData(headerData));
 			}
 
-			// try supported sections in the provided order
-			Iterator<Section> sectionIter;
-			headerLoop: for (String sectionHeader : authStateProvider.supportedAuthSections()) {
-				sectionIter = sections.stream()
-						.filter(s -> sectionHeader.equals(s.header()))
-						.iterator();
-				while (sectionIter.hasNext()) {
-					state = authStateProvider.forHttpAuthenticate(sectionIter.next());
-					if (state != null)
-						break headerLoop;
+			// check if the state can be recovered
+			if (state == null || !state.retryOnRejection(sections)) {
+				// try supported sections in the provided order
+				Iterator<AuthHeaderSection> sectionIter;
+				headerLoop: for (String sectionHeader : authStateProvider.supportedAuthSections()) {
+					sectionIter = sections.stream()
+							.filter(s -> sectionHeader.equals(s.type()))
+							.iterator();
+					while (sectionIter.hasNext()) {
+						state = authStateProvider.forHttpAuthenticate(sectionIter.next());
+						if (state != null)
+							break headerLoop;
+					}
 				}
 			}
 		}
@@ -132,16 +136,14 @@ public class AuthHandler extends ChannelDuplexHandler {
 				.attr(HttpClientUtils.ATTKEY_HTTP_AUTH_STATE)
 				.get();
 		if (authState != null) {
-			request.headers()
-					.add(HttpHeaderNames.AUTHORIZATION, authState.nextAuthorizationHeaderData());
+			authState.nextAuthorizationHeader(request, HttpHeaderNames.AUTHORIZATION);
 		}
 		// -- PROXY AUTH --
 		authState = ctx.channel()
 				.attr(HttpClientUtils.ATTKEY_HTTP_PROXY_AUTH_STATE)
 				.get();
 		if (authState != null) {
-			request.headers()
-					.add(HttpHeaderNames.PROXY_AUTHORIZATION, authState.nextAuthorizationHeaderData());
+			authState.nextAuthorizationHeader(request, HttpHeaderNames.PROXY_AUTHORIZATION);
 		}
 	}
 }

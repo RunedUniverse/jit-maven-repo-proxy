@@ -15,7 +15,7 @@
  */
 package net.runeduniverse.lib.repo.maven.api;
 
-public interface BasicRepoCredentials extends RepoCredentials {
+public interface BasicCredentials extends Credentials {
 
 	public String getUser();
 

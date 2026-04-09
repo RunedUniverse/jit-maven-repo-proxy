@@ -21,9 +21,24 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-public class HttpUtils {
+public class AuthHeaderSection {
 
-	public static List<Section> parseAuthHeaderData(final String value) {
+	protected final Map<String, String> entries = new LinkedHashMap<>();
+	protected final String type;
+
+	public AuthHeaderSection(final String type) {
+		this.type = type;
+	}
+
+	public String type() {
+		return this.type;
+	}
+
+	public Map<String, String> entries() {
+		return this.entries;
+	}
+
+	public static List<AuthHeaderSection> parseAuthHeaderData(final String value) {
 
 		// handle values like:
 		// WWW-Authenticate: Negotiate
@@ -31,11 +46,11 @@ public class HttpUtils {
 		// WWW-Authenticate: Digest realm="repo", nonce="abc", qop="auth"
 		// WWW-Authenticate: Basic realm="repo"
 
-		final List<Section> sections = new LinkedList<>();
+		final List<AuthHeaderSection> sections = new LinkedList<>();
 
 		StringBuilder buffer = null;
 		StringBuilder word = null;
-		Section section = null;
+		AuthHeaderSection section = null;
 		String key = null;
 		boolean escaped = false;
 		boolean quoted = false;
@@ -97,7 +112,7 @@ public class HttpUtils {
 					if (kvend) {
 						if (word != null) {
 							// defines new section head
-							section = new Section(word.toString()
+							section = new AuthHeaderSection(word.toString()
 									.toLowerCase(Locale.ROOT));
 							sections.add(section);
 							word = null;
@@ -135,23 +150,5 @@ public class HttpUtils {
 	public static boolean isTokenChar(char c) {
 		return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
 				|| "!#$%&'*+-.^_`|~".indexOf(c) != -1;
-	}
-
-	public static class Section {
-
-		protected final Map<String, String> entries = new LinkedHashMap<>();
-		protected final String header;
-
-		public Section(final String header) {
-			this.header = header;
-		}
-
-		public String header() {
-			return this.header;
-		}
-
-		public Map<String, String> entries() {
-			return this.entries;
-		}
 	}
 }

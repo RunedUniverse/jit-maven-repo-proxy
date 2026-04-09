@@ -18,27 +18,26 @@ package net.runeduniverse.lib.repo.maven.client.http.auth;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.runeduniverse.lib.repo.maven.api.BasicRepoCredentials;
-import net.runeduniverse.lib.repo.maven.api.RepoCredentials;
-import net.runeduniverse.lib.repo.maven.api.TokenRepoCredentials;
-import net.runeduniverse.lib.repo.maven.client.http.auth.HttpUtils.Section;
+import net.runeduniverse.lib.repo.maven.api.BasicCredentials;
+import net.runeduniverse.lib.repo.maven.api.Credentials;
+import net.runeduniverse.lib.repo.maven.api.TokenCredentials;
 
 public class DefaultAuthStateProvider implements AuthStateProvider {
 
-	protected final RepoCredentials credentials;
+	protected final Credentials credentials;
 	protected final List<String> supportedAuthSections;
 
-	public DefaultAuthStateProvider(final RepoCredentials credentials) {
+	public DefaultAuthStateProvider(final Credentials credentials) {
 		this.credentials = credentials;
 		this.supportedAuthSections = selectSupportedAuthSections();
 	}
 
 	protected List<String> selectSupportedAuthSections() {
 		final List<String> col = new ArrayList<>();
-		if (credentials instanceof TokenRepoCredentials) {
+		if (credentials instanceof TokenCredentials) {
 			col.add("bearer");
 		}
-		if (credentials instanceof BasicRepoCredentials) {
+		if (credentials instanceof BasicCredentials) {
 			col.add("digest");
 			col.add("basic");
 		}
@@ -51,19 +50,18 @@ public class DefaultAuthStateProvider implements AuthStateProvider {
 	}
 
 	@Override
-	public AuthState forHttpAuthenticate(final Section section) {
+	public AuthState forHttpAuthenticate(final AuthHeaderSection section) {
 		// check if the section is supported
-		if (!this.supportedAuthSections.contains(section.header()))
+		if (!this.supportedAuthSections.contains(section.type()))
 			return null;
 		// factory
-		switch (section.header()) {
+		switch (section.type()) {
 		case "bearer":
-			return new BearerAuthState((TokenRepoCredentials) this.credentials);
+			return new BearerAuthState((TokenCredentials) this.credentials);
 		case "digest":
-			// TODO implement
-			return null;
+			return new DigestAuthState((BasicCredentials) this.credentials, section);
 		case "basic":
-			return new BasicAuthState((BasicRepoCredentials) this.credentials);
+			return new BasicAuthState((BasicCredentials) this.credentials);
 		}
 		return null;
 	}

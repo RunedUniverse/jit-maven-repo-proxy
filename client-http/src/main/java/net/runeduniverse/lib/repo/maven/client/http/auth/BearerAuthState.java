@@ -15,18 +15,38 @@
  */
 package net.runeduniverse.lib.repo.maven.client.http.auth;
 
-import net.runeduniverse.lib.repo.maven.api.TokenRepoCredentials;
+import java.util.List;
+
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.util.AsciiString;
+import net.runeduniverse.lib.repo.maven.api.TokenCredentials;
 
 public class BearerAuthState implements AuthState {
 
-	protected final TokenRepoCredentials creds;
+	protected final TokenCredentials creds;
 
-	public BearerAuthState(final TokenRepoCredentials creds) {
+	public BearerAuthState(final TokenCredentials creds) {
 		this.creds = creds;
 	}
 
 	@Override
-	public String nextAuthorizationHeaderData() {
-		return "Bearer " + this.creds.getToken();
+	public String authType() {
+		return "bearer";
+	}
+
+	@Override
+	public boolean nextAuthorizationHeader(final HttpRequest request, final AsciiString header) {
+		request.headers()
+				.add(header, "Bearer " + this.creds.getToken());
+		return true;
+	}
+
+	@Override
+	public boolean retryOnRejection(final List<AuthHeaderSection> sections) {
+		final AuthHeaderSection response = sections.stream()
+				.filter(s -> authType().equals(s.type()))
+				.findFirst()
+				.orElse(null);
+		return response != null;
 	}
 }

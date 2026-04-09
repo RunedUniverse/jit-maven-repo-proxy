@@ -15,6 +15,6 @@
  */
 package net.runeduniverse.lib.repo.maven.api;
 
-public interface RepoCredentials {
+public interface Credentials {
 
 }

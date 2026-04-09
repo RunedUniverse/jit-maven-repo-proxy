@@ -20,7 +20,7 @@ import java.nio.file.Path;
 
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.api.MetadataValidator;
-import net.runeduniverse.lib.repo.maven.api.RepoCredentials;
+import net.runeduniverse.lib.repo.maven.api.Credentials;
 
 public interface RepositorySource {
 
@@ -30,9 +30,9 @@ public interface RepositorySource {
 
 	public URI getRepoUri();
 
-	public RepoCredentials getRepoCredentials();
+	public Credentials getRepoCredentials();
 
-	public RepoCredentials getProxyCredentials();
+	public Credentials getProxyCredentials();
 
 	public Path getLocalRepoPath();
 

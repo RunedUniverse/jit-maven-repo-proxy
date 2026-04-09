@@ -21,7 +21,7 @@ import java.util.Deque;
 import java.util.LinkedList;
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.api.MetadataValidator;
-import net.runeduniverse.lib.repo.maven.api.RepoCredentials;
+import net.runeduniverse.lib.repo.maven.api.Credentials;
 import net.runeduniverse.lib.repo.maven.client.ARepositorySource;
 import net.runeduniverse.lib.repo.maven.client.http.auth.AuthStateProvider;
 import net.runeduniverse.lib.repo.maven.client.http.auth.DefaultAuthStateProvider;
@@ -67,13 +67,13 @@ public class HttpSource extends ARepositorySource implements RepositorySource {
 	}
 
 	@Override
-	public HttpSource setRepoCredentials(final RepoCredentials credentials) {
+	public HttpSource setRepoCredentials(final Credentials credentials) {
 		super.setRepoCredentials(credentials);
 		return this;
 	}
 
 	@Override
-	public HttpSource setProxyCredentials(final RepoCredentials credentials) {
+	public HttpSource setProxyCredentials(final Credentials credentials) {
 		super.setProxyCredentials(credentials);
 		return this;
 	}

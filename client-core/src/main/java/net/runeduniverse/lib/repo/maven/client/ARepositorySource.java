@@ -23,7 +23,7 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.api.MetadataValidator;
-import net.runeduniverse.lib.repo.maven.api.RepoCredentials;
+import net.runeduniverse.lib.repo.maven.api.Credentials;
 import net.runeduniverse.lib.repo.maven.error.InvalidArtifactException;
 import net.runeduniverse.lib.repo.maven.proxy.api.RepositorySource;
 
@@ -37,8 +37,8 @@ public abstract class ARepositorySource implements RepositorySource {
 	protected final int maxRedirects;
 	protected final int maxRetries;
 
-	protected RepoCredentials repoCredentials = null;
-	protected RepoCredentials proxyCredentials = null;
+	protected Credentials repoCredentials = null;
+	protected Credentials proxyCredentials = null;
 
 	public ARepositorySource(//
 			final String key, final URI uri, final Path repoPath, //
@@ -69,21 +69,21 @@ public abstract class ARepositorySource implements RepositorySource {
 	}
 
 	@Override
-	public RepoCredentials getRepoCredentials() {
+	public Credentials getRepoCredentials() {
 		return this.repoCredentials;
 	}
 
 	@Override
-	public RepoCredentials getProxyCredentials() {
+	public Credentials getProxyCredentials() {
 		return this.proxyCredentials;
 	}
 
-	public ARepositorySource setRepoCredentials(final RepoCredentials credentials) {
+	public ARepositorySource setRepoCredentials(final Credentials credentials) {
 		this.repoCredentials = credentials;
 		return this;
 	}
 
-	public ARepositorySource setProxyCredentials(final RepoCredentials credentials) {
+	public ARepositorySource setProxyCredentials(final Credentials credentials) {
 		this.proxyCredentials = credentials;
 		return this;
 	}
