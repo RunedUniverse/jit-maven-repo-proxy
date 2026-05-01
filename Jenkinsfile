@@ -26,10 +26,12 @@ def installArtifact(mod, parent = null) {
 		sh "mvn-dev -P ${ REPOS },${ getToolchainId(mod) },ci-install -pl=${ relPath }"
 	} finally {
 		def baseName = "${ artifactId }-${ version }"
-		// create spec .pom in target/ path
-		sh "cp -T '${ mod.path() }/pom.xml' '${ mod.path() }/target/${ baseName }.pom'"
 		// archive artifacts
 		dir(path: "${ mod.path() }/target") {
+			if(!fileExists("${ baseName }.pom")) {
+				// create spec .pom in target/ path
+				sh "cp -T '${ mod.path() }/pom.xml' '${ baseName }.pom'"
+			}
 			sh 'ls -l'
 			archiveArtifacts artifacts: "${ baseName }.pom", fingerprint: true
 			if(mod.hasTag('pack-jar')) {
@@ -54,7 +56,7 @@ def installArtifact(mod, parent = null) {
 	}
 }
 
-def testArtifacts(mods, tag, toolchainId, testProfile, parent = null) {
+def testArtifacts(mods, tag, toolchainId, testProfile, parent = null, properties = []) {
 	mods = mods.findAll({ it.hasTag(tag) })
 	stage(tag) {
 		if(mods.isEmpty()) {
@@ -63,8 +65,9 @@ def testArtifacts(mods, tag, toolchainId, testProfile, parent = null) {
 		}
 
 		def modPaths = mods.collect({ it.relPathFrom(parent) }).join(',');
-		sh "mvn-dev -P ${ REPOS },${ toolchainId },ci-test-build -pl=${ modPaths }"
-		sh "mvn-dev --fail-never -P ${ REPOS },${ toolchainId },ci-test-exec,${ testProfile } -pl=${ modPaths }"
+		def props = properties.collect({ "-D${ it }" }).join(' ');
+		sh "mvn-dev -P ${ REPOS },${ toolchainId },ci-test-build -pl=${ modPaths } ${ props }"
+		sh "mvn-dev --fail-never -P ${ REPOS },${ toolchainId },ci-test-exec,${ testProfile } -pl=${ modPaths } ${ props }"
 		// check tests, archive reports in case junit flags errors
 		junit '*/target/surefire-reports/*.xml'
 		if(currentBuild.resultIsWorseOrEqualTo('UNSTABLE')) {
