@@ -48,8 +48,10 @@ public class ComponentIndex {
 			addComponent(metadata.getComponent(), filter);
 		}
 
-		for (Component component : bom.getComponents()) {
-			addComponent(component, filter);
+		final List<Component> col = bom.getComponents();
+		if (col != null) {
+			for (Component component : col)
+				addComponent(component, filter);
 		}
 	}
 
