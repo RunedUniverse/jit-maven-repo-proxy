@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -30,6 +31,7 @@ import org.cyclonedx.model.Component;
 import org.cyclonedx.model.Metadata;
 import org.cyclonedx.model.Property;
 import org.cyclonedx.model.Component.Scope;
+import org.cyclonedx.model.Hash;
 
 public class ComponentIndex {
 
@@ -54,7 +56,9 @@ public class ComponentIndex {
 	public boolean addComponent(final Component component) {
 		if (component == null)
 			return false;
-		boolean updated = this.purlComponents.putIfAbsent(component.getPurl(), component) == null;
+		trimComponentData(component);
+		boolean updated = this.purlComponents.putIfAbsent(component.getPurl()
+				.trim(), component) == null;
 		if (!updated)
 			return false;
 
@@ -137,5 +141,35 @@ public class ComponentIndex {
 			}
 		}
 		return properties;
+	}
+
+	// NOTE: trim all component valuespurl!
+	// autoformat may put a linebreak into the xml-element!
+	@SuppressWarnings("deprecation")
+	public static void trimComponentData(final Component component) {
+		component.setBomRef(StringUtils.trimToNull(component.getBomRef()));
+		component.setPurl(StringUtils.trimToNull(component.getPurl()));
+
+		component.setMimeType(StringUtils.trimToNull(component.getMimeType()));
+		component.setAuthor(StringUtils.trimToNull(component.getAuthor()));
+
+		component.setPublisher(StringUtils.trimToNull(component.getPublisher()));
+		component.setGroup(StringUtils.trimToNull(component.getGroup()));
+		component.setName(StringUtils.trimToNull(component.getName()));
+		component.setVersion(StringUtils.trimToNull(component.getVersion()));
+		component.setDescription(StringUtils.trimToNull(component.getDescription()));
+		component.setCopyright(StringUtils.trimToNull(component.getCopyright()));
+		component.setCpe(StringUtils.trimToNull(component.getCpe()));
+
+		// replace hash entries with equivalent trimmed entries, or remove empty ones
+		for (ListIterator<Hash> i = component.getHashes()
+				.listIterator(); i.hasNext();) {
+			final Hash hash = i.next();
+			final String value = StringUtils.trimToNull(hash.getValue());
+			if (value == null)
+				i.remove();
+			else
+				i.set(new Hash(hash.getAlgorithm(), value));
+		}
 	}
 }
