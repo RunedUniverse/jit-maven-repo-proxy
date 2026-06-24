@@ -96,7 +96,7 @@ public class CyclonedxValidator implements ArtifactValidator {
 				final String algorithm = hash.getAlgorithm();
 				final String localChecksum = dataHashes.get(algorithm);
 				final String remoteChecksum = hash.getValue();
-				if (!localChecksum.equalsIgnoreCase(remoteChecksum)) {
+				if (localChecksum != null && !localChecksum.equalsIgnoreCase(remoteChecksum)) {
 					throw new InvalidChecksumArtifactException(MSG_CHECKSUM_MISSMATCH, algorithm, localChecksum,
 							remoteChecksum);
 				}
