@@ -16,10 +16,11 @@
 package net.runeduniverse.lib.repo.maven.client.http;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
@@ -32,6 +33,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
@@ -66,15 +68,19 @@ public class HttpArtifactPOM extends HttpArtifactData implements ArtifactPOM {
 		this.packagingProcedure = value;
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	protected void parseData() throws ArtifactException {
 		final Path pomPath = getArtifactPath();
 
 		try {
+			String xmlText = new String(Files.readAllBytes(pomPath), StandardCharsets.UTF_8);
+			xmlText = org.apache.commons.lang3.StringEscapeUtils.unescapeHtml4(xmlText);
+
 			final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 			final DocumentBuilder builder = factory.newDocumentBuilder();
 
-			final Document document = builder.parse(Files.newInputStream(pomPath, StandardOpenOption.READ));
+			final Document document = builder.parse(new InputSource(new StringReader(xmlText)));
 			final Element docElement = document.getDocumentElement();
 
 			final Element packagingProcedure = findElement(docElement, "packaging");
