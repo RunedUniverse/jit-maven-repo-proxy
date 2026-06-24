@@ -184,8 +184,8 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 		} catch (IOException e) {
 			System.err.println(
 					"Failed to load Artifact " + ArtifactDataCoordinates.key(data) + " for Signature verification");
-			e.getCause()
-					.printStackTrace(System.err);
+			final Throwable exCause = e.getCause();
+			(exCause == null ? e : exCause).printStackTrace(System.err);
 			throw onValidateFailure(data, signature, e);
 		}
 
@@ -198,14 +198,15 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 				System.err.println("----------------- HERE » 2 --------------");
 				System.err.println("No Public-Key found for " + ArtifactDataCoordinates.key(data) + " ID: "
 						+ toHexKeyID(sigKeyID));
-				e.printStackTrace(System.err);
+				final Throwable exCause = e.getCause();
+				(exCause == null ? e : exCause).printStackTrace(System.err);
 				continue;
 			} catch (ExecutionException e) {
 				System.err.println("----------------- HERE » 3 --------------");
 				System.err.println("No Public-Key found for " + ArtifactDataCoordinates.key(data) + " ID: "
 						+ toHexKeyID(sigKeyID));
-				e.getCause()
-						.printStackTrace(System.err);
+				final Throwable exCause = e.getCause();
+				(exCause == null ? e : exCause).printStackTrace(System.err);
 				continue;
 			} catch (TimeoutException e) {
 				System.err.println("----------------- HERE » 4 --------------");
@@ -232,8 +233,8 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 				cause = e;
 				System.err.println(
 						"Failed to load Artifact " + ArtifactDataCoordinates.key(data) + " for Signature verification");
-				e.getCause()
-						.printStackTrace(System.err);
+				final Throwable exCause = e.getCause();
+				(exCause == null ? e : exCause).printStackTrace(System.err);
 			}
 		}
 
