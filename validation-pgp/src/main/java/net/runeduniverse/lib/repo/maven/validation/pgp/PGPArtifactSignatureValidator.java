@@ -131,14 +131,15 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 			System.err.println("----------------- HERE » 2 --------------");
 			System.err.println("No Public-Key found for " + ArtifactDataCoordinates.key(data) + " FP: "
 					+ toHexFingerprint(fingerprint));
-			e.printStackTrace(System.err);
+			final Throwable exCause = e.getCause();
+			(exCause == null ? e : exCause).printStackTrace(System.err);
 			return false;
 		} catch (ExecutionException e) {
 			System.err.println("----------------- HERE » 3 --------------");
 			System.err.println("No Public-Key found for " + ArtifactDataCoordinates.key(data) + " FP: "
 					+ toHexFingerprint(fingerprint));
-			e.getCause()
-					.printStackTrace(System.err);
+			final Throwable exCause = e.getCause();
+			(exCause == null ? e : exCause).printStackTrace(System.err);
 			return false;
 		} catch (TimeoutException e) {
 			System.err.println("----------------- HERE » 4 --------------");
@@ -161,8 +162,8 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 			cause = e;
 			System.err.println(
 					"Failed to load Artifact " + ArtifactDataCoordinates.key(data) + " for Signature verification");
-			e.getCause()
-					.printStackTrace(System.err);
+			final Throwable exCause = e.getCause();
+			(exCause == null ? e : exCause).printStackTrace(System.err);
 		}
 
 		throw onValidateFailure(data, signature, cause);
@@ -373,7 +374,7 @@ public class PGPArtifactSignatureValidator implements ArtifactValidator {
 			final PGPException pgpEx) {
 		System.err.println("Invalid Public-Key for the Signature provided by " + ArtifactDataCoordinates.key(data));
 		System.out.println("Pub-Key Algorithm: " + pubKeyEx.getAlgorithm());
-		pgpEx.getCause()
-				.printStackTrace(System.err);
+		final Throwable exCause = pgpEx.getCause();
+		(exCause == null ? pgpEx : exCause).printStackTrace(System.err);
 	}
 }
