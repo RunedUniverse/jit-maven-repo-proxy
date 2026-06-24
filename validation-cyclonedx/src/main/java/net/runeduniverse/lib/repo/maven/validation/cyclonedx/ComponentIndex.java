@@ -162,14 +162,16 @@ public class ComponentIndex {
 		component.setCpe(StringUtils.trimToNull(component.getCpe()));
 
 		// replace hash entries with equivalent trimmed entries, or remove empty ones
-		for (ListIterator<Hash> i = component.getHashes()
-				.listIterator(); i.hasNext();) {
-			final Hash hash = i.next();
-			final String value = StringUtils.trimToNull(hash.getValue());
-			if (value == null)
-				i.remove();
-			else
-				i.set(new Hash(hash.getAlgorithm(), value));
+		final List<Hash> hashes = component.getHashes();
+		if (hashes != null) {
+			for (ListIterator<Hash> i = hashes.listIterator(); i.hasNext();) {
+				final Hash hash = i.next();
+				final String value = StringUtils.trimToNull(hash.getValue());
+				if (value == null)
+					i.remove();
+				else
+					i.set(new Hash(hash.getAlgorithm(), value));
+			}
 		}
 	}
 }
