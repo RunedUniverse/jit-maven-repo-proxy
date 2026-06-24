@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.api.PluginEntry;
 import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 
 public class UnmodifiableArtifactMetadata extends ArtifactCoordinates.Data implements ArtifactMetadata {
@@ -29,14 +30,17 @@ public class UnmodifiableArtifactMetadata extends ArtifactCoordinates.Data imple
 	protected final String releaseVersion;
 	protected final String latestVersion;
 	protected final String lastUpdated;
+	protected final Set<PluginEntry> plugins;
 
 	public UnmodifiableArtifactMetadata(final String groupId, final String artifactId, final Set<String> versions,
-			final String releaseVersion, final String latestVersion, final String lastUpdated) {
+			final String releaseVersion, final String latestVersion, final String lastUpdated,
+			final Set<PluginEntry> plugins) {
 		super(groupId, artifactId);
 		this.versions = versions;
 		this.releaseVersion = releaseVersion;
 		this.latestVersion = latestVersion;
 		this.lastUpdated = lastUpdated;
+		this.plugins = plugins;
 	}
 
 	@Override
@@ -64,10 +68,16 @@ public class UnmodifiableArtifactMetadata extends ArtifactCoordinates.Data imple
 		return this.lastUpdated;
 	}
 
+	@Override
+	public Set<PluginEntry> getPlugins() {
+		return this.plugins;
+	}
+
 	public static ArtifactMetadata wrap(final ArtifactMetadata metadata) {
 		return new UnmodifiableArtifactMetadata(metadata.getGroupId(), metadata.getArtifactId(),
 				Collections.unmodifiableSet(metadata.getVersions()), metadata.getReleaseVersion(),
-				metadata.getLatestVersion(), metadata.getLastUpdated());
+				metadata.getLatestVersion(), metadata.getLastUpdated(),
+				Collections.unmodifiableSet(metadata.getPlugins()));
 	}
 
 	@Override
@@ -85,6 +95,7 @@ public class UnmodifiableArtifactMetadata extends ArtifactCoordinates.Data imple
 		return this.versions.equals(other.getVersions())//
 				&& Objects.equals(this.releaseVersion, other.getReleaseVersion())//
 				&& Objects.equals(this.latestVersion, other.getLatestVersion())//
-				&& Objects.equals(this.lastUpdated, other.getLastUpdated());
+				&& Objects.equals(this.lastUpdated, other.getLastUpdated())//
+				&& this.plugins.equals(other.getPlugins());
 	}
 }

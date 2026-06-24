@@ -18,6 +18,7 @@ package net.runeduniverse.lib.repo.maven.data;
 import static net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates.key;
 
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 
 import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.api.PluginEntry;
 import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
 
 public abstract class AArtifactMetadata implements ArtifactMetadata {
@@ -34,6 +36,7 @@ public abstract class AArtifactMetadata implements ArtifactMetadata {
 	protected final NavigableSet<ComparableVersion> versions;
 	protected final String groupId;
 	protected final String artifactId;
+	protected final Set<PluginEntry> plugins;
 
 	protected String lastUpdated = null;
 
@@ -42,14 +45,15 @@ public abstract class AArtifactMetadata implements ArtifactMetadata {
 	}
 
 	public AArtifactMetadata(final String groupId, final String artifactId) {
-		this(new TreeSet<>(), groupId, artifactId);
+		this(new TreeSet<>(), groupId, artifactId, new LinkedHashSet<>());
 	}
 
 	public AArtifactMetadata(final NavigableSet<ComparableVersion> versions, final String groupId,
-			final String artifactId) {
+			final String artifactId, final Set<PluginEntry> plugins) {
 		this.versions = versions;
 		this.groupId = groupId;
 		this.artifactId = artifactId;
+		this.plugins = plugins;
 	}
 
 	@Override
@@ -135,8 +139,19 @@ public abstract class AArtifactMetadata implements ArtifactMetadata {
 		return this.lastUpdated;
 	}
 
+	@Override
+	public Set<PluginEntry> getPlugins() {
+		return this.plugins;
+	}
+
 	public void setLastUpdated(final String lastUpdated) {
+		if (lastUpdated == null)
+			return;
 		this.lastUpdated = lastUpdated;
+	}
+
+	public void clearLastUpdated() {
+		this.lastUpdated = null;
 	}
 
 	public void addVersion(final String version) {
@@ -149,6 +164,12 @@ public abstract class AArtifactMetadata implements ArtifactMetadata {
 		if (version == null)
 			return;
 		this.versions.add(version);
+	}
+
+	public boolean addPlugin(final PluginEntry entry) {
+		if (entry == null)
+			return false;
+		return this.plugins.add(entry);
 	}
 
 	@Override
@@ -180,7 +201,9 @@ public abstract class AArtifactMetadata implements ArtifactMetadata {
 				&& Objects.equals(this.getArtifactId(), other.getArtifactId())//
 				&& Objects.equals(this.getLastUpdated(), other.getLastUpdated())//
 				&& this.getVersions()
-						.equals(other.getVersions());
+						.equals(other.getVersions())//
+				&& this.getPlugins()
+						.equals(other.getPlugins());
 	}
 
 	public CompletableFuture<ArtifactMetadata> asFuture() {
@@ -196,5 +219,40 @@ public abstract class AArtifactMetadata implements ArtifactMetadata {
 	protected static <T> T voidThrowable(final T value, final Throwable throwable) {
 		// we don't care about exceptions -> result is optional
 		return value;
+	}
+
+	public static class PluginEntryBuilder extends PluginEntry.Data {
+
+		public PluginEntryBuilder() {
+			super(null, null, null);
+		}
+
+		public PluginEntryBuilder(final String name, final String prefix, final String artifactId) {
+			super(name, prefix, artifactId);
+		}
+
+		public PluginEntryBuilder setName(final String name) {
+			this.name = name;
+			return this;
+		}
+
+		public PluginEntryBuilder setPrefix(final String prefix) {
+			this.prefix = prefix;
+			return this;
+		}
+
+		public PluginEntryBuilder setArtifactId(final String artifactId) {
+			this.artifactId = artifactId;
+			return this;
+		}
+
+		public boolean isValid() {
+			return this.prefix != null && this.prefix.length() != 0 //
+					&& this.artifactId != null && this.artifactId.length() != 0;
+		}
+
+		public PluginEntry build() {
+			return new PluginEntry.Data(this.name, this.prefix, this.artifactId);
+		}
 	}
 }

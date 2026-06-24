@@ -17,6 +17,7 @@ package net.runeduniverse.lib.repo.maven.client;
 
 import java.io.StringReader;
 import java.util.NavigableSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -28,6 +29,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
+import net.runeduniverse.lib.repo.maven.api.PluginEntry;
 import net.runeduniverse.lib.repo.maven.data.AArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.data.ComparableVersion;
 import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
@@ -43,8 +45,8 @@ public class XmlArtifactMetadata extends AArtifactMetadata {
 	}
 
 	public XmlArtifactMetadata(final NavigableSet<ComparableVersion> versions, final String groupId,
-			final String artifactId) {
-		super(versions, groupId, artifactId);
+			final String artifactId, final Set<PluginEntry> plugins) {
+		super(versions, groupId, artifactId, plugins);
 	}
 
 	protected String parseXmlText(final String text) {
@@ -57,18 +59,34 @@ public class XmlArtifactMetadata extends AArtifactMetadata {
 
 			final Document document = builder.parse(new InputSource(new StringReader(text)));
 			final Element docElement = document.getDocumentElement();
+
 			final Element versioningElement = findElement(docElement, "versioning");
+			if (versioningElement != null) {
+				// ignore "latest" and "release" -> they are computed!
 
-			if (versioningElement == null)
-				return text;
+				final Element lastUpdatedElement = findElement(versioningElement, "lastUpdated");
+				forTextContent(lastUpdatedElement, this::setLastUpdated);
 
-			// ignore "latest" and "release" -> they are computed!
+				final Element versionsElement = findElement(versioningElement, "versions");
+				forEachChildTextContent(versionsElement, "version", this::addVersion);
+			}
 
-			final Element lastUpdatedElement = findElement(versioningElement, "lastUpdated");
-			forTextContent(lastUpdatedElement, this::setLastUpdated);
+			final Element pluginsElement = findElement(docElement, "plugins");
+			forEachChildElement(pluginsElement, "plugin", pluginElement -> {
+				final PluginEntryBuilder entryBuilder = new PluginEntryBuilder();
 
-			final Element versionsElement = findElement(versioningElement, "versions");
-			forEachChildTextContent(versionsElement, "version", this::addVersion);
+				final Element nameElement = findElement(pluginElement, "name");
+				forTextContent(nameElement, entryBuilder::setName);
+
+				final Element prefixElement = findElement(pluginElement, "prefix");
+				forTextContent(prefixElement, entryBuilder::setPrefix);
+
+				final Element artifactIdElement = findElement(pluginElement, "artifactId");
+				forTextContent(artifactIdElement, entryBuilder::setArtifactId);
+
+				if (entryBuilder.isValid())
+					XmlArtifactMetadata.this.addPlugin(entryBuilder.build());
+			});
 
 		} catch (Exception e) {
 			throw new NotFoundArtifactException("unexpected exception while parsing in maven-metadata.xml", e);
@@ -97,11 +115,25 @@ public class XmlArtifactMetadata extends AArtifactMetadata {
 		} catch (DOMException ignored) {
 			content = null;
 		}
-		consumer.accept(content);
+		consumer.accept(trimToNull(content));
+	}
+
+	protected void forEachChildElement(final Element element, final String tagName, final Consumer<Element> consumer) {
+		if (element == null)
+			return;
+		final NodeList list = element.getChildNodes();
+		for (int i = 0; i < list.getLength(); i++) {
+			final Node node = list.item(i);
+			if (!(node instanceof Element) || !tagName.equals(node.getNodeName()))
+				continue;
+			consumer.accept((Element) node);
+		}
 	}
 
 	protected void forEachChildTextContent(final Element element, final String tagName,
 			final Consumer<String> consumer) {
+		if (element == null)
+			return;
 		final NodeList list = element.getChildNodes();
 		for (int i = 0; i < list.getLength(); i++) {
 			final Node node = list.item(i);
@@ -109,5 +141,14 @@ public class XmlArtifactMetadata extends AArtifactMetadata {
 				continue;
 			forTextContent((Element) node, consumer);
 		}
+	}
+
+	protected String trimToNull(String text) {
+		if (text == null)
+			return null;
+		text = text.trim();
+		if (text.length() == 0)
+			return null;
+		return text;
 	}
 }

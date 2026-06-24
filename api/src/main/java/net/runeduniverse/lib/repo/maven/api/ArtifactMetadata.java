@@ -30,6 +30,8 @@ public interface ArtifactMetadata extends ArtifactCoordinates {
 
 	public String getLastUpdated();
 
+	public Set<PluginEntry> getPlugins();
+
 	public void removeVersion(String version);
 
 	public default boolean isRelease(final String version) {

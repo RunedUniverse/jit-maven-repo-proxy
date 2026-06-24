@@ -40,6 +40,7 @@ import net.runeduniverse.lib.repo.maven.api.ChecksumType;
 import net.runeduniverse.lib.repo.maven.api.FileContentType;
 import net.runeduniverse.lib.repo.maven.api.FileType;
 import net.runeduniverse.lib.repo.maven.api.FileTypeIndex;
+import net.runeduniverse.lib.repo.maven.api.PluginEntry;
 import net.runeduniverse.lib.repo.maven.error.ForbiddenArtifactException;
 import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
 import net.runeduniverse.lib.repo.maven.error.UnauthorizedArtifactException;
@@ -507,45 +508,71 @@ public class HttpRepoServerHandler extends SimpleChannelInboundHandler<FullHttpR
 	}
 
 	protected String toXml(final ArtifactMetadata metadata) {
+		final boolean versionIndex = !metadata.getVersions()
+				.isEmpty();
+		final boolean pluginIndex = !metadata.getPlugins()
+				.isEmpty();
+
 		final StringBuilder text = new StringBuilder("<metadata>\n");
 
-		text.append("  <groupId>")
-				.append(metadata.getGroupId())
-				.append("</groupId>\n");
-		text.append("  <artifactId>")
-				.append(metadata.getArtifactId())
-				.append("</artifactId>\n");
+		if (versionIndex) {
+			text.append("  <groupId>")
+					.append(metadata.getGroupId())
+					.append("</groupId>\n");
+			text.append("  <artifactId>")
+					.append(metadata.getArtifactId())
+					.append("</artifactId>\n");
 
-		text.append("  <versioning>\n");
-		final String latest = metadata.getLatestVersion();
-		if (StringUtils.isNotEmpty(latest)) {
-			text.append("    <latest>")
-					.append(latest)
-					.append("</latest>\n");
-		}
-		final String release = metadata.getReleaseVersion();
-		if (StringUtils.isNotEmpty(release)) {
-			text.append("    <release>")
-					.append(release)
-					.append("</release>\n");
+			text.append("  <versioning>\n");
+			final String latest = metadata.getLatestVersion();
+			if (StringUtils.isNotEmpty(latest)) {
+				text.append("    <latest>")
+						.append(latest)
+						.append("</latest>\n");
+			}
+			final String release = metadata.getReleaseVersion();
+			if (StringUtils.isNotEmpty(release)) {
+				text.append("    <release>")
+						.append(release)
+						.append("</release>\n");
+			}
+
+			text.append("    <versions>\n");
+			for (String version : metadata.getVersions()) {
+				text.append("      <version>")
+						.append(version)
+						.append("</version>\n");
+			}
+			text.append("    </versions>\n");
+
+			final String lastUpdated = metadata.getLastUpdated();
+			if (StringUtils.isNotEmpty(lastUpdated)) {
+				text.append("    <lastUpdated>")
+						.append(lastUpdated)
+						.append("</lastUpdated>\n");
+			}
+			text.append("  </versioning>\n");
 		}
 
-		text.append("    <versions>\n");
-		for (String version : metadata.getVersions()) {
-			text.append("      <version>")
-					.append(version)
-					.append("</version>\n");
+		if (pluginIndex) {
+			text.append("  <plugins>\n");
+			for (PluginEntry entry : metadata.getPlugins()) {
+				text.append("    <plugin>\n")
+						.append("      <name>")
+						.append(entry.getName())
+						.append("</name>\n")
+						.append("      <prefix>")
+						.append(entry.getPrefix())
+						.append("</prefix>\n")
+						.append("      <artifactId>")
+						.append(entry.getArtifactId())
+						.append("</artifactId>\n")
+						.append("    </plugin>\n");
+			}
+			text.append("  </plugins>\n");
 		}
-		text.append("    </versions>\n");
 
-		final String lastUpdated = metadata.getLastUpdated();
-		if (StringUtils.isNotEmpty(lastUpdated)) {
-			text.append("    <lastUpdated>")
-					.append(lastUpdated)
-					.append("</lastUpdated>\n");
-		}
-
-		return text.append("  </versioning>\n</metadata>\n")
+		return text.append("</metadata>\n")
 				.toString();
 	}
 }

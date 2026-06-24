@@ -27,6 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.api.PluginEntry;
 import net.runeduniverse.lib.repo.maven.data.AArtifactMetadata;
 import net.runeduniverse.lib.repo.maven.data.ComparableVersion;
 import net.runeduniverse.lib.repo.maven.proxy.api.AggregateArtifactMetadata;
@@ -42,7 +43,7 @@ public class DefaultAggregateArtifactMetadata extends AArtifactMetadata implemen
 	}
 
 	public DefaultAggregateArtifactMetadata(final String groupId, final String artifactId) {
-		super(new ConcurrentSkipListSet<>(), groupId, artifactId);
+		super(new ConcurrentSkipListSet<>(), groupId, artifactId, ConcurrentHashMap.newKeySet());
 	}
 
 	@Override
@@ -87,6 +88,10 @@ public class DefaultAggregateArtifactMetadata extends AArtifactMetadata implemen
 		}
 		// update headlines
 		updateLastUpdated(metadata.getLastUpdated());
+		// track all indexed plugins
+		for (PluginEntry entry : metadata.getPlugins()) {
+			addPlugin(entry);
+		}
 	}
 
 	public void add2(final AArtifactMetadata metadata) {
@@ -99,6 +104,10 @@ public class DefaultAggregateArtifactMetadata extends AArtifactMetadata implemen
 		}
 		// update headlines
 		updateLastUpdated(metadata.getLastUpdated());
+		// track all indexed plugins
+		for (PluginEntry entry : metadata.getPlugins()) {
+			addPlugin(entry);
+		}
 	}
 
 	public void track(final CompletableFuture<ArtifactMetadata> future) {
@@ -112,7 +121,9 @@ public class DefaultAggregateArtifactMetadata extends AArtifactMetadata implemen
 			if (future.isDone())
 				i.remove();
 		}
-		return this.versions.isEmpty() ? null : this;
+		if (this.versions.isEmpty() && this.plugins.isEmpty())
+			return null;
+		return this;
 	}
 
 	@Override
