@@ -86,7 +86,10 @@ public class HttpArtifactPOM extends HttpArtifactData implements ArtifactPOM {
 			final Element packagingProcedure = findElement(docElement, "packaging");
 			forTextContent(packagingProcedure, this::setPackagingProcedure);
 
-		} catch (ParserConfigurationException | SAXException | IOException e) {
+		} catch (SAXException e) {
+			System.err.println("unexpected exception while parsing in " + pomPath.getFileName()
+					.toString());
+		} catch (ParserConfigurationException | IOException e) {
 			throw new InvalidArtifactException("unexpected exception while parsing in " + pomPath.getFileName()
 					.toString(), e);
 		}
