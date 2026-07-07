@@ -29,6 +29,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioChannelOption;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import net.runeduniverse.lib.repo.maven.api.FileTypeIndex;
 import net.runeduniverse.lib.repo.maven.api.MavenRepositoryInstance;
@@ -71,6 +72,7 @@ public class ProxyServer {
 		final ServerBootstrap bootstrap = new ServerBootstrap()//
 				.group(this.mainGroup, this.workerGroup)
 				.channel(NioServerSocketChannel.class)
+				.option(NioChannelOption.SO_REUSEADDR, true)
 				.childHandler(this.serverChannelInitializer.apply(this.instances::get, this.fileTypeIndex));
 
 		return this.serverBootstrap = bootstrap;

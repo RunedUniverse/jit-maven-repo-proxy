@@ -204,7 +204,7 @@ public class HttpArtifactData extends AArtifactData {
 										this.checksums.put(algorithm, localChecksum);
 										continue;
 									}
-									if (!refChecksum.equals(localChecksum)) {
+									if (!refChecksum.equalsIgnoreCase(localChecksum)) {
 										// somthing is wrong !!!
 										throw new InvalidChecksumArtifactException(algorithm, localChecksum,
 												refChecksum);
