@@ -22,6 +22,8 @@ public class ArtifactException extends RuntimeException {
 
 	protected final int priority;
 
+	protected String packageUrl = null;
+
 	public ArtifactException() {
 		this(PRIORITY);
 	}
@@ -51,5 +53,13 @@ public class ArtifactException extends RuntimeException {
 
 	public int priority() {
 		return this.priority;
+	}
+
+	public String getPURL() {
+		return this.packageUrl;
+	}
+
+	public void setPURL(final String purl) {
+		this.packageUrl = purl;
 	}
 }
