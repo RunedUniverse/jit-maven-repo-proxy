@@ -129,7 +129,6 @@ node( label: 'linux' ) {
 		def bomMod = getModule(id: 'bom');
 
 		stage('Init Modules') {
-			sshagent (credentials: ['RunedUniverse-Jenkins']) {
 			perModule(failFast: true) {
 				def mod = getModule();
 				def relPath = mod.relPathFrom(parentMod);
@@ -140,7 +139,6 @@ node( label: 'linux' ) {
 				// check skip flag
 				// if not skipped -> check if this version already exists!
 				mod.activate(!mod.hasTag('skip') && !gitTagExists2(scm: scm, tag: "${ mod.id() }/v${ version }"));
-			}
 			}
 		}
 		stage ('Info') {
