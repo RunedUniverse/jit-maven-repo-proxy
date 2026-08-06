@@ -1,6 +1,13 @@
 def evalValue(expression, path = null) {
-	return sh( returnStdout: true,
-		script: "mvn org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpression=${ expression } -q -DforceStdout ${ path==null ? '' : ('-pl='+path) } | tail -1")
+    def output = sh( returnStdout: true, script: """
+            mvn-dev org.apache.maven.plugins:maven-help-plugin:3.5.1:evaluate \
+                -Dexpression=${ expression } -q -DforceStdout \
+                ${ path==null ? '' : ('-pl='+path) }
+        """);
+    def result = output.readLines().last();
+    if (result.startsWith('[ERROR]'))
+        error("[ERROR] Failed to get property » ${ expression } \n ${ output }")
+    return result;
 }
 
 def getToolchainId(mod) {
@@ -79,16 +86,17 @@ def testArtifacts(mods, tag, toolchainId, testProfile, parent = null, properties
 }
 
 node( label: 'linux' ) {
+	repoProxy(['maven>central': 'central', 'maven>runeduniverse>releases': 'rnet-releases', 'maven>runeduniverse>development': 'rnet-development']) {
 	withModules {
 		tool(name: 'maven-latest', type: 'maven')
 
 		stage('Checkout SCM') {
-			checkout(scm)
+			checkout2(scm)
 		}
 
 		sh 'chmod +x $WORKSPACE/.build/*'
 		env.setProperty('PATH+SCRIPTS', "${ env.WORKSPACE }/.build")
-		env.GLOBAL_MAVEN_SETTINGS     = '/srv/jenkins/.m2/global-settings.xml'
+		// env.GLOBAL_MAVEN_SETTINGS     = '/srv/jenkins/.m2/global-settings.xml'
 		env.MAVEN_SETTINGS            = "${ env.WORKSPACE }/.mvn/settings.xml"
 		env.MAVEN_TOOLCHAINS          = "${ env.WORKSPACE }/.mvn/toolchains.xml"
 		if(env.BRANCH_NAME == 'master') {
@@ -118,26 +126,21 @@ node( label: 'linux' ) {
 			addModule( id: 'validation-cyclonedx',  path: 'validation-cyclonedx',  name: 'Maven Repo [valid:cyclonedx]',  tags: [ 'build4', 'pack-jar', 'jdk-17',    'test-smoke' ])
 		}
 		def parentMod = getModule(id: 'project')
+		def bomMod = getModule(id: 'bom');
 
 		stage('Init Modules') {
 			sshagent (credentials: ['RunedUniverse-Jenkins']) {
-				perModule(failFast: true) {
-					def mod = getModule();
-					def relPath = mod.relPathFrom(parentMod);
-					mod.metadata().put('maven.groupId', evalValue('project.groupId', relPath));
-					mod.metadata().put('maven.artifactId', evalValue('project.artifactId', relPath));
-					def version = evalValue('project.version', relPath);
-					mod.metadata().put('maven.version', version);
-					// check skip flag
-					// if not skipped -> check if this version already exists!
-					mod.activate(
-						!mod.hasTag('skip') && sh(
-								label: "check if git tag \"${ mod.id() }/v${ version }\" exists",
-								returnStatus: true,
-								script: "git ls-remote --tags --exit-code origin refs/tags/${ mod.id() }/v${ version } &>/dev/null"
-							) != 0
-					);
-				}
+			perModule(failFast: true) {
+				def mod = getModule();
+				def relPath = mod.relPathFrom(parentMod);
+				mod.metadata().put('maven.groupId', evalValue('project.groupId', relPath));
+				mod.metadata().put('maven.artifactId', evalValue('project.artifactId', relPath));
+				def version = evalValue('project.version', relPath);
+				mod.metadata().put('maven.version', version);
+				// check skip flag
+				// if not skipped -> check if this version already exists!
+				mod.activate(!mod.hasTag('skip') && !gitTagExists2(scm: scm, tag: "${ mod.id() }/v${ version }"));
+			}
 			}
 		}
 		stage ('Info') {
@@ -180,7 +183,9 @@ node( label: 'linux' ) {
 
 			stage('Code Validation') {
 				// note: bugged maven artifact resolve requires all modules to be locally installed before license verification
-				sh "mvn-dev -P ${ REPOS },ci-validate,license-apache2-approve,license-epl-v10-approve,license-bouncycastle-approve --fail-at-end -T1C"
+				def approvedLicenses = [ 'mit', 'apache2', 'epl-v10', 'epl-v20', 'bouncycastle' ]
+				def licenseProfiles = approvedLicenses.collect({ "license-${ it }-approve" }).join(',');
+				sh "mvn-dev -P ${ REPOS },ci-validate,${ licenseProfiles } --fail-at-end -T1C"
 			}
 
 			stage('Smoke Test') {
@@ -190,9 +195,13 @@ node( label: 'linux' ) {
 					return
 				}
 
-				testArtifacts(mods, 'jdk-1.8.0', 'toolchain-openjdk-1-8-0', 'test-smoke', parentMod);
-				testArtifacts(mods, 'jdk-11',    'toolchain-openjdk-11',    'test-smoke', parentMod);
-				testArtifacts(mods, 'jdk-17',    'toolchain-openjdk-17',    'test-smoke', parentMod);
+				echo 'force update bom version for tests -> test for possible collisions caused by this update'
+				def bomVersion = bomMod.metadata().get('maven.version');
+				def props = [ "maven-repo-project-bom-version=${ bomVersion }" ];
+
+				testArtifacts(mods, 'jdk-1.8.0', 'toolchain-openjdk-1-8-0', 'test-smoke', parentMod, props);
+				testArtifacts(mods, 'jdk-11',    'toolchain-openjdk-11',    'test-smoke', parentMod, props);
+				testArtifacts(mods, 'jdk-17',    'toolchain-openjdk-17',    'test-smoke', parentMod, props);
 			}
 
 			stage('Live Test') {
@@ -202,9 +211,13 @@ node( label: 'linux' ) {
 					return
 				}
 
-				testArtifacts(mods, 'jdk-1.8.0', 'toolchain-openjdk-1-8-0', 'test-live', parentMod);
-				testArtifacts(mods, 'jdk-11',    'toolchain-openjdk-11',    'test-live', parentMod);
-				testArtifacts(mods, 'jdk-17',    'toolchain-openjdk-17',    'test-live', parentMod);
+				echo 'force update bom version for tests -> test for possible collisions caused by this update'
+				def bomVersion = bomMod.metadata().get('maven.version');
+				def props = [ "maven-repo-project-bom-version=${ bomVersion }" ];
+
+				testArtifacts(mods, 'jdk-1.8.0', 'toolchain-openjdk-1-8-0', 'test-live', parentMod, props);
+				testArtifacts(mods, 'jdk-11',    'toolchain-openjdk-11',    'test-live', parentMod, props);
+				testArtifacts(mods, 'jdk-17',    'toolchain-openjdk-17',    'test-live', parentMod, props);
 			}
 
 			stage('Package Build Result') {
@@ -246,10 +259,7 @@ node( label: 'linux' ) {
 						def groupId = mod.metadata().get('maven.groupId');
 						def artifactId = mod.metadata().get('maven.artifactId');
 						def version = mod.metadata().get('maven.version');
-						sshagent (credentials: ['RunedUniverse-Jenkins']) {
-							sh "git tag -a ${ mod.id() }/v${ version } -f -m '[artifact] ${ groupId }:${ artifactId }:${ version }'"
-							sh "git push origin ${ mod.id() }/v${ version }"
-						}
+						gitTagPush2(scm: scm, tag: "${ mod.id() }/v${ version }", comment: "[artifact] ${ groupId }:${ artifactId }:${ version }")
 					}
 					// merge bundles into default
 					bundleMerge( source: mod.id() )
@@ -265,5 +275,5 @@ node( label: 'linux' ) {
 		}
 
 		cleanWs()
-	}
+	}}
 }

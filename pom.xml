@@ -102,17 +102,19 @@
 		<maven-version-min>3.3.9</maven-version-min>
 		<lombok-version>1.18.32</lombok-version>
 		<!-- ARTIFACT VERSIONS - COMPILER -->
-		<plugin-maven-clean-version>3.1.0</plugin-maven-clean-version>
-		<plugin-maven-toolchains-version>3.1.0</plugin-maven-toolchains-version>
-		<plugin-maven-resources-version>3.2.0</plugin-maven-resources-version>
-		<plugin-maven-compiler-version>3.12.0</plugin-maven-compiler-version>
-		<plugin-maven-jar-version>3.0.2</plugin-maven-jar-version>
-		<plugin-maven-source-version>3.2.1</plugin-maven-source-version>
-		<plugin-maven-javadoc-version>3.6.3</plugin-maven-javadoc-version>
-		<plugin-maven-surefire-version>3.0.0-M5</plugin-maven-surefire-version>
-		<plugin-maven-install-version>3.0.0-M1</plugin-maven-install-version>
-		<plugin-revelc-formatter-version>2.23.0</plugin-revelc-formatter-version>
-		<plugin-mycila-license-version>4.2.rc1</plugin-mycila-license-version>
+		<plugin-maven-clean-version>3.4.1</plugin-maven-clean-version>
+		<plugin-maven-toolchains-version>3.2.0</plugin-maven-toolchains-version>
+		<plugin-maven-resources-version>3.5.0</plugin-maven-resources-version>
+		<plugin-codehaus-flatten-version>1.7.3</plugin-codehaus-flatten-version>
+		<plugin-maven-dependency-version>3.10.0</plugin-maven-dependency-version>
+		<plugin-maven-compiler-version>3.14.0</plugin-maven-compiler-version>
+		<plugin-maven-jar-version>3.4.2</plugin-maven-jar-version>
+		<plugin-maven-source-version>3.3.1</plugin-maven-source-version>
+		<plugin-maven-javadoc-version>3.11.2</plugin-maven-javadoc-version>
+		<plugin-maven-surefire-version>3.2.5</plugin-maven-surefire-version>
+		<plugin-maven-install-version>3.1.4</plugin-maven-install-version>
+		<plugin-revelc-formatter-version>2.25.0</plugin-revelc-formatter-version>
+		<plugin-mycila-license-version>4.6</plugin-mycila-license-version>
 		<!-- ARTIFACT VERSIONS - WORKFLOW -->
 		<plugin-workflow-java-version>0.1.0</plugin-workflow-java-version>
 		<plugin-workflow-pipeline-version>0.1.0</plugin-workflow-pipeline-version>
@@ -286,6 +288,32 @@
 		</profile>
 		<!-- LICENSES -->
 		<profile>
+			<id>license-mit-approve</id>
+			<activation>
+				<property>
+					<name>license-mit-approve</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.mycila</groupId>
+						<artifactId>license-maven-plugin</artifactId>
+						<configuration>
+							<dependencyPolicies combine.children="append">
+								<dependencyPolicy>
+									<type>LICENSE_NAME</type>
+									<rule>APPROVE</rule>
+									<value>The MIT License</value>
+								</dependencyPolicy>
+							</dependencyPolicies>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
 			<id>license-apache2-approve</id>
 			<activation>
 				<property>
@@ -378,6 +406,51 @@
 									<rule>APPROVE</rule>
 									<value>
 										https://www.eclipse.org/legal/epl-v10.html
+									</value>
+								</dependencyPolicy>
+							</dependencyPolicies>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>license-epl-v20-approve</id>
+			<activation>
+				<property>
+					<name>license-epl-v20-approve</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.mycila</groupId>
+						<artifactId>license-maven-plugin</artifactId>
+						<configuration>
+							<dependencyPolicies combine.children="append">
+								<dependencyPolicy>
+									<type>LICENSE_NAME</type>
+									<rule>APPROVE</rule>
+									<value>Eclipse Public License v2.0</value>
+								</dependencyPolicy>
+								<dependencyPolicy>
+									<type>LICENSE_NAME</type>
+									<rule>APPROVE</rule>
+									<value>Eclipse Public License, Version 2.0</value>
+								</dependencyPolicy>
+								<dependencyPolicy>
+									<type>LICENSE_URL</type>
+									<rule>APPROVE</rule>
+									<value>
+										http://www.eclipse.org/legal/epl-v20.html
+									</value>
+								</dependencyPolicy>
+								<dependencyPolicy>
+									<type>LICENSE_URL</type>
+									<rule>APPROVE</rule>
+									<value>
+										https://www.eclipse.org/legal/epl-v20.html
 									</value>
 								</dependencyPolicy>
 							</dependencyPolicies>
@@ -588,6 +661,25 @@
 						<dependencyExceptionMessage>1 or more dependencies got
 							rejected doe to invalid licenses! Contact the
 							Maintainer for a solution!</dependencyExceptionMessage>
+						<dependencyScopes>
+							<dependencyScope>import</dependencyScope>
+							<dependencyScope>compile</dependencyScope>
+							<dependencyScope>runtime</dependencyScope>
+							<dependencyScope>system</dependencyScope>
+							<dependencyScope>test</dependencyScope>
+						</dependencyScopes>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>flatten-maven-plugin</artifactId>
+					<version>${plugin-codehaus-flatten-version}</version>
+					<configuration>
+						<outputDirectory>${project.build.directory}</outputDirectory>
+						<flattenedPomFilename>
+							${project.artifactId}-${project.version}.pom
+						</flattenedPomFilename>
+						<updatePomFile>true</updatePomFile>
 					</configuration>
 				</plugin>
 				<plugin>
