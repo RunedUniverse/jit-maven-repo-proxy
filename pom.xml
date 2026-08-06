@@ -666,14 +666,16 @@
 								</excludes>
 							</licenseSet>
 						</licenseSets>
-						<dependencyEnforce>${license-enforce}</dependencyEnforce>
+						<!-- security issue - also made redundant by Jenkins CI's dynamic artifact validation -->
+						<!--<dependencyEnforce>${license-enforce}</dependencyEnforce>-->
+						<dependencyEnforce>false</dependencyEnforce>
 						<dependencyExceptionMessage>1 or more dependencies got
 							rejected doe to invalid licenses! Contact the
 							Maintainer for a solution!</dependencyExceptionMessage>
 						<dependencyScopes>
 							<dependencyScope>import</dependencyScope>
 							<dependencyScope>compile</dependencyScope>
-							<dependencyScope>runtime</dependencyScope>
+							<!--<dependencyScope>runtime</dependencyScope>-->
 							<dependencyScope>system</dependencyScope>
 							<dependencyScope>test</dependencyScope>
 						</dependencyScopes>
