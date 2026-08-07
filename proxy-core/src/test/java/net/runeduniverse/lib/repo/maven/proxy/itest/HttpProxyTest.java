@@ -53,9 +53,9 @@ public class HttpProxyTest extends AProxyTest {
 		// mirror!
 		return builder.setServerChannelInitializer(HttpRepoServerInitializer::new)
 				.instance("maven-central-proxy", instance -> {
-					instance.putSource(new HttpSource("maven-central",
-							URI.create("https://nexus.runeduniverse.net/repository/maven-central/"), repoPath(), 3, 5)
-									.addFirstValidator(pgpValidator));
+					instance.putSource(
+							new HttpSource("maven-central", URI.create(systemProperty_repo_mvnCentral_urlHttp()),
+									repoPath(), 3, 5).addFirstValidator(pgpValidator));
 				});
 	}
 

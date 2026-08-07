@@ -45,7 +45,8 @@ public class RepoBuilderTest {
 				.setCacheFactory(null)
 				.setServerChannelInitializer(HttpRepoServerInitializer::new)
 				.instance("maven-central", instance -> {
-					instance.putSource(new HttpSource("repo1.maven.org", URI.create("https://repo1.maven.org/maven2/"),
+					instance.putSource(new HttpSource("repo1.maven.org", URI.create(System
+							.getProperty("test.infra.repo.maven-central.url-http", "https://repo1.maven.org/maven2/")),
 							this.repoPath, 3, 10));
 				})
 				.build();

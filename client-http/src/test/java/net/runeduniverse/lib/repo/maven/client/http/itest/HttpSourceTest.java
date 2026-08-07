@@ -46,9 +46,8 @@ public class HttpSourceTest extends ASourceTest {
 		// NOTE: we obviously test against our mirror and not maven-central
 		// but of course it was tested against maven-central before moving to the
 		// mirror!
-		return new HttpSource("maven-central", URI.create("https://nexus.runeduniverse.net/repository/maven-central/"),
-				repoPath(), 3, 5)
-						.addFirstValidator(new PGPArtifactSignatureValidator(PublicKeyIndex.createDefaultKeyIndex()));
+		return new HttpSource("maven-central", URI.create(systemProperty_repo_mvnCentral_urlHttp()), repoPath(), 3, 5)
+				.addFirstValidator(new PGPArtifactSignatureValidator(PublicKeyIndex.createDefaultKeyIndex()));
 	}
 
 	@Test

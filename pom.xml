@@ -163,7 +163,7 @@
 							<groupId>org.apache.maven.plugins</groupId>
 							<artifactId>maven-surefire-plugin</artifactId>
 							<configuration>
-								<groups>smoke,live</groups>
+								<groups>smoke,live,live-with-internet</groups>
 							</configuration>
 						</plugin>
 					</plugins>
@@ -666,7 +666,8 @@
 								</excludes>
 							</licenseSet>
 						</licenseSets>
-						<!-- security issue - also made redundant by Jenkins CI's dynamic artifact validation -->
+						<!-- security issue - also made redundant by Jenkins
+						CI's dynamic artifact validation -->
 						<!--<dependencyEnforce>${license-enforce}</dependencyEnforce>-->
 						<dependencyEnforce>false</dependencyEnforce>
 						<dependencyExceptionMessage>1 or more dependencies got

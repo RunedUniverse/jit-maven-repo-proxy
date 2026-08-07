@@ -66,4 +66,8 @@ public abstract class ASourceTest {
 		System.out.println(LocalDateTime.now() + ": " + line);
 	}
 
+	public String systemProperty_repo_mvnCentral_urlHttp() {
+		return System.getProperty("test.infra.repo.maven-central.url-http",
+				"https://nexus.runeduniverse.net/repository/maven-central/");
+	}
 }

@@ -41,7 +41,7 @@ public class PublicKeyIndexTest {
 	}
 
 	@Test
-	@Tag("live")
+	@Tag("live-with-internet")
 	public void findByKeyID() throws InterruptedException, TimeoutException {
 		PublicKeyIndex index = PublicKeyIndex.createDefaultKeyIndex();
 
@@ -82,7 +82,7 @@ public class PublicKeyIndexTest {
 	}
 
 	@Test
-	@Tag("live")
+	@Tag("live-with-internet")
 	public void findByFingerprint() throws InterruptedException, TimeoutException {
 		PublicKeyIndex index = PublicKeyIndex.createDefaultKeyIndex();
 
