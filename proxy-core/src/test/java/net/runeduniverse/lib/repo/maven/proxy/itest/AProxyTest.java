@@ -109,4 +109,8 @@ public abstract class AProxyTest {
 	public String systemProperty_r4m_version() {
 		return System.getProperty("test.infra.r4m.version", "1.1.0");
 	}
+
+	public boolean systemProperty_offline() {
+		return Boolean.parseBoolean(System.getProperty("test.infra.offline", "false"));
+	}
 }

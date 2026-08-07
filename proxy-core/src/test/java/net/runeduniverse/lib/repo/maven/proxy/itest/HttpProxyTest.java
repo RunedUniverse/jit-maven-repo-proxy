@@ -46,8 +46,8 @@ public class HttpProxyTest extends AProxyTest {
 
 	@Override
 	protected ProxyServerBuilder configureProxy(ProxyServerBuilder builder) {
-		final ArtifactValidator pgpValidator = new PGPArtifactSignatureValidator(
-				PublicKeyIndex.createDefaultKeyIndex());
+		final ArtifactValidator pgpValidator = systemProperty_offline() ? null
+				: new PGPArtifactSignatureValidator(PublicKeyIndex.createDefaultKeyIndex());
 		// NOTE: we obviously test against our mirror and not maven-central
 		// but of course it was tested against maven-central before moving to the
 		// mirror!

@@ -30,6 +30,7 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactData;
 import net.runeduniverse.lib.repo.maven.api.ArtifactDataCoordinates;
 import net.runeduniverse.lib.repo.maven.api.ArtifactMetadata;
+import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.client.http.HttpSource;
 import net.runeduniverse.lib.repo.maven.client.itest.ASourceTest;
 import net.runeduniverse.lib.repo.maven.error.NotFoundArtifactException;
@@ -43,11 +44,13 @@ public class HttpSourceTest extends ASourceTest {
 
 	@Override
 	protected RepositorySource configure() {
+		final ArtifactValidator pgpValidator = systemProperty_offline() ? null
+				: new PGPArtifactSignatureValidator(PublicKeyIndex.createDefaultKeyIndex());
 		// NOTE: we obviously test against our mirror and not maven-central
 		// but of course it was tested against maven-central before moving to the
 		// mirror!
 		return new HttpSource("maven-central", URI.create(systemProperty_repo_mvnCentral_urlHttp()), repoPath(), 3, 5)
-				.addFirstValidator(new PGPArtifactSignatureValidator(PublicKeyIndex.createDefaultKeyIndex()));
+				.addFirstValidator(pgpValidator);
 	}
 
 	@Test
