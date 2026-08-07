@@ -121,7 +121,7 @@ public class HttpProxyTest extends AProxyTest {
 	@Tag("live")
 	public void downloadPom() throws Exception {
 		final ArtifactDataCoordinates coords = ArtifactDataCoordinates.build(//
-				"net.runeduniverse.tools.maven.r4m", "r4m-maven-extension", "1.1.0", null, "pom");
+				"net.runeduniverse.tools.maven.r4m", "r4m-maven-extension", systemProperty_r4m_version(), null, "pom");
 
 		final CompletableFuture<? extends ArtifactData> future = client().getArtifact(coords);
 
@@ -141,7 +141,8 @@ public class HttpProxyTest extends AProxyTest {
 	@Tag("live")
 	public void downloadWithClassifier() throws Exception {
 		final ArtifactDataCoordinates coords = ArtifactDataCoordinates.build(//
-				"net.runeduniverse.tools.maven.r4m", "r4m-maven-extension", "1.1.0", "sources", "jar");
+				"net.runeduniverse.tools.maven.r4m", "r4m-maven-extension", systemProperty_r4m_version(), "sources",
+				"jar");
 
 		final CompletableFuture<? extends ArtifactData> future = client().getArtifact(coords);
 
@@ -161,7 +162,7 @@ public class HttpProxyTest extends AProxyTest {
 	@Tag("live")
 	public void downloadWithoutClassifier() throws Exception {
 		final ArtifactDataCoordinates coords = ArtifactDataCoordinates.build(//
-				"net.runeduniverse.tools.maven.r4m", "r4m-maven-extension", "1.1.0", null, "jar");
+				"net.runeduniverse.tools.maven.r4m", "r4m-maven-extension", systemProperty_r4m_version(), null, "jar");
 
 		final CompletableFuture<? extends ArtifactData> future = client().getArtifact(coords);
 
@@ -181,7 +182,7 @@ public class HttpProxyTest extends AProxyTest {
 	@Tag("live")
 	public void downloadNotFound() throws Exception {
 		final ArtifactDataCoordinates coords = ArtifactDataCoordinates.build(//
-				"net.runeduniverse.tools.maven.r4m", "r4m-maven-extension", "1.1.0", null, "pomX");
+				"net.runeduniverse.tools.maven.r4m", "r4m-maven-extension", systemProperty_r4m_version(), null, "pomX");
 
 		final CompletableFuture<? extends ArtifactData> future = client().getArtifact(coords);
 

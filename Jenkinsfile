@@ -195,7 +195,8 @@ node( label: 'linux' ) {
 
 				echo 'force update bom version for tests -> test for possible collisions caused by this update'
 				def bomVersion = bomMod.metadata().get('maven.version');
-				def props = [ "maven-repo-project-bom-version=${ bomVersion }", "test.infra.repo.maven-central.url-http=${ MVN_PROXY_central_URL }" ];
+				def props = [ "maven-repo-project-bom-version=${ bomVersion }",
+					"test.infra.repo.maven-central.url-http=${ MVN_PROXY_central_URL }", "test.infra.r4m.version=1.1.2" ];
 
 				testArtifacts(mods, 'jdk-1.8.0', 'toolchain-openjdk-1-8-0', 'test-smoke', parentMod, props);
 				testArtifacts(mods, 'jdk-11',    'toolchain-openjdk-11',    'test-smoke', parentMod, props);
@@ -211,7 +212,8 @@ node( label: 'linux' ) {
 
 				echo 'force update bom version for tests -> test for possible collisions caused by this update'
 				def bomVersion = bomMod.metadata().get('maven.version');
-				def props = [ "maven-repo-project-bom-version=${ bomVersion }", "test.infra.repo.maven-central.url-http=${ MVN_PROXY_central_URL }" ];
+				def props = [ "maven-repo-project-bom-version=${ bomVersion }",
+					"test.infra.repo.maven-central.url-http=${ MVN_PROXY_central_URL }", "test.infra.r4m.version=1.1.2" ];
 
 				testArtifacts(mods, 'jdk-1.8.0', 'toolchain-openjdk-1-8-0', 'test-live', parentMod, props);
 				testArtifacts(mods, 'jdk-11',    'toolchain-openjdk-11',    'test-live', parentMod, props);

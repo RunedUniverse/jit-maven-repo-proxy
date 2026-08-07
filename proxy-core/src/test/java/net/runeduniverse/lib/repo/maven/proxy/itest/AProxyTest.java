@@ -105,4 +105,8 @@ public abstract class AProxyTest {
 		return System.getProperty("test.infra.repo.maven-central.url-http",
 				"https://nexus.runeduniverse.net/repository/maven-central/");
 	}
+
+	public String systemProperty_r4m_version() {
+		return System.getProperty("test.infra.r4m.version", "1.1.0");
+	}
 }
