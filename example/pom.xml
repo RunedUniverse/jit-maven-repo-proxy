@@ -87,7 +87,7 @@
 		<!-- ARTIFACT VERSIONS -->
 		<maven-repo-project-bom-version>0.1.0</maven-repo-project-bom-version>
 		<maven-repo-project-sbom-version>0.1.0</maven-repo-project-sbom-version>
-		<runeduniverse-utils-bom-version>2.0.0</runeduniverse-utils-bom-version>
+		<runeduniverse-utils-bom-version>2.0.1</runeduniverse-utils-bom-version>
 	</properties>
 
 	<dependencyManagement>
