@@ -145,7 +145,7 @@ public class ComponentIndex {
 		return properties;
 	}
 
-	// NOTE: trim all component valuespurl!
+	// NOTE: trim all component values!
 	// autoformat may put a linebreak into the xml-element!
 	@SuppressWarnings("deprecation")
 	public static void trimComponentData(final Component component) {
