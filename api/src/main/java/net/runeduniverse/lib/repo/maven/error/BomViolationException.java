@@ -15,32 +15,32 @@
  */
 package net.runeduniverse.lib.repo.maven.error;
 
-public class SBomViolationException extends InvalidArtifactException {
+public class BomViolationException extends InvalidArtifactException {
 
 	private static final long serialVersionUID = 1L;
 	private static final int PRIORITY = -30;
 
-	public SBomViolationException() {
+	public BomViolationException() {
 		super(PRIORITY);
 	}
 
-	public SBomViolationException(final int priority) {
+	public BomViolationException(final int priority) {
 		super(priority);
 	}
 
-	public SBomViolationException(final String message) {
+	public BomViolationException(final String message) {
 		super(PRIORITY, message);
 	}
 
-	public SBomViolationException(final int priority, final String message) {
+	public BomViolationException(final int priority, final String message) {
 		super(priority, message);
 	}
 
-	public SBomViolationException(final String message, final Throwable cause) {
+	public BomViolationException(final String message, final Throwable cause) {
 		super(PRIORITY, message, cause);
 	}
 
-	public SBomViolationException(final int priority, final String message, final Throwable cause) {
+	public BomViolationException(final int priority, final String message, final Throwable cause) {
 		super(priority, message, cause);
 	}
 }
