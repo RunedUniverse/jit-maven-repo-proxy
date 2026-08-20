@@ -28,7 +28,7 @@ import net.runeduniverse.lib.repo.maven.api.ArtifactProvider;
 import net.runeduniverse.lib.repo.maven.api.ArtifactValidator;
 import net.runeduniverse.lib.repo.maven.error.InvalidArtifactException;
 import net.runeduniverse.lib.repo.maven.error.InvalidChecksumArtifactException;
-import net.runeduniverse.lib.repo.maven.error.SBomViolationException;
+import net.runeduniverse.lib.repo.maven.error.BomViolationException;
 import net.runeduniverse.lib.repo.maven.validation.pgp.PGPArtifactSignatureValidator;
 import net.runeduniverse.lib.repo.maven.validation.pgp.PublicKeyIndex;
 
@@ -37,10 +37,14 @@ import static net.runeduniverse.lib.repo.maven.validation.pgp.PublicKeyIndex.toH
 
 public class CyclonedxValidator implements ArtifactValidator {
 
-	public static final String MSG_CHECKSUM_MISSMATCH = "SBOM: Artifact Checksum does not match expected value!";
-	public static final String MSG_SIGNATURE_KEYID_MISSMATCH = "SBOM: Artifact PGP-Signature KeyID does not match expected value!";
-	public static final String MSG_SIGNATURE_FINGERPRINT_MISSMATCH = "SBOM: Artifact PGP-Signature Fingerprint does not match expected value!";
-	public static final String MSG_SIGNATURE_FAILED_MISSMATCH = "SBOM: Artifact PGP-Signature could not be verified with a trusted PGP-Public-Key!";
+	public static final String MSG_ARTIFACT_NOT_FOUND = "BOM: Artifact not listed in BOM";
+	public static final String MSG_CHECKSUM_MISSMATCH = "BOM: Artifact Checksum does not match expected value!";
+	public static final String MSG_SIGNATURE_KEYID_MISSMATCH = "BOM: Artifact PGP-Signature KeyID does not match expected value!";
+	public static final String MSG_SIGNATURE_FINGERPRINT_MISSMATCH = "BOM: Artifact PGP-Signature Fingerprint does not match expected value!";
+	public static final String MSG_SIGNATURE_FAILED_MISSMATCH = "BOM: Artifact PGP-Signature could not be verified with a trusted PGP-Public-Key!";
+
+	public static final String PROP_PGP_KEYID = "pgp:keyId";
+	public static final String PROP_PGP_FINGERPRINT = "pgp:fingerprint";
 
 	protected final PublicKeyIndex keyIndex;
 	protected final ComponentIndex componentIndex;
@@ -56,7 +60,7 @@ public class CyclonedxValidator implements ArtifactValidator {
 	/**
 	 * Set skipMissing components flag.
 	 * <p>
-	 * NOTE: Only use when intending to chain multiple SBOM-Validator, otherwise
+	 * NOTE: Only use when intending to chain multiple BOM-Validator, otherwise
 	 * artifacts will slip through the cracks!
 	 *
 	 * @param value {@code true} to disarm the validate() method, prevents throwing
@@ -81,7 +85,7 @@ public class CyclonedxValidator implements ArtifactValidator {
 			if (this.skipMissing || this.ignorePom && data.isPOM())
 				return false;
 			else
-				throw new SBomViolationException("SBOM: Artifact not listed in SBOM");
+				throw new BomViolationException(MSG_ARTIFACT_NOT_FOUND);
 		}
 
 		// -- create Property-Map
@@ -111,9 +115,9 @@ public class CyclonedxValidator implements ArtifactValidator {
 			@Override
 			public Collection<PGPPublicKey> validatePublicKeys(final ArtifactData data, final PGPSignature signature,
 					final Collection<PGPPublicKey> keys) {
-				// remove all keys that do not match SBOM values!
-				final String pgpKeyID = StringUtils.trimToNull(properties.get("pgp:keyId"));
-				final String pgpFingerprint = StringUtils.trimToNull(properties.get("pgp:fingerprint"));
+				// remove all keys that do not match BOM values!
+				final String pgpKeyID = StringUtils.trimToNull(properties.get(PROP_PGP_KEYID));
+				final String pgpFingerprint = StringUtils.trimToNull(properties.get(PROP_PGP_FINGERPRINT));
 
 				if (pgpKeyID != null || pgpFingerprint != null) {
 
@@ -145,16 +149,16 @@ public class CyclonedxValidator implements ArtifactValidator {
 					final PGPPublicKey pubKey) throws InvalidArtifactException {
 				// if the signature had a key-fingerprint attached, a key in violation can
 				// sucessfully verify a signature and reach this point!
-				final String pgpKeyID = StringUtils.trimToNull(properties.get("pgp:keyId"));
-				final String pgpFingerprint = StringUtils.trimToNull(properties.get("pgp:fingerprint"));
+				final String pgpKeyID = StringUtils.trimToNull(properties.get(PROP_PGP_KEYID));
+				final String pgpFingerprint = StringUtils.trimToNull(properties.get(PROP_PGP_FINGERPRINT));
 
 				if (pgpKeyID != null && !pgpKeyID.equalsIgnoreCase(toHexKeyID(pubKey.getKeyID()))) {
-					throw new SBomViolationException(MSG_SIGNATURE_KEYID_MISSMATCH);
+					throw new BomViolationException(MSG_SIGNATURE_KEYID_MISSMATCH);
 				}
 
 				if (pgpFingerprint != null
 						&& !pgpFingerprint.equalsIgnoreCase(toHexFingerprint(pubKey.getFingerprint()))) {
-					throw new SBomViolationException(MSG_SIGNATURE_FINGERPRINT_MISSMATCH);
+					throw new BomViolationException(MSG_SIGNATURE_FINGERPRINT_MISSMATCH);
 				}
 			}
 
@@ -163,7 +167,7 @@ public class CyclonedxValidator implements ArtifactValidator {
 					final Throwable cause) {
 				if (cause == null && this.keysEliminated) {
 					// there's a chance we filtered out all public-keys
-					return new SBomViolationException(MSG_SIGNATURE_FAILED_MISSMATCH);
+					return new BomViolationException(MSG_SIGNATURE_FAILED_MISSMATCH);
 				}
 				return super.onValidateFailure(data, signature, cause);
 			}

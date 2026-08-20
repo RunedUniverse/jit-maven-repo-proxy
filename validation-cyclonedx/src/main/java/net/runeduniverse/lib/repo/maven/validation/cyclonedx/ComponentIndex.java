@@ -15,6 +15,7 @@
  */
 package net.runeduniverse.lib.repo.maven.validation.cyclonedx;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -164,8 +165,9 @@ public class ComponentIndex {
 		component.setCpe(StringUtils.trimToNull(component.getCpe()));
 
 		// replace hash entries with equivalent trimmed entries, or remove empty ones
-		final List<Hash> hashes = component.getHashes();
+		List<Hash> hashes = component.getHashes();
 		if (hashes != null) {
+			component.setHashes(hashes = new ArrayList<>(hashes));
 			for (ListIterator<Hash> i = hashes.listIterator(); i.hasNext();) {
 				final Hash hash = i.next();
 				final String value = StringUtils.trimToNull(hash.getValue());
