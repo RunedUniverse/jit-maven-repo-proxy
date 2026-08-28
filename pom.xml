@@ -114,7 +114,7 @@
 		<plugin-maven-surefire-version>3.2.5</plugin-maven-surefire-version>
 		<plugin-maven-install-version>3.1.4</plugin-maven-install-version>
 		<plugin-revelc-formatter-version>2.25.0</plugin-revelc-formatter-version>
-		<plugin-mycila-license-version>4.6</plugin-mycila-license-version>
+		<plugin-mycila-license-version>5.1.2</plugin-mycila-license-version>
 		<!-- ARTIFACT VERSIONS - WORKFLOW -->
 		<plugin-workflow-java-version>0.1.0</plugin-workflow-java-version>
 		<plugin-workflow-pipeline-version>0.1.0</plugin-workflow-pipeline-version>
@@ -666,10 +666,7 @@
 								</excludes>
 							</licenseSet>
 						</licenseSets>
-						<!-- security issue - also made redundant by Jenkins
-						CI's dynamic artifact validation -->
-						<!--<dependencyEnforce>${license-enforce}</dependencyEnforce>-->
-						<dependencyEnforce>false</dependencyEnforce>
+						<dependencyEnforce>${license-enforce}</dependencyEnforce>
 						<dependencyExceptionMessage>1 or more dependencies got
 							rejected doe to invalid licenses! Contact the
 							Maintainer for a solution!</dependencyExceptionMessage>
